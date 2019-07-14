@@ -88,9 +88,6 @@ namespace Bat
 			case '+': Match( '=' ) ? AddToken( TOKEN_PLUS_EQUAL ) : AddToken( TOKEN_PLUS ); break;
 			case '-': Match( '=' ) ? AddToken( TOKEN_MINUS_EQUAL ) : AddToken( TOKEN_MINUS ); break;
 			case '*': Match( '=' ) ? AddToken( TOKEN_ASTERISK_EQUAL ) : AddToken( TOKEN_ASTERISK ); break;
-			case '/': Match( '=' ) ? AddToken( TOKEN_SLASH_EQUAL )
-			                       : (Match( '/' ) ? Comment()
-			                                       : AddToken( TOKEN_SLASH )); break;
 			case '=': Match( '=' ) ? AddToken( TOKEN_EQUAL_EQUAL ) : AddToken( TOKEN_EQUAL ); break;
 			case '!': Match( '=' ) ? AddToken( TOKEN_EXCLMARK_EQUAL ) : AddToken( TOKEN_EXCLMARK ); break;
 			case '>': Match( '=' ) ? AddToken( TOKEN_GREATER_EQUAL ) : AddToken( TOKEN_GREATER ); break;
@@ -100,6 +97,11 @@ namespace Bat
 			case '&': Match( '=' ) ? AddToken( TOKEN_AMP_EQUAL ) : AddToken( TOKEN_AMP ); break;
 			case '^': Match( '=' ) ? AddToken( TOKEN_HAT_EQUAL ) : AddToken( TOKEN_HAT ); break;
 
+			case '/':
+				if( Match( '=' ) )      AddToken( TOKEN_SLASH_EQUAL );
+				else if( Match( '/' ) ) Comment();
+				else                    AddToken( TOKEN_SLASH );
+
 			case '"': String( '"' ); break;
 			case '\'': String('\''); break;
 
@@ -108,7 +110,11 @@ namespace Bat
 			case '\r':
 				break;
 
-			case '\n': m_iLine++; m_iLineStart = m_iCurrent + 1; break;
+			case '\n':
+				AddToken( TOKEN_ENDOFLINE );
+				m_iLine++;
+				m_iLineStart = m_iCurrent + 1;
+				break;
 
 			default:
 				if( IsNumeric( c ) )

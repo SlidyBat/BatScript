@@ -79,6 +79,7 @@
 	KEYWORD_TYPES(_)                                            \
 	/* Special */                                               \
 	_(ENDOFFILE,      "<end-of-file>")                          \
+	_(ENDOFLINE,      "<end-of-line>")                          \
 	_(COMMENT,        "<comment>")                              \
 	_(UNKNOWN,        "<unknown>")
 
