@@ -3,19 +3,19 @@
 
 #include "memory_stream.h"
 #include "lexer.h"
+#include "errorsys.h"
 
 using namespace Bat;
 
 void Run( const std::string& src )
 {
 	Lexer l( src );
+	std::vector<Token> tokens = l.Scan();
 	
-	Token t;
-	do
+	for( const auto& t : tokens )
 	{
-		t = l.NextToken();
-		std::cout << t.lexeme << '\n';
-	} while( t.type != TOKEN_EOF );
+		std::cout << TokenTypeToString( t.type ) << '\n';
+	}
 }
 
 void RunFromFile( const std::string& filename )
@@ -50,5 +50,13 @@ int main( int argc, char** argv )
 	}
 
 	system( "pause" );
-	return 0;
+
+	if( ErrorSys::HadError() )
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }

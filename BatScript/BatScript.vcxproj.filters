@@ -24,6 +24,18 @@
     <ClCompile Include="lexer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="errorsys.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="token.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stringlib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stringpool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lexer.h">
@@ -33,6 +45,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="token.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="errorsys.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stringlib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stringpool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
