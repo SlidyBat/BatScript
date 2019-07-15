@@ -19,12 +19,17 @@ namespace Bat
 
 	bool Parser::AtEnd() const
 	{
-		return Peek().type == TOKEN_ENDOFFILE;
+		return Check( TOKEN_ENDOFFILE );
 	}
 
 	const Token& Parser::Peek() const
 	{
 		return m_Tokens[m_iCurrent];
+	}
+
+	bool Parser::Check( TokenType type ) const
+	{
+		return Peek().type == type;
 	}
 
 	const Token& Parser::Advance()
@@ -40,7 +45,7 @@ namespace Bat
 
 	bool Parser::Match( TokenType type )
 	{
-		if( Peek().type == type )
+		if( Check( type ) )
 		{
 			Advance();
 			return true;
@@ -48,10 +53,46 @@ namespace Bat
 		return false;
 	}
 
+	const Token& Parser::Expect( TokenType type, const std::string& message )
+	{
+		if( Check( type ) )
+		{
+			return Advance();
+		}
+
+		Error( message );
+		throw ParseError();
+	}
+
 	void Parser::Error( const std::string& message )
 	{
 		auto tok = Peek();
 		ErrorSys::Report( m_szSource, tok.line, tok.column, message );
+	}
+
+	void Parser::Synchronize()
+	{
+		Advance();
+		while( !AtEnd() )
+		{
+			switch( Peek().type )
+			{
+				case TOKEN_CLASS:
+				case TOKEN_STRUCT:
+				case TOKEN_CONST:
+				case TOKEN_VAR:
+				case TOKEN_IF:
+				case TOKEN_WHILE:
+				case TOKEN_FOR:
+				case TOKEN_PRINT:
+				case TOKEN_RETURN:
+				case TOKEN_ENUM:
+				case TOKEN_IMPORT:
+				case TOKEN_TYPEDEF:
+				case TOKEN_ALIASDEF:
+					return;
+			}
+		}
 	}
 
 	std::unique_ptr<Expression> Parser::ParseExpression()
@@ -253,8 +294,7 @@ namespace Bat
 			Match( TOKEN_MINUS ) ||
 			Match( TOKEN_EXCLMARK ) ||
 			Match( TOKEN_TILDE ) ||
-			Match( TOKEN_AMP ) ||
-			Match( TOKEN_PRINT ) )
+			Match( TOKEN_AMP ) )
 		{
 			Token op = Previous();
 			auto right = ParseUnary();
@@ -265,7 +305,6 @@ namespace Bat
 				case TOKEN_EXCLMARK: return CreateExpr_NOT( std::move( right ) );
 				case TOKEN_TILDE:    return CreateExpr_BITNEG( std::move( right ) );
 				case TOKEN_AMP:      return CreateExpr_MOVE( std::move( right ) );
-				case TOKEN_PRINT:    return CreateExpr_PRINT( std::move( right ) );
 			}
 		}
 
@@ -284,10 +323,7 @@ namespace Bat
 		if( Match( TOKEN_LPAREN ) )
 		{
 			auto expr = ParseExpression();
-			if( !Match( TOKEN_RPAREN ) )
-			{
-				Error( "Expected ')' after expression." );
-			}
+			Expect( TOKEN_RPAREN, "Expected ')' after expression." );
 
 			return CreateExpr_GROUP( std::move( expr ) );
 		}

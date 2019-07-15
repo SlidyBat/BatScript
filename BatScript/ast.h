@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include "token.h"
 #include "stringlib.h"
 
@@ -44,8 +45,6 @@
 	_(1, GROUP) \
 	_(1, ADDROF) \
 	_(1, MOVE) \
-	/* Built-ins */ \
-	_(1, PRINT)
 
 #define LITERAL_EXPR_TYPES(_) \
 	/* Literals */ \
@@ -109,24 +108,42 @@ namespace Bat
 	EXPRESSION_TYPES(_)
 #undef _
 
+	template <typename T>
 	class ASTVisitor
 	{
 	public:
-		void Traverse( Expression* e );
+		T Traverse( Expression* e )
+		{
+			switch( e->type )
+			{
+#define _(num_params, exprtype) case EXPR_##exprtype: return Visit##exprtype( e->params[0].get(), e->params[1].get() );
+				BINARY_EXPR_TYPES( _ )
+#undef _
+#define _(num_params, exprtype) case EXPR_##exprtype: return Visit##exprtype( e->params[0].get() );
+				UNARY_EXPR_TYPES( _ )
+#undef _
+				case EXPR_NULL_LITERAL:  return VisitNULL_LITERAL();
+				case EXPR_BOOL_LITERAL:  return VisitBOOL_LITERAL( e->value.i64 );
+				case EXPR_FLOAT_LITERAL: return VisitFLOAT_LITERAL( e->value.f64 );
+				case EXPR_INT_LITERAL:   return VisitINT_LITERAL( e->value.i64 );
+				case EXPR_STR_LITERAL:   return VisitSTR_LITERAL( e->value.str );
+				default: assert( false && "Unhandled expression type" ); return T{};
+			}
+		}
 
-#define _(num_ops, exprtype) virtual void Visit##exprtype( Expression* left, Expression* right ) {}
+#define _(num_ops, exprtype) virtual T Visit##exprtype( Expression* left, Expression* right ) = 0;
 		BINARY_EXPR_TYPES(_)
 #undef _
 
-#define _(num_ops, exprtype) virtual void Visit##exprtype( Expression* expr ) {}
+#define _(num_ops, exprtype) virtual T Visit##exprtype( Expression* expr ) = 0;
 		UNARY_EXPR_TYPES(_)
 #undef _
 
-		virtual void VisitNULL_LITERAL() {}
-		virtual void VisitBOOL_LITERAL( bool value ) {}
-		virtual void VisitFLOAT_LITERAL( double value ) {}
-		virtual void VisitINT_LITERAL( int64_t value ) {}
-		virtual void VisitSTR_LITERAL( const char* str ) {}
+		virtual T VisitNULL_LITERAL() = 0;
+		virtual T VisitBOOL_LITERAL( bool value ) = 0;
+		virtual T VisitFLOAT_LITERAL( double value ) = 0;
+		virtual T VisitINT_LITERAL( int64_t value ) = 0;
+		virtual T VisitSTR_LITERAL( const char* str ) = 0;
 	};
 
 	class LiteralExpr

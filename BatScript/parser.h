@@ -22,11 +22,15 @@ namespace Bat
 	private:
 		bool AtEnd() const;
 		const Token& Peek() const;
+		bool Check( TokenType type ) const;
 		const Token& Advance();
 		const Token& Previous() const;
 		bool Match( TokenType type );
 
+		const Token& Expect( TokenType type, const std::string& message );
 		void Error( const std::string& message );
+		// Skips to next statement to avoid cascading errors
+		void Synchronize();
 	private:
 		std::unique_ptr<Expression> ParseExpression();
 		std::unique_ptr<Expression> ParseAssign();
