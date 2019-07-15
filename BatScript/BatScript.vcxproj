@@ -131,18 +131,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ast.cpp" />
     <ClCompile Include="errorsys.cpp" />
     <ClCompile Include="lexer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory_stream.cpp" />
+    <ClCompile Include="parser.cpp" />
     <ClCompile Include="stringlib.cpp" />
     <ClCompile Include="stringpool.cpp" />
     <ClCompile Include="token.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ast.h" />
     <ClInclude Include="errorsys.h" />
     <ClInclude Include="lexer.h" />
     <ClInclude Include="memory_stream.h" />
+    <ClInclude Include="parser.h" />
     <ClInclude Include="stringlib.h" />
     <ClInclude Include="stringpool.h" />
     <ClInclude Include="token.h" />

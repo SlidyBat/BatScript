@@ -240,8 +240,8 @@ namespace Bat
 
 		Advance(); // Eat ending quote
 
-		std::string lexeme = m_szText.substr( m_iStart, m_iCurrent - m_iStart );
-		const char* str = stringpool.AddString( m_szText.substr( m_iStart + 1, m_iCurrent - m_iStart - 1 ) );
+		std::string lexeme = GetCurrLexeme();
+		const char* str = stringpool.AddString( m_szText.substr( m_iStart + 1, m_iCurrent - m_iStart - 2 ) );
 
 		m_Tokens.emplace_back( str, lexeme, m_iLine, GetCurrColumn() );
 	}
