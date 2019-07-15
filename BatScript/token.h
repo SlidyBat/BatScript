@@ -59,8 +59,10 @@
 	_(EXCLMARK,       "!")                                      \
 	_(EXCLMARK_EQUAL, "!=")                                     \
 	_(GREATER,        ">")                                      \
+	_(GREATER_GREATER,">>")                                     \
 	_(GREATER_EQUAL,  ">=")                                     \
 	_(LESS,           "<")                                      \
+	_(LESS_LESS,      "<<")                                     \
 	_(LESS_EQUAL,     "<=")                                     \
 	_(PERCENT,        "%")                                      \
 	_(PERCENT_EQUAL,  "%=")                                     \
