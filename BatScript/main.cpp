@@ -10,18 +10,25 @@
 
 using namespace Bat;
 
-Interpreter i;
+Interpreter interpreter;
 
-void Run( const std::string& src )
+void Run( const std::string& src, bool print_expression_results = false )
 {
 	Lexer l( src );
 	std::vector<Token> tokens = l.Scan();
 	Parser p( std::move( tokens ) );
-	std::unique_ptr<Expression> e = p.Parse();
-	if( e != nullptr )
+	std::vector<std::unique_ptr<Statement>> res = p.Parse();
+	for( size_t i = 0; i < res.size(); i++ )
 	{
-		auto res = i.Evaluate( e.get() );
-		std::cout << res.ToString() << std::endl;
+		if( print_expression_results && res[i]->IsExpressionStmt() )
+		{
+			auto expr_res = interpreter.Evaluate( res[i]->AsExpressionStmt()->Expr() );
+			std::cout << expr_res.ToString() << std::endl;
+		}
+		else
+		{
+			interpreter.Execute( res[i].get() );
+		}
 	}
 }
 
@@ -38,7 +45,7 @@ void RunFromPrompt()
 	std::getline( std::cin, input );
 	while( input != "quit" )
 	{
-		Run( input );
+		Run( input, true );
 
 		std::cout << "> ";
 		std::getline( std::cin, input );

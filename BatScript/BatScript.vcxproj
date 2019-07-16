@@ -132,8 +132,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ast.cpp" />
+    <ClCompile Include="ast_printer.cpp" />
     <ClCompile Include="bat_object.cpp" />
+    <ClCompile Include="environment.cpp" />
     <ClCompile Include="errorsys.cpp" />
     <ClCompile Include="interpreter.cpp" />
     <ClCompile Include="lexer.cpp" />
@@ -148,6 +149,7 @@
     <ClInclude Include="ast.h" />
     <ClInclude Include="ast_printer.h" />
     <ClInclude Include="bat_object.h" />
+    <ClInclude Include="environment.h" />
     <ClInclude Include="errorsys.h" />
     <ClInclude Include="interpreter.h" />
     <ClInclude Include="lexer.h" />

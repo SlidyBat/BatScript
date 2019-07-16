@@ -4,188 +4,212 @@
 #include "token.h"
 #include "stringlib.h"
 
-#define BINARY_EXPR_TYPES(_) \
-	/* Arithmetic operators */ \
-	_(2, ADD) \
-	_(2, SUB) \
-	_(2, DIV) \
-	_(2, MUL) \
-	_(2, MOD) \
-	/* Bit operators */ \
-	_(2, BITOR) \
-	_(2, BITXOR) \
-	_(2, BITAND) \
-	_(2, LBITSHIFT) \
-	_(2, RBITSHIFT) \
-	/* Assignment operators */ \
-	_(2, ASSIGN) \
-	_(2, ADD_ASSIGN) \
-	_(2, SUB_ASSIGN) \
-	_(2, DIV_ASSIGN) \
-	_(2, MUL_ASSIGN) \
-	_(2, MOD_ASSIGN) \
-	_(2, BITOR_ASSIGN) \
-	_(2, BITXOR_ASSIGN) \
-	_(2, BITAND_ASSIGN) \
-	/* Logical operators */ \
-	_(2, AND) \
-	_(2, OR) \
-	_(2, CMPEQ) \
-	_(2, CMPNEQ) \
-	_(2, CMPL) \
-	_(2, CMPLE) \
-	_(2, CMPG) \
-	_(2, CMPGE)
-
-#define UNARY_EXPR_TYPES(_) \
-	/* Unary operators */ \
-	_(1, NOT) \
-	_(1, BITNEG) \
-	_(1, NEG) \
-	_(1, GROUP) \
-	_(1, ADDROF) \
-	_(1, MOVE) \
-
-#define LITERAL_EXPR_TYPES(_) \
+#define AST_TYPES(_) \
 	/* Literals */ \
-	_(0, BOOL_LITERAL) \
-	_(0, INT_LITERAL) \
-	_(0, FLOAT_LITERAL) \
-	_(0, STR_LITERAL) \
-	_(0, NULL_LITERAL)
-
-#define EXPRESSION_TYPES(_) \
-	BINARY_EXPR_TYPES(_) \
-	UNARY_EXPR_TYPES(_) \
-	LITERAL_EXPR_TYPES(_) \
+	_( IntLiteral ) \
+	_( FloatLiteral ) \
+	_( StringLiteral ) \
+	_( TokenLiteral ) /* For any literals that can be represented by their token type (e.g. true, false, null) */ \
+	/* Expressions */ \
+	_( BinaryExpr ) \
+	_( UnaryExpr ) \
+	_( GroupExpr ) \
+	_( VarExpr ) \
+	/* Statements */ \
+	_( ExpressionStmt ) \
+	_( PrintStmt ) \
+	/* Declarations */ \
+	_( VarDecl )
 
 namespace Bat
 {
-	enum ExpressionType
+	enum class AstType
 	{
-#define _(num_params, exprtype) EXPR_##exprtype,
-		EXPRESSION_TYPES(_)
+#define _(asttype) asttype,
+		AST_TYPES(_)
 #undef _
 	};
 
-	struct Expression
-	{
-		ExpressionType type;
-		std::vector<std::unique_ptr<Expression>> params;
-		union
-		{
-			int64_t i64;
-			double f64;
-			const char* str;
-		} value;
-
-		static bool IsLiteral( ExpressionType type );
-		static int GetNumParams( ExpressionType type );
-	};
-
-	template <typename Arg>
-	void AddParams( Expression* e, Arg arg )
-	{
-		e->params.push_back( std::move( arg ) );
-	}
-
-	template <typename Arg, typename... Rest>
-	void AddParams( Expression* e, Arg arg, Rest... rest )
-	{
-		e->params.push_back( std::move( arg ) );
-		AddParams( e, std::move( rest )... );
-	}
-
-#define _(num_ops, exprtype) \
-	template <typename... Args> \
-	std::unique_ptr<Expression> CreateExpr_##exprtype( Args... args ) \
-	{ \
-		auto e = std::make_unique<Expression>(); \
-		e->type = EXPR_##exprtype; \
-		AddParams( e.get(), std::move( args )... ); \
-		return std::move( e ); \
-	}
-	EXPRESSION_TYPES(_)
+#define _(asttype) class asttype;
+	AST_TYPES(_)
 #undef _
 
-	template <typename T>
-	class ASTVisitor
+	class AstVisitor
 	{
 	public:
-		T Traverse( Expression* e )
-		{
-			switch( e->type )
-			{
-#define _(num_params, exprtype) case EXPR_##exprtype: return Visit##exprtype( e->params[0].get(), e->params[1].get() );
-				BINARY_EXPR_TYPES( _ )
+#define _(asttype) virtual void Visit##asttype( asttype* node ) = 0;
+		AST_TYPES(_)
 #undef _
-#define _(num_params, exprtype) case EXPR_##exprtype: return Visit##exprtype( e->params[0].get() );
-				UNARY_EXPR_TYPES( _ )
-#undef _
-				case EXPR_NULL_LITERAL:  return VisitNULL_LITERAL();
-				case EXPR_BOOL_LITERAL:  return VisitBOOL_LITERAL( e->value.i64 );
-				case EXPR_FLOAT_LITERAL: return VisitFLOAT_LITERAL( e->value.f64 );
-				case EXPR_INT_LITERAL:   return VisitINT_LITERAL( e->value.i64 );
-				case EXPR_STR_LITERAL:   return VisitSTR_LITERAL( e->value.str );
-				default: assert( false && "Unhandled expression type" ); return T{};
-			}
-		}
-
-#define _(num_ops, exprtype) virtual T Visit##exprtype( Expression* left, Expression* right ) = 0;
-		BINARY_EXPR_TYPES(_)
-#undef _
-
-#define _(num_ops, exprtype) virtual T Visit##exprtype( Expression* expr ) = 0;
-		UNARY_EXPR_TYPES(_)
-#undef _
-
-		virtual T VisitNULL_LITERAL() = 0;
-		virtual T VisitBOOL_LITERAL( bool value ) = 0;
-		virtual T VisitFLOAT_LITERAL( double value ) = 0;
-		virtual T VisitINT_LITERAL( int64_t value ) = 0;
-		virtual T VisitSTR_LITERAL( const char* str ) = 0;
 	};
 
-	class LiteralExpr
+	class AstNode
 	{
 	public:
-		static std::unique_ptr<Expression> Null()
-		{
-			auto e = std::make_unique<Expression>();
-			e->type = EXPR_NULL_LITERAL;
-			return e;
-		}
+		virtual AstType Type() const = 0;
+		virtual void Accept( AstVisitor* visitor ) = 0;
+		virtual const char* Name() const = 0;
 
-		static std::unique_ptr<Expression> Bool( bool bool_literal )
-		{
-			auto e = std::make_unique<Expression>();
-			e->type = EXPR_BOOL_LITERAL;
-			e->value.i64 = bool_literal ? 1 : 0;
-			return e;
-		}
+#define _(asttype) \
+		bool Is##asttype() const { return Type() == AstType::asttype; } \
+		asttype* As##asttype() { assert( Is##asttype() ); return (asttype*) this; } \
+		const asttype* As##asttype() const { assert( Is##asttype() ); return (const asttype*)this; } \
+		asttype* To##asttype() { if ( !Is##asttype() ) return nullptr; return (asttype*)this; } \
+		const asttype* To##asttype() const { if ( !Is##asttype() ) return nullptr; return (const asttype*)this; }
+		AST_TYPES(_)
+#undef _
+	};
 
-		static std::unique_ptr<Expression> Float( double value )
-		{
-			auto e = std::make_unique<Expression>();
-			e->type = EXPR_FLOAT_LITERAL;
-			e->value.f64 = value;
-			return e;
-		}
+#define DECLARE_AST_NODE(asttype) \
+	virtual AstType Type() const override { return AstType::##asttype; } \
+	virtual void Accept( AstVisitor* visitor ) override { visitor->Visit##asttype( this ); } \
+	virtual const char* Name() const override { return #asttype; }
 
-		static std::unique_ptr<Expression> Int( int64_t value )
-		{
-			auto e = std::make_unique<Expression>();
-			e->type = EXPR_INT_LITERAL;
-			e->value.i64 = value;
-			return e;
-		}
+	class Expression : public AstNode {};
+	class Statement : public AstNode {};
 
-		static std::unique_ptr<Expression> String( const char* value )
-		{
-			auto e = std::make_unique<Expression>();
-			e->type = EXPR_STR_LITERAL;
-			e->value.str = value;
-			return e;
-		}
+	class IntLiteral : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( IntLiteral );
+
+		IntLiteral( int64_t value ) : value( value ) {}
+
+		int64_t value;
+	};
+
+	class FloatLiteral : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( FloatLiteral );
+
+		FloatLiteral( double value ) : value( value ) {}
+
+		double value;
+	};
+
+	class StringLiteral : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( StringLiteral );
+
+		StringLiteral( const char* value ) : value( value ) {}
+
+		const char* value;
+	};
+
+	class TokenLiteral : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( TokenLiteral );
+
+		TokenLiteral( TokenType value ) : value( value ) {}
+
+		TokenType value;
+	};
+
+	class BinaryExpr : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( BinaryExpr );
+
+		BinaryExpr( TokenType op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right )
+			:
+			m_Op( op ),
+			m_pLeft( std::move( left ) ),
+			m_pRight( std::move( right ) )
+		{}
+
+		TokenType Op() const { return m_Op; }
+		Expression* Left() { return m_pLeft.get(); }
+		Expression* Right() { return m_pRight.get(); }
+	private:
+		TokenType m_Op;
+		std::unique_ptr<Expression> m_pLeft;
+		std::unique_ptr<Expression> m_pRight;
+	};
+
+	class UnaryExpr : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( UnaryExpr );
+
+		UnaryExpr( TokenType op, std::unique_ptr<Expression> right )
+			:
+			m_Op( op ),
+			m_pRight( std::move( right ) )
+		{}
+
+		TokenType Op() const { return m_Op; }
+		Expression* Right() { return m_pRight.get(); }
+	private:
+		TokenType m_Op;
+		std::unique_ptr<Expression> m_pRight;
+	};
+
+	class GroupExpr : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( GroupExpr );
+
+		GroupExpr( std::unique_ptr<Expression> expression ) : m_pExpression( std::move( expression ) ) {}
+
+		Expression* Expr() { return m_pExpression.get(); }
+	private:
+		std::unique_ptr<Expression> m_pExpression;
+	};
+
+	class VarExpr : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( VarExpr );
+
+		VarExpr( Token name ) : name( name ) {}
+
+		Token name;
+	};
+
+	class ExpressionStmt : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( ExpressionStmt );
+
+		ExpressionStmt( std::unique_ptr<Expression> expression ) : m_pExpression( std::move( expression ) ) {}
+
+		Expression* Expr() { return m_pExpression.get(); }
+	private:
+		std::unique_ptr<Expression> m_pExpression;
+	};
+
+	class PrintStmt : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( PrintStmt );
+
+		PrintStmt( std::unique_ptr<Expression> expression ) : m_pExpression( std::move( expression ) ) {}
+
+		Expression* Expr() { return m_pExpression.get(); }
+	private:
+		std::unique_ptr<Expression> m_pExpression;
+	};
+
+	class VarDecl : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( VarDecl );
+
+		VarDecl( Token classifier, Token identifier, std::unique_ptr<Expression> initializer )
+			:
+			m_Classifier( classifier ),
+			m_Identifier( identifier ),
+			m_pInitializer( std::move( initializer ) )
+		{}
+
+		const Token& Classifier() const { return m_Classifier; }
+		const Token& Identifier() const { return m_Identifier; }
+		Expression* Initializer() { return m_pInitializer.get(); }
+	private:
+		Token m_Classifier;
+		Token m_Identifier;
+		std::unique_ptr<Expression> m_pInitializer;
 	};
 }

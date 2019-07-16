@@ -39,13 +39,16 @@
     <ClCompile Include="parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ast.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="interpreter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="bat_object.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ast_printer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="environment.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -81,6 +84,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="bat_object.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="environment.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

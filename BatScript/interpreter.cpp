@@ -1,217 +1,147 @@
 #include "interpreter.h"
 
+#include <iostream>
+
+#define BAT_RETURN( value ) m_Result = (value); return
+
 namespace Bat
 {
 	BatObject Interpreter::Evaluate( Expression* e )
 	{
-		return Traverse( e );
+		e->Accept( this );
+		return m_Result;
 	}
 
-	BatObject Interpreter::VisitNULL_LITERAL()
+	void Interpreter::Execute( Statement* s )
 	{
-		return {};
+		s->Accept( this );
 	}
-	BatObject Interpreter::VisitBOOL_LITERAL( bool value )
+
+	void Interpreter::VisitIntLiteral( Bat::IntLiteral* node )
 	{
-		return value;
+		BAT_RETURN( node->value );
 	}
-	BatObject Interpreter::VisitFLOAT_LITERAL( double value )
+	void Interpreter::VisitFloatLiteral( Bat::FloatLiteral* node )
 	{
-		return value;
+		BAT_RETURN( node->value );
 	}
-	BatObject Interpreter::VisitINT_LITERAL( int64_t value )
+	void Interpreter::VisitStringLiteral( Bat::StringLiteral* node )
 	{
-		return value;
+		BAT_RETURN( node->value );
 	}
-	BatObject Interpreter::VisitSTR_LITERAL( const char* str )
+	void Interpreter::VisitTokenLiteral( Bat::TokenLiteral* node )
 	{
-		return str;
-	}
-	Bat::BatObject Interpreter::VisitADD( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l + r;
-	}
-	Bat::BatObject Interpreter::VisitSUB( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l - r;
-	}
-	Bat::BatObject Interpreter::VisitDIV( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l / r;
-	}
-	Bat::BatObject Interpreter::VisitMUL( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l * r;
-	}
-	Bat::BatObject Interpreter::VisitMOD( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l % r;
-	}
-	Bat::BatObject Interpreter::VisitBITOR( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l | r;
-	}
-	Bat::BatObject Interpreter::VisitBITXOR( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l ^ r;
-	}
-	Bat::BatObject Interpreter::VisitBITAND( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l & r;
-	}
-	Bat::BatObject Interpreter::VisitLBITSHIFT( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l << r;
-	}
-	Bat::BatObject Interpreter::VisitRBITSHIFT( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l >> r;
-	}
-	Bat::BatObject Interpreter::VisitASSIGN( Bat::Expression* left, Bat::Expression* right )
-	{
-		throw BatObjectError();
-	}
-	Bat::BatObject Interpreter::VisitADD_ASSIGN( Bat::Expression* left, Bat::Expression* right )
-	{
-		throw BatObjectError();
-	}
-	Bat::BatObject Interpreter::VisitSUB_ASSIGN( Bat::Expression* left, Bat::Expression* right )
-	{
-		throw BatObjectError();
-	}
-	Bat::BatObject Interpreter::VisitDIV_ASSIGN( Bat::Expression* left, Bat::Expression* right )
-	{
-		throw BatObjectError();
-	}
-	Bat::BatObject Interpreter::VisitMUL_ASSIGN( Bat::Expression* left, Bat::Expression* right )
-	{
-		throw BatObjectError();
-	}
-	Bat::BatObject Interpreter::VisitMOD_ASSIGN( Bat::Expression* left, Bat::Expression* right )
-	{
-		throw BatObjectError();
-	}
-	Bat::BatObject Interpreter::VisitBITOR_ASSIGN( Bat::Expression* left, Bat::Expression* right )
-	{
-		throw BatObjectError();
-	}
-	Bat::BatObject Interpreter::VisitBITXOR_ASSIGN( Bat::Expression* left, Bat::Expression* right )
-	{
-		throw BatObjectError();
-	}
-	Bat::BatObject Interpreter::VisitBITAND_ASSIGN( Bat::Expression* left, Bat::Expression* right )
-	{
-		throw BatObjectError();
-	}
-	Bat::BatObject Interpreter::VisitAND( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		if( !l.IsTruthy() )
+		switch( node->value )
 		{
-			return false;
+			case TOKEN_TRUE:  BAT_RETURN( true );
+			case TOKEN_FALSE: BAT_RETURN( false );
+			case TOKEN_NIL:   BAT_RETURN( BatObject() );
 		}
-		BatObject r = Evaluate( right );
-		if( !r.IsTruthy() )
-		{
-			return false;
-		}
-		return true;
-	}
-	Bat::BatObject Interpreter::VisitOR( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		if( l.IsTruthy() )
-		{
-			return true;
-		}
-		BatObject r = Evaluate( right );
-		if( r.IsTruthy() )
-		{
-			return true;
-		}
-		return false;
-	}
-	Bat::BatObject Interpreter::VisitCMPEQ( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l == r;
-	}
-	Bat::BatObject Interpreter::VisitCMPNEQ( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l != r;
-	}
-	Bat::BatObject Interpreter::VisitCMPL( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l < r;
-	}
-	Bat::BatObject Interpreter::VisitCMPLE( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l <= r;
-	}
-	Bat::BatObject Interpreter::VisitCMPG( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l > r;
-	}
-	Bat::BatObject Interpreter::VisitCMPGE( Bat::Expression* left, Bat::Expression* right )
-	{
-		BatObject l = Evaluate( left );
-		BatObject r = Evaluate( right );
-		return l >= r;
-	}
-	Bat::BatObject Interpreter::VisitNOT( Bat::Expression* expr )
-	{
-		BatObject e = Evaluate( expr );
-		return !e;
-	}
-	Bat::BatObject Interpreter::VisitBITNEG( Bat::Expression* expr )
-	{
-		BatObject e = Evaluate( expr );
-		return ~e;
-	}
-	Bat::BatObject Interpreter::VisitNEG( Bat::Expression* expr )
-	{
-		BatObject e = Evaluate( expr );
-		return -e;
-	}
-	Bat::BatObject Interpreter::VisitGROUP( Bat::Expression* expr )
-	{
-		return Evaluate( expr );
-	}
-	Bat::BatObject Interpreter::VisitADDROF( Bat::Expression* expr )
-	{
 		throw BatObjectError();
 	}
-	Bat::BatObject Interpreter::VisitMOVE( Bat::Expression* expr )
+	void Interpreter::VisitBinaryExpr( Bat::BinaryExpr* node )
 	{
+		Expression* l = node->Left();
+		Expression* r = node->Right();
+		switch( node->Op() )
+		{
+			case TOKEN_EQUAL:
+			case TOKEN_PLUS_EQUAL:
+			case TOKEN_MINUS_EQUAL:
+			case TOKEN_ASTERISK_EQUAL:
+			case TOKEN_SLASH_EQUAL:
+			case TOKEN_PERCENT_EQUAL:
+			case TOKEN_AMP_EQUAL:
+			case TOKEN_HAT_EQUAL:
+			case TOKEN_BAR_EQUAL:
+			{
+				if( !l->IsVarExpr() )
+				{
+					throw BatObjectError();
+				}
+				std::string name = l->AsVarExpr()->name.lexeme;
+				BatObject current = Evaluate( l );
+				BatObject assign = Evaluate( r );
+
+				BatObject newval;
+				switch( node->Op() )
+				{
+					case TOKEN_EQUAL:          newval = assign; break;
+					case TOKEN_PLUS_EQUAL:     newval = current + assign; break;
+					case TOKEN_MINUS_EQUAL:    newval = current - assign; break;
+					case TOKEN_ASTERISK_EQUAL: newval = current * assign; break;
+					case TOKEN_SLASH_EQUAL:    newval = current / assign; break;
+					case TOKEN_PERCENT_EQUAL:  newval = current % assign; break;
+					case TOKEN_AMP_EQUAL:      newval = current & assign; break;
+					case TOKEN_HAT_EQUAL:      newval = current ^ assign; break;
+					case TOKEN_BAR_EQUAL:      newval = current | assign; break;
+				}
+				m_Environment.SetVar( name, newval );
+				BAT_RETURN( newval );
+			}
+
+			case TOKEN_BAR:              BAT_RETURN( Evaluate( l ) | Evaluate( r ) );
+			case TOKEN_HAT:              BAT_RETURN( Evaluate( l ) ^ Evaluate( r ) );
+			case TOKEN_AMP:              BAT_RETURN( Evaluate( l ) & Evaluate( r ) );
+			case TOKEN_EQUAL_EQUAL:      BAT_RETURN( Evaluate( l ) == Evaluate( r ) );
+			case TOKEN_EXCLMARK_EQUAL:   BAT_RETURN( Evaluate( l ) != Evaluate( r ) );
+			case TOKEN_LESS:             BAT_RETURN( Evaluate( l ) < Evaluate( r ) );
+			case TOKEN_LESS_EQUAL:       BAT_RETURN( Evaluate( l ) <= Evaluate( r ) );
+			case TOKEN_GREATER:          BAT_RETURN( Evaluate( l ) > Evaluate( r ) );
+			case TOKEN_GREATER_EQUAL:    BAT_RETURN( Evaluate( l ) >= Evaluate( r ) );
+			case TOKEN_LESS_LESS:        BAT_RETURN( Evaluate( l ) << Evaluate( r ) );
+			case TOKEN_GREATER_GREATER:  BAT_RETURN( Evaluate( l ) >> Evaluate( r ) );
+			case TOKEN_PLUS:             BAT_RETURN( Evaluate( l ) + Evaluate( r ) );
+			case TOKEN_MINUS:            BAT_RETURN( Evaluate( l ) - Evaluate( r ) );
+			case TOKEN_ASTERISK:         BAT_RETURN( Evaluate( l ) * Evaluate( r ) );
+			case TOKEN_SLASH:            BAT_RETURN( Evaluate( l ) / Evaluate( r ) );
+			case TOKEN_PERCENT:          BAT_RETURN( Evaluate( l ) % Evaluate( r ) );
+
+			case TOKEN_OR:
+				if( Evaluate( l ).IsTruthy() ) BAT_RETURN( true );
+				if( Evaluate( r ).IsTruthy() ) BAT_RETURN( true );
+				BAT_RETURN( false );
+			case TOKEN_AND:
+				if( !Evaluate( l ).IsTruthy() ) BAT_RETURN( false );
+				if( !Evaluate( r ).IsTruthy() ) BAT_RETURN( false );
+				BAT_RETURN( true );
+		}
 		throw BatObjectError();
+	}
+	void Interpreter::VisitUnaryExpr( Bat::UnaryExpr* node )
+	{
+		switch( node->Op() )
+		{
+			case TOKEN_MINUS:    BAT_RETURN( -Evaluate( node->Right() ) );
+			case TOKEN_EXCLMARK: BAT_RETURN( !Evaluate( node->Right() ) );
+			case TOKEN_TILDE:    BAT_RETURN( ~Evaluate( node->Right() ) );
+				// case TOKEN_AMP:
+		}
+		throw BatObjectError();
+	}
+	void Interpreter::VisitGroupExpr( Bat::GroupExpr* node )
+	{
+		BAT_RETURN( Evaluate( node->Expr() ) );
+	}
+	void Interpreter::VisitVarExpr( Bat::VarExpr* node )
+	{
+		BAT_RETURN( m_Environment.GetVar( node->name.lexeme ) );
+	}
+	void Interpreter::VisitExpressionStmt( Bat::ExpressionStmt* node )
+	{
+		Evaluate( node->Expr() );
+	}
+	void Interpreter::VisitPrintStmt( Bat::PrintStmt* node )
+	{
+		std::cout << Evaluate( node->Expr() ).ToString() << std::endl;
+	}
+	void Interpreter::VisitVarDecl( Bat::VarDecl* node )
+	{
+		BatObject initial;
+		if( node->Initializer() )
+		{
+			initial = Evaluate( node->Initializer() );
+		}
+		m_Environment.AddVar( node->Identifier().lexeme, initial );
 	}
 }

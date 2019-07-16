@@ -18,7 +18,8 @@ namespace Bat
 			m_szSource( source )
 		{}
 
-		std::unique_ptr<Expression> Parse();
+		// Returns vector of statements
+		std::vector<std::unique_ptr<Statement>> Parse();
 	private:
 		bool AtEnd() const;
 		const Token& Peek() const;
@@ -28,10 +29,19 @@ namespace Bat
 		bool Match( TokenType type );
 
 		const Token& Expect( TokenType type, const std::string& message );
+		void ExpectTerminator();
 		void Error( const std::string& message );
 		// Skips to next statement to avoid cascading errors
 		void Synchronize();
 	private:
+		// Statement parsing
+		std::unique_ptr<Statement> ParseDeclaration();
+		std::unique_ptr<Statement> ParseStatement();
+		std::unique_ptr<Statement> ParseExpressionStatement();
+		std::unique_ptr<Statement> ParsePrint();
+		std::unique_ptr<Statement> ParseVarDeclaration();
+
+		// Expression parsing
 		std::unique_ptr<Expression> ParseExpression();
 		std::unique_ptr<Expression> ParseAssign();
 		std::unique_ptr<Expression> ParseOr();

@@ -5,15 +5,20 @@
 
 namespace Bat
 {
-	std::unique_ptr<Expression> Parser::Parse()
+	std::vector<std::unique_ptr<Statement>> Parser::Parse()
 	{
 		try
 		{
-			return ParseExpression();
+			std::vector<std::unique_ptr<Statement>> statements;
+			while( !AtEnd() )
+			{
+				statements.push_back( ParseDeclaration() );
+			}
+			return statements;
 		}
 		catch( const ParseError& )
 		{
-			return nullptr;
+			return {};
 		}
 	}
 
@@ -64,6 +69,15 @@ namespace Bat
 		throw ParseError();
 	}
 
+	void Parser::ExpectTerminator()
+	{
+		if( !Match( TOKEN_SEMICOLON ) && !Match( TOKEN_ENDOFLINE ) && !AtEnd() )
+		{
+			Error( "Expected statement terminator (newline or ';')" );
+			throw ParseError();
+		}
+	}
+
 	void Parser::Error( const std::string& message )
 	{
 		auto tok = Peek();
@@ -95,6 +109,58 @@ namespace Bat
 		}
 	}
 
+	std::unique_ptr<Statement> Parser::ParseDeclaration()
+	{
+		try
+		{
+			if( Match( TOKEN_VAR ) || Match( TOKEN_CONST ) ) return ParseVarDeclaration();
+
+			return ParseStatement();
+		}
+		catch( const ParseError& )
+		{
+			Synchronize();
+			return nullptr;
+		}
+	}
+
+	std::unique_ptr<Statement> Parser::ParseStatement()
+	{
+		if( Match( TOKEN_PRINT ) ) return ParsePrint();
+
+		return ParseExpressionStatement();
+	}
+
+	std::unique_ptr<Statement> Parser::ParseExpressionStatement()
+	{
+		auto stmt = std::make_unique<ExpressionStmt>( ParseExpression() );
+		ExpectTerminator();
+		return stmt;
+	}
+
+	std::unique_ptr<Statement> Parser::ParsePrint()
+	{
+		auto stmt = std::make_unique<PrintStmt>( ParseExpression() );
+		ExpectTerminator();
+		return stmt;
+	}
+
+	std::unique_ptr<Statement> Parser::ParseVarDeclaration()
+	{
+		Token classifier = Previous();
+		Token ident = Expect( TOKEN_IDENT, "Expected variable name." );
+
+		std::unique_ptr<Expression> init = nullptr;
+		if( Match( TOKEN_EQUAL ) )
+		{
+			init = ParseExpression();
+		}
+
+		ExpectTerminator();
+
+		return std::make_unique<VarDecl>( classifier, ident, std::move( init ) );
+	}
+
 	std::unique_ptr<Expression> Parser::ParseExpression()
 	{
 		return ParseAssign();
@@ -115,18 +181,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseOr();
-			switch( op.type )
-			{
-				case TOKEN_EQUAL:          expr = CreateExpr_ASSIGN( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_PLUS_EQUAL:     expr = CreateExpr_ADD_ASSIGN( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_MINUS_EQUAL:    expr = CreateExpr_SUB_ASSIGN( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_ASTERISK_EQUAL: expr = CreateExpr_MUL_ASSIGN( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_SLASH_EQUAL:    expr = CreateExpr_DIV_ASSIGN( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_PERCENT_EQUAL:  expr = CreateExpr_MOD_ASSIGN( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_AMP_EQUAL:      expr = CreateExpr_BITAND_ASSIGN( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_HAT_EQUAL:      expr = CreateExpr_BITXOR_ASSIGN( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_BAR_EQUAL:      expr = CreateExpr_BITOR_ASSIGN( std::move( expr ), std::move( right ) ); break;
-			}
+			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -139,7 +194,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseAnd();
-			expr = CreateExpr_OR( std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -152,7 +207,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseBitOr();
-			expr = CreateExpr_AND( std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -165,7 +220,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseBitXor();
-			expr = CreateExpr_BITOR( std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -178,7 +233,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseBitAnd();
-			expr = CreateExpr_BITXOR( std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -191,7 +246,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseEqualCompare();
-			expr = CreateExpr_BITAND( std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -204,11 +259,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseSizeCompare();
-			switch( op.type )
-			{
-				case TOKEN_EQUAL_EQUAL:    expr = CreateExpr_CMPEQ( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_EXCLMARK_EQUAL: expr = CreateExpr_CMPNEQ( std::move( expr ), std::move( right ) ); break;
-			}
+			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -222,13 +273,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseBitShift();
-			switch( op.type )
-			{
-				case TOKEN_LESS:          expr = CreateExpr_CMPL( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_LESS_EQUAL:    expr = CreateExpr_CMPLE( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_GREATER:       expr = CreateExpr_CMPG( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_GREATER_EQUAL: expr = CreateExpr_CMPGE( std::move( expr ), std::move( right ) ); break;
-			}
+			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -241,11 +286,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseAddition();
-			switch( op.type )
-			{
-				case TOKEN_LESS_LESS:       expr = CreateExpr_LBITSHIFT( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_GREATER_GREATER: expr = CreateExpr_RBITSHIFT( std::move( expr ), std::move( right ) ); break;
-			}
+			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -258,11 +299,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseMultiplication();
-			switch( op.type )
-			{
-				case TOKEN_PLUS:  expr = CreateExpr_ADD( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_MINUS: expr = CreateExpr_SUB( std::move( expr ), std::move( right ) ); break;
-			}
+			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -277,12 +314,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseUnary();
-			switch( op.type )
-			{
-				case TOKEN_ASTERISK:  expr = CreateExpr_MUL( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_SLASH:     expr = CreateExpr_DIV( std::move( expr ), std::move( right ) ); break;
-				case TOKEN_PERCENT:   expr = CreateExpr_MOD( std::move( expr ), std::move( right ) ); break;
-			}
+			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -290,22 +322,14 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseUnary()
 	{
-		if( Match( TOKEN_PLUS ) ||
-			Match( TOKEN_MINUS ) ||
+		if( Match( TOKEN_MINUS ) ||
 			Match( TOKEN_EXCLMARK ) ||
 			Match( TOKEN_TILDE ) ||
 			Match( TOKEN_AMP ) )
 		{
 			Token op = Previous();
 			auto right = ParseUnary();
-			switch( op.type )
-			{
-				case TOKEN_PLUS:     return std::move( right ); // TODO: Support this? Error?
-				case TOKEN_MINUS:    return CreateExpr_NEG( std::move( right ) );
-				case TOKEN_EXCLMARK: return CreateExpr_NOT( std::move( right ) );
-				case TOKEN_TILDE:    return CreateExpr_BITNEG( std::move( right ) );
-				case TOKEN_AMP:      return CreateExpr_MOVE( std::move( right ) );
-			}
+			return std::make_unique<UnaryExpr>( op.type, std::move( right ) );
 		}
 
 		return ParsePrimary();
@@ -313,19 +337,21 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParsePrimary()
 	{
-		if( Match( TOKEN_INT ) ) return LiteralExpr::Int( Previous().literal.i64 );
-		if( Match( TOKEN_FLOAT ) ) return LiteralExpr::Float( Previous().literal.f64 );
-		if( Match( TOKEN_STRING ) ) return LiteralExpr::String( Previous().literal.str );
-		if( Match( TOKEN_TRUE ) ) return LiteralExpr::Bool( true );
-		if( Match( TOKEN_FALSE ) ) return LiteralExpr::Bool( false );
-		if( Match( TOKEN_NIL ) ) return LiteralExpr::Null();
+		if( Match( TOKEN_INT ) ) return std::make_unique<IntLiteral>( Previous().literal.i64 );
+		if( Match( TOKEN_FLOAT ) ) return std::make_unique<FloatLiteral>( Previous().literal.f64 );
+		if( Match( TOKEN_STRING ) ) return std::make_unique<StringLiteral>( Previous().literal.str );
+
+		if( Match( TOKEN_TRUE ) || Match( TOKEN_FALSE ) || Match( TOKEN_NIL ) )
+			return std::make_unique<TokenLiteral>( Previous().type );
+
+		if( Match( TOKEN_IDENT ) ) return std::make_unique<VarExpr>( Previous() );
 
 		if( Match( TOKEN_LPAREN ) )
 		{
 			auto expr = ParseExpression();
 			Expect( TOKEN_RPAREN, "Expected ')' after expression." );
 
-			return CreateExpr_GROUP( std::move( expr ) );
+			return std::make_unique<GroupExpr>( std::move( expr ) );
 		}
 
 		Error( std::string( "Unexpected '") + TokenTypeToString( Peek().type ) + "'." );
