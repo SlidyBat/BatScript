@@ -126,8 +126,9 @@ namespace Bat
 
 	std::unique_ptr<Statement> Parser::ParseStatement()
 	{
-		if( Match( TOKEN_PRINT ) ) return ParsePrint();
+		if( Match( TOKEN_PRINT ) )  return ParsePrint();
 		if( Match( TOKEN_LBRACE ) ) return ParseBlock();
+		if( Match( TOKEN_IF ) )     return ParseIf();
 
 		return ParseExpressionStatement();
 	}
@@ -157,6 +158,22 @@ namespace Bat
 		Expect( TOKEN_RBRACE, "Expected '}'." );
 
 		return std::make_unique<BlockStmt>( std::move( statements ) );
+	}
+
+	std::unique_ptr<Statement> Parser::ParseIf()
+	{
+		Expect( TOKEN_LPAREN, "Expected '('" );
+		auto condition = ParseExpression();
+		Expect( TOKEN_RPAREN, "Expected ')'" );
+		auto then_branch = ParseStatement();
+
+		std::unique_ptr<Statement> else_branch = nullptr;
+		if( Match( TOKEN_ELSE ) )
+		{
+			else_branch = ParseStatement();
+		}
+
+		return std::make_unique<IfStmt>( std::move( condition ), std::move( then_branch ), std::move( else_branch ) );
 	}
 
 	std::unique_ptr<Statement> Parser::ParseVarDeclaration()

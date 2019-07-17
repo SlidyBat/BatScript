@@ -154,6 +154,18 @@ namespace Bat
 	{
 		std::cout << Evaluate( node->Expr() ).ToString() << std::endl;
 	}
+	void Interpreter::VisitIfStmt( IfStmt* node )
+	{
+		BatObject condition = Evaluate( node->Condition() );
+		if( condition.IsTruthy() )
+		{
+			Execute( node->Then() );
+		}
+		else if( node->Else() )
+		{
+			Execute( node->Else() );
+		}
+	}
 	void Interpreter::VisitVarDecl( Bat::VarDecl* node )
 	{
 		BatObject initial;

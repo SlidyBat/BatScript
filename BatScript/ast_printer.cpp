@@ -101,6 +101,17 @@ namespace Bat
 		PrintNode( node->Expr() );
 	}
 
+	void AstPrinter::VisitIfStmt( IfStmt* node )
+	{
+		std::cout << "if";
+		PrintNode( node->Then() );
+		if( node->Else() )
+		{
+			std::cout << "else";
+			PrintNode( node->Else() );
+		}
+	}
+
 	void AstPrinter::VisitVarDecl( VarDecl* node )
 	{
 		std::cout << "var " << node->Identifier().lexeme;

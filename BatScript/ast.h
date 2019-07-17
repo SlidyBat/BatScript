@@ -19,6 +19,7 @@
 	_( ExpressionStmt ) \
 	_( BlockStmt ) \
 	_( PrintStmt ) \
+	_( IfStmt ) \
 	/* Declarations */ \
 	_( VarDecl )
 
@@ -204,6 +205,27 @@ namespace Bat
 		Expression* Expr() { return m_pExpression.get(); }
 	private:
 		std::unique_ptr<Expression> m_pExpression;
+	};
+
+	class IfStmt : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( IfStmt );
+
+		IfStmt( std::unique_ptr<Expression> condition, std::unique_ptr<Statement> then_branch, std::unique_ptr<Statement> else_branch )
+			:
+			m_pCondition( std::move( condition ) ),
+			m_pThen( std::move( then_branch ) ),
+			m_pElse( std::move( else_branch ) )
+		{}
+		
+		Expression* Condition() { return m_pCondition.get(); }
+		Statement* Then() { return m_pThen.get(); }
+		Statement* Else() { return m_pElse.get(); }
+	private:
+		std::unique_ptr<Expression> m_pCondition;
+		std::unique_ptr<Statement> m_pThen;
+		std::unique_ptr<Statement> m_pElse;
 	};
 
 	class VarDecl : public Statement
