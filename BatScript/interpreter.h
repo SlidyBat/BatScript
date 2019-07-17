@@ -27,6 +27,8 @@ namespace Bat
 		virtual void VisitBlockStmt( BlockStmt* node );
 		virtual void VisitPrintStmt( PrintStmt* node );
 		virtual void VisitIfStmt( IfStmt* node );
+		virtual void VisitWhileStmt( WhileStmt* node );
+		virtual void VisitForStmt( ForStmt* node );
 		virtual void VisitVarDecl( VarDecl* node );
 	private:
 		BatObject m_Result;

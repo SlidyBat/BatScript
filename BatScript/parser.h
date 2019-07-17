@@ -41,6 +41,8 @@ namespace Bat
 		std::unique_ptr<Statement> ParsePrint();
 		std::unique_ptr<Statement> ParseBlock();
 		std::unique_ptr<Statement> ParseIf();
+		std::unique_ptr<Statement> ParseWhile();
+		std::unique_ptr<Statement> ParseFor();
 		std::unique_ptr<Statement> ParseVarDeclaration();
 
 		// Expression parsing

@@ -112,6 +112,22 @@ namespace Bat
 		}
 	}
 
+	void AstPrinter::VisitWhileStmt( WhileStmt* node )
+	{
+		std::cout << "while";
+		PrintNode( node->Condition() );
+		PrintNode( node->Body() );
+	}
+
+	void AstPrinter::VisitForStmt( ForStmt* node )
+	{
+		std::cout << "for";
+		PrintNode( node->Initializer() );
+		PrintNode( node->Condition() );
+		PrintNode( node->Increment() );
+		PrintNode( node->Body() );
+	}
+
 	void AstPrinter::VisitVarDecl( VarDecl* node )
 	{
 		std::cout << "var " << node->Identifier().lexeme;

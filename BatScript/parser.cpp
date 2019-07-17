@@ -129,6 +129,8 @@ namespace Bat
 		if( Match( TOKEN_PRINT ) )  return ParsePrint();
 		if( Match( TOKEN_LBRACE ) ) return ParseBlock();
 		if( Match( TOKEN_IF ) )     return ParseIf();
+		if( Match( TOKEN_WHILE ) )  return ParseWhile();
+		if( Match( TOKEN_FOR ) )    return ParseFor();
 
 		return ParseExpressionStatement();
 	}
@@ -174,6 +176,46 @@ namespace Bat
 		}
 
 		return std::make_unique<IfStmt>( std::move( condition ), std::move( then_branch ), std::move( else_branch ) );
+	}
+
+	std::unique_ptr<Statement> Parser::ParseWhile()
+	{
+		Expect( TOKEN_LPAREN, "Expected '('" );
+		auto condition = ParseExpression();
+		Expect( TOKEN_RPAREN, "Expected ')'" );
+		auto body = ParseStatement();
+
+		return std::make_unique<WhileStmt>( std::move( condition ), std::move( body ) );
+	}
+
+	std::unique_ptr<Statement> Parser::ParseFor()
+	{
+		Expect( TOKEN_LPAREN, "Expected '('" );
+
+		std::unique_ptr<Expression> initializer = nullptr;
+		if( !Check( TOKEN_SEMICOLON ) )
+		{
+			initializer = ParseExpression();
+		}
+		Expect( TOKEN_SEMICOLON, "Expected ';'" );
+
+		std::unique_ptr<Expression> condition = nullptr;
+		if( !Check( TOKEN_SEMICOLON ) )
+		{
+			condition = ParseExpression();
+		}
+		Expect( TOKEN_SEMICOLON, "Expected ';'" );
+
+		std::unique_ptr<Expression> increment = nullptr;
+		if( !Check( TOKEN_RPAREN ) )
+		{
+			increment = ParseExpression();
+		}
+		Expect( TOKEN_RPAREN, "Expected ')'" );
+
+		std::unique_ptr<Statement> body = ParseStatement();
+
+		return std::make_unique<ForStmt>( std::move( initializer ), std::move( condition ), std::move( increment ), std::move( body ) );
 	}
 
 	std::unique_ptr<Statement> Parser::ParseVarDeclaration()

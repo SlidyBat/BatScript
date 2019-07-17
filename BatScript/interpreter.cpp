@@ -166,6 +166,20 @@ namespace Bat
 			Execute( node->Else() );
 		}
 	}
+	void Interpreter::VisitWhileStmt( WhileStmt* node )
+	{
+		while( Evaluate( node->Condition() ).IsTruthy() )
+		{
+			Execute( node->Body() );
+		}
+	}
+	void Interpreter::VisitForStmt( ForStmt* node )
+	{
+		for( Evaluate( node->Initializer() ); Evaluate( node->Condition() ).IsTruthy(); Evaluate( node->Increment() ) )
+		{
+			Execute( node->Body() );
+		}
+	}
 	void Interpreter::VisitVarDecl( Bat::VarDecl* node )
 	{
 		BatObject initial;

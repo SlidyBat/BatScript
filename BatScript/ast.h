@@ -20,6 +20,8 @@
 	_( BlockStmt ) \
 	_( PrintStmt ) \
 	_( IfStmt ) \
+	_( WhileStmt ) \
+	_( ForStmt ) \
 	/* Declarations */ \
 	_( VarDecl )
 
@@ -226,6 +228,48 @@ namespace Bat
 		std::unique_ptr<Expression> m_pCondition;
 		std::unique_ptr<Statement> m_pThen;
 		std::unique_ptr<Statement> m_pElse;
+	};
+
+	class WhileStmt : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( WhileStmt );
+
+		WhileStmt( std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body )
+			:
+			m_pCondition( std::move( condition ) ),
+			m_pBody( std::move( body ) )
+		{}
+
+		Expression* Condition() { return m_pCondition.get(); }
+		Statement* Body() { return m_pBody.get(); }
+	private:
+		std::unique_ptr<Expression> m_pCondition;
+		std::unique_ptr<Statement> m_pBody;
+	};
+
+	class ForStmt : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( ForStmt );
+
+		ForStmt( std::unique_ptr<Expression> initializer, std::unique_ptr<Expression> condition, std::unique_ptr<Expression> increment, std::unique_ptr<Statement> body )
+			:
+			m_pCondition( std::move( condition ) ),
+			m_pInitializer( std::move( initializer ) ),
+			m_pIncrement( std::move( increment ) ),
+			m_pBody( std::move( body ) )
+		{}
+
+		Expression* Condition() { return m_pCondition.get(); }
+		Expression* Initializer() { return m_pInitializer.get(); }
+		Expression* Increment() { return m_pIncrement.get(); }
+		Statement* Body() { return m_pBody.get(); }
+	private:
+		std::unique_ptr<Expression> m_pCondition;
+		std::unique_ptr<Expression> m_pInitializer;
+		std::unique_ptr<Expression> m_pIncrement;
+		std::unique_ptr<Statement> m_pBody;
 	};
 
 	class VarDecl : public Statement
