@@ -131,6 +131,25 @@ namespace Bat
 	{
 		Evaluate( node->Expr() );
 	}
+	void Interpreter::VisitBlockStmt( BlockStmt* node )
+	{
+		Environment previous = m_Environment;
+		m_Environment = Environment( &previous );
+
+		try
+		{
+			size_t count = node->NumStatements();
+			for( size_t i = 0; i < count; i++ )
+			{
+				Execute( node->Stmt( i ) );
+			}
+		}
+		catch( const BatObjectError& )
+		{
+		}
+		
+		m_Environment = previous;
+	}
 	void Interpreter::VisitPrintStmt( Bat::PrintStmt* node )
 	{
 		std::cout << Evaluate( node->Expr() ).ToString() << std::endl;

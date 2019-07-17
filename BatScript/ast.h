@@ -17,6 +17,7 @@
 	_( VarExpr ) \
 	/* Statements */ \
 	_( ExpressionStmt ) \
+	_( BlockStmt ) \
 	_( PrintStmt ) \
 	/* Declarations */ \
 	_( VarDecl )
@@ -178,6 +179,19 @@ namespace Bat
 		Expression* Expr() { return m_pExpression.get(); }
 	private:
 		std::unique_ptr<Expression> m_pExpression;
+	};
+
+	class BlockStmt : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( BlockStmt );
+
+		BlockStmt( std::vector<std::unique_ptr<Statement>> statements ) : m_Statements( std::move( statements ) ) {}
+
+		size_t NumStatements() const { return m_Statements.size(); }
+		Statement* Stmt(size_t index) const { return m_Statements[index].get(); }
+	private:
+		std::vector<std::unique_ptr<Statement>> m_Statements;
 	};
 
 	class PrintStmt : public Statement

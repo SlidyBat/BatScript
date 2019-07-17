@@ -39,6 +39,7 @@ namespace Bat
 		std::unique_ptr<Statement> ParseStatement();
 		std::unique_ptr<Statement> ParseExpressionStatement();
 		std::unique_ptr<Statement> ParsePrint();
+		std::unique_ptr<Statement> ParseBlock();
 		std::unique_ptr<Statement> ParseVarDeclaration();
 
 		// Expression parsing

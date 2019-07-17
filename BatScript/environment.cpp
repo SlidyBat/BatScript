@@ -34,7 +34,7 @@ namespace Bat
 
 	void Environment::AddVar( const std::string& name, const BatObject& value )
 	{
-		if( Exists( name ) )
+		if( ExistsLocally( name ) )
 		{
 			throw BatObjectError();
 		}

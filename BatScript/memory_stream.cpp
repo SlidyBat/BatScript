@@ -179,12 +179,14 @@ MemoryStream MemoryStream::FromStream( std::istream& stream )
 MemoryStream MemoryStream::FromFile( const std::string& filename, FileMode mode )
 {
 	std::ifstream file( filename, (mode == FileMode::BINARY) ? std::ios::binary : 0 );
+	assert( file && "Could not open file" );
 	return FromStream( file );
 }
 
 MemoryStream MemoryStream::FromFile( const std::wstring& filename, FileMode mode )
 {
 	std::ifstream file( filename, (mode == FileMode::BINARY) ? std::ios::binary : 0 );
+	assert( file && "Could not open file" );
 	return FromStream( file );
 }
 
@@ -196,12 +198,14 @@ void MemoryStream::ToStream( const MemoryStream& ms, std::ostream& stream )
 void MemoryStream::ToFile( const MemoryStream& ms, const std::string& filename, FileMode mode )
 {
 	std::ofstream file( filename, (mode == FileMode::BINARY) ? std::ios::binary : 0 );
+	assert( file && "Could not open file" );
 	ToStream( ms, file );
 }
 
 void MemoryStream::ToFile( const MemoryStream& ms, const std::wstring& filename, FileMode mode )
 {
 	std::ofstream file( filename, (mode == FileMode::BINARY) ? std::ios::binary : 0 );
+	assert( file && "Could not open file" );
 	ToStream( ms, file );
 }
 

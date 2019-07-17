@@ -120,7 +120,7 @@ namespace Bat
 				break;
 
 			case '\n':
-				AddToken( TOKEN_ENDOFLINE );
+				// AddToken( TOKEN_ENDOFLINE );
 				m_iLine++;
 				m_iLineStart = m_iCurrent + 1;
 				break;
@@ -163,7 +163,7 @@ namespace Bat
 			Advance();
 		}
 
-		AddToken( TOKEN_COMMENT );
+		// AddToken( TOKEN_COMMENT );
 	}
 
 	void Lexer::Number()

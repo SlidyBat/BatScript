@@ -18,16 +18,17 @@ namespace Bat
 
 		int level = -1;
 	private:
-		virtual void VisitIntLiteral( Bat::IntLiteral* node );
-		virtual void VisitFloatLiteral( Bat::FloatLiteral* node );
-		virtual void VisitStringLiteral( Bat::StringLiteral* node );
-		virtual void VisitTokenLiteral( Bat::TokenLiteral* node );
-		virtual void VisitBinaryExpr( Bat::BinaryExpr* node );
-		virtual void VisitUnaryExpr( Bat::UnaryExpr* node );
-		virtual void VisitGroupExpr( Bat::GroupExpr* node );
-		virtual void VisitVarExpr( Bat::VarExpr* node );
-		virtual void VisitExpressionStmt( Bat::ExpressionStmt* node );
-		virtual void VisitPrintStmt( Bat::PrintStmt* node );
-		virtual void VisitVarDecl( Bat::VarDecl* node );
+		virtual void VisitIntLiteral( IntLiteral* node );
+		virtual void VisitFloatLiteral( FloatLiteral* node );
+		virtual void VisitStringLiteral( StringLiteral* node );
+		virtual void VisitTokenLiteral( TokenLiteral* node );
+		virtual void VisitBinaryExpr( BinaryExpr* node );
+		virtual void VisitUnaryExpr( UnaryExpr* node );
+		virtual void VisitGroupExpr( GroupExpr* node );
+		virtual void VisitVarExpr( VarExpr* node );
+		virtual void VisitExpressionStmt( ExpressionStmt* node );
+		virtual void VisitBlockStmt( BlockStmt* node );
+		virtual void VisitPrintStmt( PrintStmt* node );
+		virtual void VisitVarDecl( VarDecl* node );
 	};
 }

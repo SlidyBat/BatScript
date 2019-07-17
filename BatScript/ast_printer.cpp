@@ -86,6 +86,15 @@ namespace Bat
 		PrintNode( node->Expr() );
 	}
 
+	void AstPrinter::VisitBlockStmt( BlockStmt* node )
+	{
+		std::cout << "{}";
+		for( size_t i = 0; i < node->NumStatements(); i++ )
+		{
+			PrintNode( node->Stmt( i ) );
+		}
+	}
+
 	void AstPrinter::VisitPrintStmt( PrintStmt* node )
 	{
 		std::cout << "print";
