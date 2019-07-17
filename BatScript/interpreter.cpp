@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#define BAT_RETURN( value ) m_Result = (value); return
+#define BAT_RETURN( value ) do { m_Result = (value); return; } while( false )
 
 namespace Bat
 {

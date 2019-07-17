@@ -69,7 +69,7 @@ namespace Bat
 			TYPE_BOOL,
 			TYPE_STR
 		};
-		Type type;
+		Type type = TYPE_NULL;
 		union
 		{
 			int64_t i64;
