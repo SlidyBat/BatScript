@@ -15,6 +15,7 @@
 	_( UnaryExpr ) \
 	_( GroupExpr ) \
 	_( VarExpr ) \
+	_( CallExpr ) \
 	/* Statements */ \
 	_( ExpressionStmt ) \
 	_( BlockStmt ) \
@@ -22,8 +23,10 @@
 	_( IfStmt ) \
 	_( WhileStmt ) \
 	_( ForStmt ) \
+	_( ReturnStmt ) \
 	/* Declarations */ \
-	_( VarDecl )
+	_( VarDecl ) \
+	_( FuncDecl )
 
 namespace Bat
 {
@@ -172,6 +175,25 @@ namespace Bat
 		Token name;
 	};
 
+	class CallExpr : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( CallExpr );
+
+		CallExpr( std::unique_ptr<Expression> func, std::vector<std::unique_ptr<Expression>> arguments )
+			:
+			m_pFunc( std::move( func ) ),
+			m_pArguments( std::move( arguments ) )
+		{}
+
+		Expression* Function() { return m_pFunc.get(); }
+		size_t NumArgs() const { return m_pArguments.size(); }
+		Expression* Arg( size_t index ) const { return m_pArguments[index].get(); }
+	private:
+		std::unique_ptr<Expression> m_pFunc;
+		std::vector<std::unique_ptr<Expression>> m_pArguments;
+	};
+
 	class ExpressionStmt : public Statement
 	{
 	public:
@@ -272,6 +294,21 @@ namespace Bat
 		std::unique_ptr<Statement> m_pBody;
 	};
 
+	class ReturnStmt : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( ReturnStmt );
+
+		ReturnStmt( std::unique_ptr<Expression> ret_value )
+			:
+			m_pRetValue( std::move( ret_value ) )
+		{}
+
+		Expression* RetValue() { return m_pRetValue.get(); }
+	private:
+		std::unique_ptr<Expression> m_pRetValue;
+	};
+
 	class VarDecl : public Statement
 	{
 	public:
@@ -291,5 +328,27 @@ namespace Bat
 		Token m_Classifier;
 		Token m_Identifier;
 		std::unique_ptr<Expression> m_pInitializer;
+	};
+
+	class FuncDecl : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( FuncDecl );
+
+		FuncDecl( Token identifier, std::vector<Token> parameters, std::unique_ptr<Statement> body )
+			:
+			m_Identifier( identifier ),
+			m_Parameters( std::move( parameters ) ),
+			m_pBody( std::move( body ) )
+		{}
+
+		const Token& Identifier() const { return m_Identifier; }
+		size_t NumParams() const { return m_Parameters.size(); }
+		const Token& Param( size_t index ) const { return m_Parameters[index]; }
+		Statement* Body() { return m_pBody.get(); }
+	private:
+		Token m_Identifier;
+		std::vector<Token> m_Parameters;
+		std::unique_ptr<Statement> m_pBody;
 	};
 }

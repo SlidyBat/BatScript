@@ -3,9 +3,14 @@
 #include <cstdint>
 #include <exception>
 #include <string>
+#include <vector>
 
 namespace Bat
 {
+	class BatCallable;
+	class BatObject;
+	class Interpreter;
+
 	class BatObjectError : public std::exception
 	{};
 
@@ -37,6 +42,12 @@ namespace Bat
 		{
 			value.i64 = s;
 		}
+		BatObject( BatCallable* func )
+			:
+			type( TYPE_CALLABLE )
+		{
+			value.func = func;
+		}
 
 		BatObject operator+( const BatObject& rhs );
 		BatObject operator-( const BatObject& rhs );
@@ -57,6 +68,7 @@ namespace Bat
 		BatObject operator!();
 		BatObject operator-();
 		BatObject operator~();
+		BatObject operator()( Interpreter& interpreter, const std::vector<BatObject>& args );
 
 		std::string ToString();
 		bool IsTruthy();
@@ -67,7 +79,8 @@ namespace Bat
 			TYPE_INT,
 			TYPE_FLOAT,
 			TYPE_BOOL,
-			TYPE_STR
+			TYPE_STR,
+			TYPE_CALLABLE,
 		};
 		Type type = TYPE_NULL;
 		union
@@ -75,6 +88,7 @@ namespace Bat
 			int64_t i64;
 			double f64;
 			const char* str;
+			BatCallable* func;
 		} value;
 	};
 }

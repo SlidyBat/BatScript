@@ -10,28 +10,37 @@ namespace Bat
 	class Interpreter : public AstVisitor
 	{
 	public:
-		Interpreter() = default;
+		Interpreter();
+		~Interpreter();
 
 		BatObject Evaluate( Expression* e );
 		void Execute( Statement* s );
+		void ExecuteBlock( Statement* s, Environment& environment );
+
+		void AddNative( const std::string& name, BatCallable* native );
+		Environment* GetEnvironment() { return m_pEnvironment; }
+		const Environment* GetEnvironment() const { return m_pEnvironment; }
 	private:
-		virtual void VisitIntLiteral( IntLiteral* node );
-		virtual void VisitFloatLiteral( FloatLiteral* node );
-		virtual void VisitStringLiteral( StringLiteral* node );
-		virtual void VisitTokenLiteral( TokenLiteral* node );
-		virtual void VisitBinaryExpr( BinaryExpr* node );
-		virtual void VisitUnaryExpr( UnaryExpr* node );
-		virtual void VisitGroupExpr( GroupExpr* node );
-		virtual void VisitVarExpr( VarExpr* node );
-		virtual void VisitExpressionStmt( ExpressionStmt* node );
-		virtual void VisitBlockStmt( BlockStmt* node );
-		virtual void VisitPrintStmt( PrintStmt* node );
-		virtual void VisitIfStmt( IfStmt* node );
-		virtual void VisitWhileStmt( WhileStmt* node );
-		virtual void VisitForStmt( ForStmt* node );
-		virtual void VisitVarDecl( VarDecl* node );
+		virtual void VisitIntLiteral( IntLiteral* node ) override;
+		virtual void VisitFloatLiteral( FloatLiteral* node ) override;
+		virtual void VisitStringLiteral( StringLiteral* node ) override;
+		virtual void VisitTokenLiteral( TokenLiteral* node ) override;
+		virtual void VisitBinaryExpr( BinaryExpr* node ) override;
+		virtual void VisitUnaryExpr( UnaryExpr* node ) override;
+		virtual void VisitCallExpr( CallExpr* node ) override;
+		virtual void VisitGroupExpr( GroupExpr* node ) override;
+		virtual void VisitVarExpr( VarExpr* node ) override;
+		virtual void VisitExpressionStmt( ExpressionStmt* node ) override;
+		virtual void VisitBlockStmt( BlockStmt* node ) override;
+		virtual void VisitPrintStmt( PrintStmt* node ) override;
+		virtual void VisitIfStmt( IfStmt* node ) override;
+		virtual void VisitWhileStmt( WhileStmt* node ) override;
+		virtual void VisitForStmt( ForStmt* node ) override;
+		virtual void VisitReturnStmt( ReturnStmt* node ) override;
+		virtual void VisitVarDecl( VarDecl* node ) override;
+		virtual void VisitFuncDecl( FuncDecl* node ) override;
 	private:
 		BatObject m_Result;
-		Environment m_Environment;
+		Environment* m_pEnvironment;
 	};
 }

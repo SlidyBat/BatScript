@@ -1,11 +1,20 @@
 #include "interpreter.h"
 
 #include <iostream>
+#include "bat_callable.h"
 
 #define BAT_RETURN( value ) do { m_Result = (value); return; } while( false )
 
 namespace Bat
 {
+	Interpreter::Interpreter()
+	{
+		m_pEnvironment = new Environment;
+	}
+	Interpreter::~Interpreter()
+	{
+		delete m_pEnvironment;
+	}
 	BatObject Interpreter::Evaluate( Expression* e )
 	{
 		e->Accept( this );
@@ -15,6 +24,21 @@ namespace Bat
 	void Interpreter::Execute( Statement* s )
 	{
 		s->Accept( this );
+	}
+
+	void Interpreter::ExecuteBlock( Statement* s, Environment& environment )
+	{
+		Environment* previous = m_pEnvironment;
+		m_pEnvironment = &environment;
+
+		Execute( s );
+
+		m_pEnvironment = previous;
+	}
+
+	void Interpreter::AddNative( const std::string& name, BatCallable* native )
+	{
+		m_pEnvironment->AddVar( name, BatObject( native ) );
 	}
 
 	void Interpreter::VisitIntLiteral( Bat::IntLiteral* node )
@@ -76,7 +100,7 @@ namespace Bat
 					case TOKEN_HAT_EQUAL:      newval = current ^ assign; break;
 					case TOKEN_BAR_EQUAL:      newval = current | assign; break;
 				}
-				m_Environment.SetVar( name, newval );
+				m_pEnvironment->SetVar( name, newval );
 				BAT_RETURN( newval );
 			}
 
@@ -119,13 +143,25 @@ namespace Bat
 		}
 		throw BatObjectError();
 	}
+	void Interpreter::VisitCallExpr( CallExpr* node )
+	{
+		BatObject func = Evaluate( node->Function() );
+		size_t num_args = node->NumArgs();
+		std::vector<BatObject> arguments;
+		for( size_t i = 0; i < num_args; i++ )
+		{
+			arguments.push_back( Evaluate( node->Arg( i ) ) );
+		}
+
+		BAT_RETURN( func( *this, arguments ) );
+	}
 	void Interpreter::VisitGroupExpr( Bat::GroupExpr* node )
 	{
 		BAT_RETURN( Evaluate( node->Expr() ) );
 	}
 	void Interpreter::VisitVarExpr( Bat::VarExpr* node )
 	{
-		BAT_RETURN( m_Environment.GetVar( node->name.lexeme ) );
+		BAT_RETURN( m_pEnvironment->GetVar( node->name.lexeme ) );
 	}
 	void Interpreter::VisitExpressionStmt( Bat::ExpressionStmt* node )
 	{
@@ -133,22 +169,19 @@ namespace Bat
 	}
 	void Interpreter::VisitBlockStmt( BlockStmt* node )
 	{
-		Environment previous = m_Environment;
-		m_Environment = Environment( &previous );
+		auto environment = Environment( m_pEnvironment );
 
 		try
 		{
 			size_t count = node->NumStatements();
 			for( size_t i = 0; i < count; i++ )
 			{
-				Execute( node->Stmt( i ) );
+				ExecuteBlock( node->Stmt( i ), environment );
 			}
 		}
 		catch( const BatObjectError& )
 		{
 		}
-		
-		m_Environment = previous;
 	}
 	void Interpreter::VisitPrintStmt( Bat::PrintStmt* node )
 	{
@@ -180,6 +213,13 @@ namespace Bat
 			Execute( node->Body() );
 		}
 	}
+	void Interpreter::VisitReturnStmt( ReturnStmt* node )
+	{
+		auto ret_value = Evaluate( node->RetValue() );
+		ReturnValue ret;
+		ret.value = ret_value;
+		throw ret;
+	}
 	void Interpreter::VisitVarDecl( Bat::VarDecl* node )
 	{
 		BatObject initial;
@@ -187,6 +227,10 @@ namespace Bat
 		{
 			initial = Evaluate( node->Initializer() );
 		}
-		m_Environment.AddVar( node->Identifier().lexeme, initial );
+		m_pEnvironment->AddVar( node->Identifier().lexeme, initial );
+	}
+	void Interpreter::VisitFuncDecl( FuncDecl* node )
+	{
+		m_pEnvironment->AddVar( node->Identifier().lexeme, new BatFunction( node ) );
 	}
 }

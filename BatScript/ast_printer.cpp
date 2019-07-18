@@ -69,6 +69,16 @@ namespace Bat
 		PrintNode( node->Right() );
 	}
 
+	void AstPrinter::VisitCallExpr( CallExpr* node )
+	{
+		std::cout << "call";
+		PrintNode( node->Function() );
+		for( size_t i = 0; i < node->NumArgs(); i++ )
+		{
+			PrintNode( node->Arg( i ) );
+		}
+	}
+
 	void AstPrinter::VisitGroupExpr( GroupExpr* node )
 	{
 		std::cout << "()";
@@ -128,9 +138,25 @@ namespace Bat
 		PrintNode( node->Body() );
 	}
 
+	void AstPrinter::VisitReturnStmt( ReturnStmt* node )
+	{
+		std::cout << "return";
+		PrintNode( node->RetValue() );
+	}
+
 	void AstPrinter::VisitVarDecl( VarDecl* node )
 	{
 		std::cout << "var " << node->Identifier().lexeme;
 		if( node->Initializer() ) PrintNode( node->Initializer() );
+	}
+	void AstPrinter::VisitFuncDecl( FuncDecl* node )
+	{
+		std::cout << "def " << node->Identifier().lexeme << "(";
+		for( size_t i = 0; i < node->NumParams() - 1; i++ )
+		{
+			std::cout << node->Param( i ).lexeme << ",";
+		}
+		std::cout << node->Param( node->NumParams() - 1 ).lexeme << ")";
+		PrintNode( node->Body() );
 	}
 }

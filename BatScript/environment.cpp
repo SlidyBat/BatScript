@@ -1,11 +1,17 @@
 #include "environment.h"
 
+#include <Windows.h>
+
 namespace Bat
 {
 	Environment::Environment( Environment* enclosing )
-		:
-		m_pEnclosing( enclosing )
-	{}
+	{
+		if( enclosing->m_pEnclosing == enclosing )
+		{
+			DebugBreak();
+		}
+		m_pEnclosing = enclosing;
+	}
 
 	bool Environment::Exists( const std::string& name ) const
 	{

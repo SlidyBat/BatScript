@@ -43,7 +43,9 @@ namespace Bat
 		std::unique_ptr<Statement> ParseIf();
 		std::unique_ptr<Statement> ParseWhile();
 		std::unique_ptr<Statement> ParseFor();
+		std::unique_ptr<Statement> ParseReturn();
 		std::unique_ptr<Statement> ParseVarDeclaration();
+		std::unique_ptr<Statement> ParseFuncDeclaration();
 
 		// Expression parsing
 		std::unique_ptr<Expression> ParseExpression();
@@ -59,6 +61,7 @@ namespace Bat
 		std::unique_ptr<Expression> ParseAddition();
 		std::unique_ptr<Expression> ParseMultiplication();
 		std::unique_ptr<Expression> ParseUnary();
+		std::unique_ptr<Expression> ParseCall();
 		std::unique_ptr<Expression> ParsePrimary();
 	private:
 		int m_iCurrent = 0;

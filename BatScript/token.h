@@ -23,9 +23,10 @@
 	_(STRUCT,         "struct")                                 \
 	_(CLASS,          "class")                                  \
 	_(THIS,           "this")                                   \
-	_(NIL,           "null")                                    \
+	_(NIL,            "null")                                   \
 	_(AND,            "and")                                    \
 	_(OR,             "or")                                     \
+	_(DEF,            "def")                                    \
 
 
 #define TOKEN_TYPES(_) \

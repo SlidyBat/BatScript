@@ -7,6 +7,7 @@
 #include "errorsys.h"
 #include "ast_printer.h"
 #include "interpreter.h"
+#include "bat_callable.h"
 
 using namespace Bat;
 
@@ -54,14 +55,12 @@ void RunFromPrompt()
 
 int main( int argc, char** argv )
 {
-	if( argc >= 2 )
-	{
-		RunFromFile( argv[1] );
-	}
-	else
-	{
-		RunFromPrompt();
-	}
+	interpreter.AddNative( "nativetest", new BatNative( 0, []( const std::vector<BatObject> & args ) {
+		std::cout << "hehe\n";
+		return BatObject();
+	} ) );
+
+	RunFromFile( "test2.bat" );
 
 	system( "pause" );
 

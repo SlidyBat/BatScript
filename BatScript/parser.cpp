@@ -114,6 +114,7 @@ namespace Bat
 		try
 		{
 			if( Match( TOKEN_VAR ) || Match( TOKEN_CONST ) ) return ParseVarDeclaration();
+			if( Match( TOKEN_DEF ) )                         return ParseFuncDeclaration();
 
 			return ParseStatement();
 		}
@@ -131,6 +132,7 @@ namespace Bat
 		if( Match( TOKEN_IF ) )     return ParseIf();
 		if( Match( TOKEN_WHILE ) )  return ParseWhile();
 		if( Match( TOKEN_FOR ) )    return ParseFor();
+		if( Match( TOKEN_RETURN ) ) return ParseReturn();
 
 		return ParseExpressionStatement();
 	}
@@ -218,6 +220,13 @@ namespace Bat
 		return std::make_unique<ForStmt>( std::move( initializer ), std::move( condition ), std::move( increment ), std::move( body ) );
 	}
 
+	std::unique_ptr<Statement> Parser::ParseReturn()
+	{
+		auto ret_value = ParseExpression();
+		ExpectTerminator();
+		return std::make_unique<ReturnStmt>( std::move( ret_value ) );
+	}
+
 	std::unique_ptr<Statement> Parser::ParseVarDeclaration()
 	{
 		Token classifier = Previous();
@@ -232,6 +241,27 @@ namespace Bat
 		ExpectTerminator();
 
 		return std::make_unique<VarDecl>( classifier, ident, std::move( init ) );
+	}
+
+	std::unique_ptr<Statement> Parser::ParseFuncDeclaration()
+	{
+		Token name = Expect( TOKEN_IDENT, "Expected function name" );
+		Expect( TOKEN_LPAREN, "Expected '('" );
+
+		std::vector<Token> parameters;
+		if( !Check( TOKEN_RPAREN ) )
+		{
+			do
+			{
+				Token param = Expect( TOKEN_IDENT, "Expected parameter identifier" );
+				parameters.push_back( param );
+			} while( Match( TOKEN_COMMA ) );
+		}
+		Expect( TOKEN_RPAREN, "Expected ')'" );
+
+		Expect( TOKEN_LBRACE, "Expected '{'" );
+		auto body = ParseBlock();
+		return std::make_unique<FuncDecl>( name, std::move( parameters ), std::move( body ) );
 	}
 
 	std::unique_ptr<Expression> Parser::ParseExpression()
@@ -405,7 +435,30 @@ namespace Bat
 			return std::make_unique<UnaryExpr>( op.type, std::move( right ) );
 		}
 
-		return ParsePrimary();
+		return ParseCall();
+	}
+
+	std::unique_ptr<Expression> Parser::ParseCall()
+	{
+		auto func = ParsePrimary();
+
+		while( Match( TOKEN_LPAREN ) )
+		{
+			std::vector<std::unique_ptr<Expression>> arguments;
+			if( !Check( TOKEN_RPAREN ) )
+			{
+				do
+				{
+					auto arg = ParseExpression();
+					arguments.push_back( std::move( arg ) );
+				} while( Match( TOKEN_COMMA ) );
+			}
+			Expect( TOKEN_RPAREN, "Expected ')'" );
+
+			func = std::make_unique<CallExpr>( std::move( func ), std::move( arguments ) );
+		}
+
+		return func;
 	}
 
 	std::unique_ptr<Expression> Parser::ParsePrimary()

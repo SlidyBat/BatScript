@@ -1,6 +1,8 @@
 #include "bat_object.h"
 
 #include <string>
+#include "bat_callable.h"
+#include "interpreter.h"
 
 namespace Bat
 {
@@ -183,6 +185,13 @@ namespace Bat
 		}
 
 		throw BatObjectError();
+	}
+	BatObject BatObject::operator()( Interpreter& interpreter, const std::vector<BatObject>& args )
+	{
+		if( type != TYPE_CALLABLE ) throw BatObjectError();
+		if( args.size() != value.func->Arity() ) throw BatObjectError();
+
+		return value.func->Call( interpreter, args );
 	}
 	std::string BatObject::ToString()
 	{
