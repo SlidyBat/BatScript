@@ -1,12 +1,5 @@
-var a = nativetest();
+var a = 5, b = 10, c = 32;
 
-def afunc() {
-	return 5;
-}
-
-def somefunc() {
-	print afunc();
-	print "Hello there!";
-}
-
-somefunc();
+print a;
+print b;
+print c;

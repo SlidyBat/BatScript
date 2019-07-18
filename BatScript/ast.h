@@ -324,10 +324,13 @@ namespace Bat
 		const Token& Classifier() const { return m_Classifier; }
 		const Token& Identifier() const { return m_Identifier; }
 		Expression* Initializer() { return m_pInitializer.get(); }
+		void SetNext( std::unique_ptr<VarDecl> next ) { m_pNext = std::move( next ); }
+		VarDecl* Next() { return m_pNext.get(); }
 	private:
 		Token m_Classifier;
 		Token m_Identifier;
 		std::unique_ptr<Expression> m_pInitializer;
+		std::unique_ptr<VarDecl> m_pNext;
 	};
 
 	class FuncDecl : public Statement

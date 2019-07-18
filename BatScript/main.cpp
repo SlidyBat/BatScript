@@ -55,12 +55,19 @@ void RunFromPrompt()
 
 int main( int argc, char** argv )
 {
-	interpreter.AddNative( "nativetest", new BatNative( 0, []( const std::vector<BatObject> & args ) {
+	interpreter.AddNative( "nativetest", 0, []( const std::vector<BatObject>& args ) {
 		std::cout << "hehe\n";
 		return BatObject();
-	} ) );
+	} );
 
-	RunFromFile( "test2.bat" );
+	if( argc >= 2 )
+	{
+		RunFromFile( argv[1] );
+	}
+	else
+	{
+		RunFromPrompt();
+	}
 
 	system( "pause" );
 

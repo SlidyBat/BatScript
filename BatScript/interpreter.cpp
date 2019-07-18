@@ -36,24 +36,24 @@ namespace Bat
 		m_pEnvironment = previous;
 	}
 
-	void Interpreter::AddNative( const std::string& name, BatCallable* native )
+	void Interpreter::AddNative( const std::string& name, size_t arity, BatNativeCallback callback )
 	{
-		m_pEnvironment->AddVar( name, BatObject( native ) );
+		m_pEnvironment->AddVar( name, BatObject( new BatNative( arity, std::move( callback ) ) ) );
 	}
 
-	void Interpreter::VisitIntLiteral( Bat::IntLiteral* node )
+	void Interpreter::VisitIntLiteral( IntLiteral* node )
 	{
 		BAT_RETURN( node->value );
 	}
-	void Interpreter::VisitFloatLiteral( Bat::FloatLiteral* node )
+	void Interpreter::VisitFloatLiteral( FloatLiteral* node )
 	{
 		BAT_RETURN( node->value );
 	}
-	void Interpreter::VisitStringLiteral( Bat::StringLiteral* node )
+	void Interpreter::VisitStringLiteral( StringLiteral* node )
 	{
 		BAT_RETURN( node->value );
 	}
-	void Interpreter::VisitTokenLiteral( Bat::TokenLiteral* node )
+	void Interpreter::VisitTokenLiteral( TokenLiteral* node )
 	{
 		switch( node->value )
 		{
@@ -63,7 +63,7 @@ namespace Bat
 		}
 		throw BatObjectError();
 	}
-	void Interpreter::VisitBinaryExpr( Bat::BinaryExpr* node )
+	void Interpreter::VisitBinaryExpr( BinaryExpr* node )
 	{
 		Expression* l = node->Left();
 		Expression* r = node->Right();
@@ -132,7 +132,7 @@ namespace Bat
 		}
 		throw BatObjectError();
 	}
-	void Interpreter::VisitUnaryExpr( Bat::UnaryExpr* node )
+	void Interpreter::VisitUnaryExpr( UnaryExpr* node )
 	{
 		switch( node->Op() )
 		{
@@ -155,15 +155,15 @@ namespace Bat
 
 		BAT_RETURN( func( *this, arguments ) );
 	}
-	void Interpreter::VisitGroupExpr( Bat::GroupExpr* node )
+	void Interpreter::VisitGroupExpr( GroupExpr* node )
 	{
 		BAT_RETURN( Evaluate( node->Expr() ) );
 	}
-	void Interpreter::VisitVarExpr( Bat::VarExpr* node )
+	void Interpreter::VisitVarExpr( VarExpr* node )
 	{
 		BAT_RETURN( m_pEnvironment->GetVar( node->name.lexeme ) );
 	}
-	void Interpreter::VisitExpressionStmt( Bat::ExpressionStmt* node )
+	void Interpreter::VisitExpressionStmt( ExpressionStmt* node )
 	{
 		Evaluate( node->Expr() );
 	}
@@ -183,7 +183,7 @@ namespace Bat
 		{
 		}
 	}
-	void Interpreter::VisitPrintStmt( Bat::PrintStmt* node )
+	void Interpreter::VisitPrintStmt( PrintStmt* node )
 	{
 		std::cout << Evaluate( node->Expr() ).ToString() << std::endl;
 	}
@@ -220,14 +220,20 @@ namespace Bat
 		ret.value = ret_value;
 		throw ret;
 	}
-	void Interpreter::VisitVarDecl( Bat::VarDecl* node )
+	void Interpreter::VisitVarDecl( VarDecl* node )
 	{
-		BatObject initial;
-		if( node->Initializer() )
+		VarDecl* curr = node;
+		while( curr )
 		{
-			initial = Evaluate( node->Initializer() );
+			BatObject initial;
+			if( curr->Initializer() )
+			{
+				initial = Evaluate( curr->Initializer() );
+			}
+			m_pEnvironment->AddVar( curr->Identifier().lexeme, initial );
+			
+			curr = curr->Next();
 		}
-		m_pEnvironment->AddVar( node->Identifier().lexeme, initial );
 	}
 	void Interpreter::VisitFuncDecl( FuncDecl* node )
 	{

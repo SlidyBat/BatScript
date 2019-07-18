@@ -18,6 +18,7 @@ namespace Bat
 	{
 	public:
 		BatObject() = default;
+		~BatObject();
 		BatObject( int64_t i )
 			:
 			type( TYPE_INT )

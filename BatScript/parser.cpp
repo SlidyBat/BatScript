@@ -237,10 +237,25 @@ namespace Bat
 		{
 			init = ParseExpression();
 		}
+		
+		auto first = std::make_unique<VarDecl>( classifier, ident, std::move( init ) );
+		VarDecl* curr = first.get();
+
+		// Check for more variable declarations on same line
+		while( Match( TOKEN_COMMA ) )
+		{
+			ident = Expect( TOKEN_IDENT, "Expected variable name." );
+			if( Match( TOKEN_EQUAL ) )
+			{
+				init = ParseExpression();
+			}
+			curr->SetNext( std::make_unique<VarDecl>( classifier, ident, std::move( init ) ) );
+			curr = curr->Next();
+		}
 
 		ExpectTerminator();
 
-		return std::make_unique<VarDecl>( classifier, ident, std::move( init ) );
+		return first;
 	}
 
 	std::unique_ptr<Statement> Parser::ParseFuncDeclaration()

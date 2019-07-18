@@ -6,6 +6,13 @@
 
 namespace Bat
 {
+	BatObject::~BatObject()
+	{
+		if( type == TYPE_CALLABLE )
+		{
+			delete value.func;
+		}
+	}
 	BatObject BatObject::operator+( const BatObject& rhs )
 	{
 		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 + rhs.value.i64 );

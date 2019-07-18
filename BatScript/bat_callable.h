@@ -2,10 +2,12 @@
 
 #include <functional>
 #include "bat_object.h"
-#include "interpreter.h"
+#include "ast.h"
 
 namespace Bat
 {
+	class Interpreter;
+
 	using BatNativeCallback = std::function<BatObject( const std::vector<BatObject>& )>;
 
 	struct ReturnValue

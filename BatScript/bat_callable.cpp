@@ -1,5 +1,7 @@
 #include "bat_callable.h"
 
+#include "interpreter.h"
+
 namespace Bat
 {
 	BatFunction::BatFunction( FuncDecl* declaration )

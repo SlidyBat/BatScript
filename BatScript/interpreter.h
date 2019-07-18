@@ -3,6 +3,7 @@
 #include <stack>
 #include "ast.h"
 #include "bat_object.h"
+#include "bat_callable.h"
 #include "environment.h"
 
 namespace Bat
@@ -17,7 +18,7 @@ namespace Bat
 		void Execute( Statement* s );
 		void ExecuteBlock( Statement* s, Environment& environment );
 
-		void AddNative( const std::string& name, BatCallable* native );
+		void AddNative( const std::string& name, size_t arity, BatNativeCallback callback );
 		Environment* GetEnvironment() { return m_pEnvironment; }
 		const Environment* GetEnvironment() const { return m_pEnvironment; }
 	private:
