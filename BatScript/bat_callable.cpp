@@ -17,7 +17,7 @@ namespace Bat
 		Environment environment( interpreter.GetEnvironment() );
 		for( size_t i = 0; i < args.size(); i++ )
 		{
-			environment.AddVar( m_pDeclaration->Param( i ).lexeme, args[i] );
+			environment.AddVar( m_pDeclaration->Param( i ).lexeme, args[i], m_pDeclaration->Param( i ).loc );
 		}
 
 		try

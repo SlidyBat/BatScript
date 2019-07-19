@@ -4,15 +4,13 @@
 #include <exception>
 #include <string>
 #include <vector>
+#include "sourceloc.h"
 
 namespace Bat
 {
 	class BatCallable;
 	class BatObject;
 	class Interpreter;
-
-	class BatObjectError : public std::exception
-	{};
 
 	class BatObject
 	{
@@ -50,30 +48,31 @@ namespace Bat
 			value.func = func;
 		}
 
-		BatObject operator+( const BatObject& rhs );
-		BatObject operator-( const BatObject& rhs );
-		BatObject operator/( const BatObject& rhs );
-		BatObject operator*( const BatObject& rhs );
-		BatObject operator%( const BatObject& rhs );
-		BatObject operator<<( const BatObject& rhs );
-		BatObject operator>>( const BatObject& rhs );
-		BatObject operator^( const BatObject& rhs );
-		BatObject operator|( const BatObject& rhs );
-		BatObject operator&( const BatObject& rhs );
-		BatObject operator==( const BatObject& rhs );
-		BatObject operator!=( const BatObject& rhs );
-		BatObject operator<( const BatObject& rhs );
-		BatObject operator<=( const BatObject& rhs );
-		BatObject operator>( const BatObject& rhs );
-		BatObject operator>=( const BatObject& rhs );
-		BatObject operator!();
-		BatObject operator-();
-		BatObject operator~();
-		BatObject operator()( Interpreter& interpreter, const std::vector<BatObject>& args );
+		BatObject Add( const BatObject& rhs, const SourceLoc& loc );
+		BatObject Sub( const BatObject& rhs, const SourceLoc& loc );
+		BatObject Div( const BatObject& rhs, const SourceLoc& loc );
+		BatObject Mul( const BatObject& rhs, const SourceLoc& loc );
+		BatObject Mod( const BatObject& rhs, const SourceLoc& loc );
+		BatObject LShift( const BatObject& rhs, const SourceLoc& loc );
+		BatObject RShift( const BatObject& rhs, const SourceLoc& loc );
+		BatObject BitXor( const BatObject& rhs, const SourceLoc& loc );
+		BatObject BitOr( const BatObject& rhs, const SourceLoc& loc );
+		BatObject BitAnd( const BatObject& rhs, const SourceLoc& loc );
+		BatObject CmpEq( const BatObject& rhs, const SourceLoc& loc );
+		BatObject CmpNeq( const BatObject& rhs, const SourceLoc& loc );
+		BatObject CmpL( const BatObject& rhs, const SourceLoc& loc );
+		BatObject CmpLe( const BatObject& rhs, const SourceLoc& loc );
+		BatObject CmpG( const BatObject& rhs, const SourceLoc& loc );
+		BatObject CmpGe( const BatObject& rhs, const SourceLoc& loc );
+		BatObject Not( const SourceLoc& loc );
+		BatObject Neg( const SourceLoc& loc );
+		BatObject BitNeg( const SourceLoc& loc );
+		BatObject Call( Interpreter& interpreter, const std::vector<BatObject>& args, const SourceLoc& loc );
+
+		bool IsTruthy( const SourceLoc& loc );
 
 		std::string ToString();
-		bool IsTruthy();
-	private:
+	public:
 		enum Type
 		{
 			TYPE_NULL,
@@ -83,6 +82,7 @@ namespace Bat
 			TYPE_STR,
 			TYPE_CALLABLE,
 		};
+	private:
 		Type type = TYPE_NULL;
 		union
 		{

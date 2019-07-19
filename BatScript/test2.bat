@@ -1,5 +1,6 @@
-var a = 5, b = 10, c = 32;
+def x() {
+	return 5;
+	print "Something's wrong D:";
+}
 
-print a;
-print b;
-print c;
+print x();

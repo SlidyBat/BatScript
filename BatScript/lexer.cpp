@@ -153,7 +153,7 @@ namespace Bat
 
 	void Lexer::Error( const std::string& message )
 	{
-		ErrorSys::Report( m_szSource, m_iLine, GetCurrColumn(), message );
+		ErrorSys::Report( m_iLine, GetCurrColumn(), message );
 	}
 
 	void Lexer::Comment()

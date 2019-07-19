@@ -95,6 +95,12 @@
     <ClInclude Include="bat_callable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="runtime_error.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sourceloc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

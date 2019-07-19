@@ -3,9 +3,24 @@
 #include <string>
 #include "bat_callable.h"
 #include "interpreter.h"
+#include "runtime_error.h"
 
 namespace Bat
 {
+	static const char* TypeToStr( BatObject::Type type )
+	{
+		switch( type )
+		{
+			case BatObject::TYPE_NULL: return "null";
+			case BatObject::TYPE_INT: return "int";
+			case BatObject::TYPE_FLOAT: return "float";
+			case BatObject::TYPE_BOOL: return "bool";
+			case BatObject::TYPE_STR: return "string";
+			case BatObject::TYPE_CALLABLE: return "function";
+			default: return "<error-type>";
+		}
+	}
+
 	BatObject::~BatObject()
 	{
 		if( type == TYPE_CALLABLE )
@@ -13,154 +28,164 @@ namespace Bat
 			delete value.func;
 		}
 	}
-	BatObject BatObject::operator+( const BatObject& rhs )
+	BatObject BatObject::Add( const BatObject& rhs, const SourceLoc& loc )
 	{
 		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 + rhs.value.i64 );
 		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject( value.f64 + rhs.value.f64 );
 		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject( (double)value.i64 + rhs.value.f64 );
 		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject( value.f64 + (double)rhs.value.i64 );
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string("Cannot add ") + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator-( const BatObject& rhs )
+	BatObject BatObject::Sub( const BatObject& rhs, const SourceLoc& loc )
 	{
 		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 - rhs.value.i64 );
 		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject( value.f64 - rhs.value.f64 );
 		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject( (double)value.i64 - rhs.value.f64 );
 		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject( value.f64 - (double)rhs.value.i64 );
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot subtract " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator/( const BatObject& rhs )
+	BatObject BatObject::Div( const BatObject& rhs, const SourceLoc& loc )
 	{
 		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 / rhs.value.i64 );
 		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject( value.f64 / rhs.value.f64 );
 		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject( (double)value.i64 / rhs.value.f64 );
 		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject( value.f64 / (double)rhs.value.i64 );
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot divide " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator*( const BatObject& rhs )
+	BatObject BatObject::Mul( const BatObject& rhs, const SourceLoc& loc )
 	{
 		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 * rhs.value.i64 );
 		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject( value.f64 * rhs.value.f64 );
 		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject( (double)value.i64 * rhs.value.f64 );
 		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject( value.f64 * (double)rhs.value.i64 );
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot multiply " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator%( const BatObject& rhs )
+	BatObject BatObject::Mod( const BatObject& rhs, const SourceLoc& loc )
 	{
 		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 % rhs.value.i64 );
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot mod " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator<<( const BatObject& rhs )
+	BatObject BatObject::LShift( const BatObject& rhs, const SourceLoc& loc )
 	{
 		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 << rhs.value.i64 );
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot left-shift " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator>>( const BatObject& rhs )
+	BatObject BatObject::RShift( const BatObject& rhs, const SourceLoc& loc )
 	{
 		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 >> rhs.value.i64 );
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot right-shift " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator^( const BatObject& rhs )
+	BatObject BatObject::BitXor( const BatObject& rhs, const SourceLoc& loc )
 	{
 		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 ^ rhs.value.i64 );
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot bitwise-xor " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator|( const BatObject& rhs )
+	BatObject BatObject::BitOr( const BatObject& rhs, const SourceLoc& loc )
 	{
 		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 | rhs.value.i64 );
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot bitwise-or " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator&( const BatObject& rhs )
+	BatObject BatObject::BitAnd( const BatObject& rhs, const SourceLoc& loc )
 	{
 		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 & rhs.value.i64 );
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot bitwise-and " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator==( const BatObject& rhs )
+	BatObject BatObject::CmpEq( const BatObject& rhs, const SourceLoc& loc )
 	{
-		if( type != rhs.type ) throw BatObjectError();
-		switch( type )
+		if( type == rhs.type )
 		{
-			case TYPE_NULL:
-				return true;
-			case TYPE_INT:
-				return value.i64 == rhs.value.i64;
-			case TYPE_BOOL:
-				return (value.i64 != 0) == (rhs.value.i64 != 0);
-			case TYPE_FLOAT:
-				return value.f64 == rhs.value.f64;
-			case TYPE_STR:
-				return std::string( value.str ) == rhs.value.str;
+			switch( type )
+			{
+				case TYPE_NULL:
+					return true;
+				case TYPE_INT:
+					return value.i64 == rhs.value.i64;
+				case TYPE_BOOL:
+					return (value.i64 != 0) == (rhs.value.i64 != 0);
+				case TYPE_FLOAT:
+					return value.f64 == rhs.value.f64;
+				case TYPE_STR:
+					return std::string( value.str ) == rhs.value.str;
+			}
 		}
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot compare " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator!=( const BatObject& rhs )
+	BatObject BatObject::CmpNeq( const BatObject& rhs, const SourceLoc& loc )
 	{
-		return !(*this == rhs);
+		return CmpEq( rhs, loc ).Not( loc );
 	}
-	BatObject BatObject::operator<( const BatObject& rhs )
+	BatObject BatObject::CmpL( const BatObject& rhs, const SourceLoc& loc )
 	{
-		if( type != rhs.type ) throw BatObjectError();
-		switch( type )
+		if( type == rhs.type )
 		{
-			case TYPE_INT:
-				return value.i64 < rhs.value.i64;
-			case TYPE_FLOAT:
-				return value.f64 < rhs.value.f64;
+			switch( type )
+			{
+				case TYPE_INT:
+					return value.i64 < rhs.value.i64;
+				case TYPE_FLOAT:
+					return value.f64 < rhs.value.f64;
+			}
 		}
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot compare " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator<=( const BatObject& rhs )
+	BatObject BatObject::CmpLe( const BatObject& rhs, const SourceLoc& loc )
 	{
-		if( type != rhs.type ) throw BatObjectError();
-		switch( type )
+		if( type == rhs.type )
 		{
-			case TYPE_INT:
-				return value.i64 <= rhs.value.i64;
-			case TYPE_FLOAT:
-				return value.f64 <= rhs.value.f64;
+			switch( type )
+			{
+				case TYPE_INT:
+					return value.i64 <= rhs.value.i64;
+				case TYPE_FLOAT:
+					return value.f64 <= rhs.value.f64;
+			}
 		}
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot compare " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator>( const BatObject& rhs )
+	BatObject BatObject::CmpG( const BatObject& rhs, const SourceLoc& loc )
 	{
-		if( type != rhs.type ) throw BatObjectError();
-		switch( type )
+		if( type == rhs.type )
 		{
-			case TYPE_INT:
-				return value.i64 > rhs.value.i64;
-			case TYPE_FLOAT:
-				return value.f64 > rhs.value.f64;
+			switch( type )
+			{
+				case TYPE_INT:
+					return value.i64 > rhs.value.i64;
+				case TYPE_FLOAT:
+					return value.f64 > rhs.value.f64;
+			}
 		}
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot compare " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator>=( const BatObject& rhs )
+	BatObject BatObject::CmpGe( const BatObject& rhs, const SourceLoc& loc )
 	{
-		if( type != rhs.type ) throw BatObjectError();
-		switch( type )
+		if( type == rhs.type )
 		{
-			case TYPE_INT:
-				return value.i64 >= rhs.value.i64;
-			case TYPE_FLOAT:
-				return value.f64 >= rhs.value.f64;
+			switch( type )
+			{
+				case TYPE_INT:
+					return value.i64 >= rhs.value.i64;
+				case TYPE_FLOAT:
+					return value.f64 >= rhs.value.f64;
+			}
 		}
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot compare " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
-	BatObject BatObject::operator!()
+	BatObject BatObject::Not( const SourceLoc& loc )
 	{
 		switch( type )
 		{
@@ -169,9 +194,9 @@ namespace Bat
 				return !value.i64;
 		}
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot invert " ) + TypeToStr( type ) );
 	}
-	BatObject BatObject::operator-()
+	BatObject BatObject::Neg( const SourceLoc& loc )
 	{
 		switch( type )
 		{
@@ -181,9 +206,9 @@ namespace Bat
 				return -value.i64;
 		}
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot netage " ) + TypeToStr( type ) );
 	}
-	BatObject BatObject::operator~()
+	BatObject BatObject::BitNeg( const SourceLoc& loc )
 	{
 		switch( type )
 		{
@@ -191,12 +216,19 @@ namespace Bat
 				return ~value.i64;
 		}
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot bitwise-negate " ) + TypeToStr( type ) );
 	}
-	BatObject BatObject::operator()( Interpreter& interpreter, const std::vector<BatObject>& args )
+	BatObject BatObject::Call( Interpreter& interpreter, const std::vector<BatObject>& args, const SourceLoc& loc )
 	{
-		if( type != TYPE_CALLABLE ) throw BatObjectError();
-		if( args.size() != value.func->Arity() ) throw BatObjectError();
+		if( type != TYPE_CALLABLE )
+		{
+			throw RuntimeError( loc, std::string( "Cannot call " ) + TypeToStr( type ) );
+		}
+		if( args.size() != value.func->Arity() )
+		{
+			throw RuntimeError( loc, std::string( "Argument size mismatch. Expected " +
+				std::to_string( value.func->Arity() ) + " arguments, recieved " + std::to_string( args.size() ) ) );
+		}
 
 		return value.func->Call( interpreter, args );
 	}
@@ -218,7 +250,7 @@ namespace Bat
 				return "<error>";
 		}
 	}
-	bool BatObject::IsTruthy()
+	bool BatObject::IsTruthy( const SourceLoc& loc )
 	{
 		switch( type )
 		{
@@ -231,6 +263,6 @@ namespace Bat
 				return value.f64;
 		}
 
-		throw BatObjectError();
+		throw RuntimeError( loc, std::string( "Cannot implicitly convert " ) + TypeToStr( type ) + " to bool" );
 	}
 }

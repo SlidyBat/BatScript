@@ -157,6 +157,8 @@
     <ClInclude Include="lexer.h" />
     <ClInclude Include="memory_stream.h" />
     <ClInclude Include="parser.h" />
+    <ClInclude Include="runtime_error.h" />
+    <ClInclude Include="sourceloc.h" />
     <ClInclude Include="stringlib.h" />
     <ClInclude Include="stringpool.h" />
     <ClInclude Include="token.h" />

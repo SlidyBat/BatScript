@@ -12,10 +12,9 @@ namespace Bat
 	class Parser
 	{
 	public:
-		Parser( std::vector<Token> tokens, const std::string& source = "" )
+		Parser( std::vector<Token> tokens )
 			:
-			m_Tokens( std::move( tokens ) ),
-			m_szSource( source )
+			m_Tokens( std::move( tokens ) )
 		{}
 
 		// Returns vector of statements
@@ -66,6 +65,5 @@ namespace Bat
 	private:
 		int m_iCurrent = 0;
 		std::vector<Token> m_Tokens;
-		std::string m_szSource;
 	};
 }

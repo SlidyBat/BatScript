@@ -41,16 +41,14 @@ namespace Bat
 		:
 		type( type ),
 		lexeme( lexeme ),
-		line( line ),
-		column( column )
+		loc( line, column )
 	{}
 
 	Token::Token( double f64, const std::string & lexeme, int line, int column )
 		:
 		type( TOKEN_FLOAT ),
 		lexeme( lexeme ),
-		line( line ),
-		column( column )
+		loc( line, column )
 	{
 		literal.f64 = f64;
 	}
@@ -59,8 +57,7 @@ namespace Bat
 		:
 		type( TOKEN_INT ),
 		lexeme( lexeme ),
-		line( line ),
-		column( column )
+		loc( line, column )
 	{
 		literal.i64 = i64;
 	}
@@ -69,8 +66,7 @@ namespace Bat
 		:
 		type( TOKEN_STRING ),
 		lexeme( lexeme ),
-		line( line ),
-		column( column )
+		loc( line, column )
 	{
 		literal.str = str;
 	}

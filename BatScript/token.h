@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include "sourceloc.h"
 
 #define KEYWORD_TYPES(_) \
 	_(TRUE,           "true")                                   \
@@ -110,8 +111,7 @@ namespace Bat
 
 		TokenType type;
 		std::string lexeme;
-		int line;
-		int column;
+		SourceLoc loc;
 		union
 		{
 			int64_t i64;

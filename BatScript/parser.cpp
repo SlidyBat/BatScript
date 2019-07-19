@@ -81,7 +81,7 @@ namespace Bat
 	void Parser::Error( const std::string& message )
 	{
 		auto tok = Peek();
-		ErrorSys::Report( m_szSource, tok.line, tok.column, message );
+		ErrorSys::Report( tok.loc.Line(), tok.loc.Column(), message );
 	}
 
 	void Parser::Synchronize()
@@ -139,20 +139,26 @@ namespace Bat
 
 	std::unique_ptr<Statement> Parser::ParseExpressionStatement()
 	{
-		auto stmt = std::make_unique<ExpressionStmt>( ParseExpression() );
+		SourceLoc loc = Peek().loc;
+
+		auto stmt = std::make_unique<ExpressionStmt>( loc, ParseExpression() );
 		ExpectTerminator();
 		return stmt;
 	}
 
 	std::unique_ptr<Statement> Parser::ParsePrint()
 	{
-		auto stmt = std::make_unique<PrintStmt>( ParseExpression() );
+		SourceLoc loc = Previous().loc;
+
+		auto stmt = std::make_unique<PrintStmt>( loc, ParseExpression() );
 		ExpectTerminator();
 		return stmt;
 	}
 
 	std::unique_ptr<Statement> Parser::ParseBlock()
 	{
+		SourceLoc loc = Previous().loc;
+
 		std::vector<std::unique_ptr<Statement>> statements;
 		while( !Check( TOKEN_RBRACE ) && !AtEnd() )
 		{
@@ -161,11 +167,13 @@ namespace Bat
 
 		Expect( TOKEN_RBRACE, "Expected '}'." );
 
-		return std::make_unique<BlockStmt>( std::move( statements ) );
+		return std::make_unique<BlockStmt>( loc, std::move( statements ) );
 	}
 
 	std::unique_ptr<Statement> Parser::ParseIf()
 	{
+		SourceLoc loc = Previous().loc;
+
 		Expect( TOKEN_LPAREN, "Expected '('" );
 		auto condition = ParseExpression();
 		Expect( TOKEN_RPAREN, "Expected ')'" );
@@ -177,21 +185,25 @@ namespace Bat
 			else_branch = ParseStatement();
 		}
 
-		return std::make_unique<IfStmt>( std::move( condition ), std::move( then_branch ), std::move( else_branch ) );
+		return std::make_unique<IfStmt>( loc, std::move( condition ), std::move( then_branch ), std::move( else_branch ) );
 	}
 
 	std::unique_ptr<Statement> Parser::ParseWhile()
 	{
+		SourceLoc loc = Previous().loc;
+
 		Expect( TOKEN_LPAREN, "Expected '('" );
 		auto condition = ParseExpression();
 		Expect( TOKEN_RPAREN, "Expected ')'" );
 		auto body = ParseStatement();
 
-		return std::make_unique<WhileStmt>( std::move( condition ), std::move( body ) );
+		return std::make_unique<WhileStmt>( loc, std::move( condition ), std::move( body ) );
 	}
 
 	std::unique_ptr<Statement> Parser::ParseFor()
 	{
+		SourceLoc loc = Previous().loc;
+
 		Expect( TOKEN_LPAREN, "Expected '('" );
 
 		std::unique_ptr<Expression> initializer = nullptr;
@@ -217,18 +229,22 @@ namespace Bat
 
 		std::unique_ptr<Statement> body = ParseStatement();
 
-		return std::make_unique<ForStmt>( std::move( initializer ), std::move( condition ), std::move( increment ), std::move( body ) );
+		return std::make_unique<ForStmt>( loc, std::move( initializer ), std::move( condition ), std::move( increment ), std::move( body ) );
 	}
 
 	std::unique_ptr<Statement> Parser::ParseReturn()
 	{
+		SourceLoc loc = Previous().loc;
+
 		auto ret_value = ParseExpression();
 		ExpectTerminator();
-		return std::make_unique<ReturnStmt>( std::move( ret_value ) );
+		return std::make_unique<ReturnStmt>( loc, std::move( ret_value ) );
 	}
 
 	std::unique_ptr<Statement> Parser::ParseVarDeclaration()
 	{
+		SourceLoc loc = Previous().loc;
+
 		Token classifier = Previous();
 		Token ident = Expect( TOKEN_IDENT, "Expected variable name." );
 
@@ -238,7 +254,7 @@ namespace Bat
 			init = ParseExpression();
 		}
 		
-		auto first = std::make_unique<VarDecl>( classifier, ident, std::move( init ) );
+		auto first = std::make_unique<VarDecl>( loc, classifier, ident, std::move( init ) );
 		VarDecl* curr = first.get();
 
 		// Check for more variable declarations on same line
@@ -249,7 +265,7 @@ namespace Bat
 			{
 				init = ParseExpression();
 			}
-			curr->SetNext( std::make_unique<VarDecl>( classifier, ident, std::move( init ) ) );
+			curr->SetNext( std::make_unique<VarDecl>( ident.loc, classifier, ident, std::move( init ) ) );
 			curr = curr->Next();
 		}
 
@@ -260,6 +276,8 @@ namespace Bat
 
 	std::unique_ptr<Statement> Parser::ParseFuncDeclaration()
 	{
+		SourceLoc loc = Previous().loc;
+
 		Token name = Expect( TOKEN_IDENT, "Expected function name" );
 		Expect( TOKEN_LPAREN, "Expected '('" );
 
@@ -276,7 +294,7 @@ namespace Bat
 
 		Expect( TOKEN_LBRACE, "Expected '{'" );
 		auto body = ParseBlock();
-		return std::make_unique<FuncDecl>( name, std::move( parameters ), std::move( body ) );
+		return std::make_unique<FuncDecl>( loc, name, std::move( parameters ), std::move( body ) );
 	}
 
 	std::unique_ptr<Expression> Parser::ParseExpression()
@@ -286,6 +304,8 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseAssign()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto expr = ParseOr();
 		while( Match( TOKEN_EQUAL ) ||
 			Match( TOKEN_PLUS_EQUAL ) ||
@@ -299,7 +319,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseOr();
-			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -307,12 +327,14 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseOr()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto expr = ParseAnd();
 		while( Match( TOKEN_OR ) )
 		{
 			Token op = Previous();
 			auto right = ParseAnd();
-			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -320,12 +342,14 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseAnd()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto expr = ParseBitOr();
 		while( Match( TOKEN_AND ) )
 		{
 			Token op = Previous();
 			auto right = ParseBitOr();
-			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -333,12 +357,14 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseBitOr()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto expr = ParseBitXor();
 		while( Match( TOKEN_BAR ) )
 		{
 			Token op = Previous();
 			auto right = ParseBitXor();
-			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -346,12 +372,14 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseBitXor()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto expr = ParseBitAnd();
 		while( Match( TOKEN_HAT ) )
 		{
 			Token op = Previous();
 			auto right = ParseBitAnd();
-			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -359,12 +387,14 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseBitAnd()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto expr = ParseEqualCompare();
 		while( Match( TOKEN_AMP ) )
 		{
 			Token op = Previous();
 			auto right = ParseEqualCompare();
-			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -372,12 +402,14 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseEqualCompare()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto expr = ParseSizeCompare();
 		while( Match( TOKEN_EQUAL_EQUAL ) || Match( TOKEN_EXCLMARK_EQUAL ) )
 		{
 			Token op = Previous();
 			auto right = ParseSizeCompare();
-			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -385,13 +417,15 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseSizeCompare()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto expr = ParseBitShift();
 		while( Match( TOKEN_LESS ) || Match( TOKEN_LESS_EQUAL ) ||
 			Match( TOKEN_GREATER ) || Match( TOKEN_GREATER_EQUAL ) )
 		{
 			Token op = Previous();
 			auto right = ParseBitShift();
-			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -399,12 +433,14 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseBitShift()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto expr = ParseAddition();
 		while( Match( TOKEN_LESS_LESS ) || Match( TOKEN_GREATER_GREATER ) )
 		{
 			Token op = Previous();
 			auto right = ParseAddition();
-			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -412,12 +448,14 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseAddition()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto expr = ParseMultiplication();
 		while( Match( TOKEN_PLUS ) || Match( TOKEN_MINUS ) )
 		{
 			Token op = Previous();
 			auto right = ParseMultiplication();
-			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -425,6 +463,8 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseMultiplication()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto expr = ParseUnary();
 		while( Match( TOKEN_ASTERISK ) ||
 			Match( TOKEN_SLASH ) ||
@@ -432,7 +472,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseUnary();
-			expr = std::make_unique<BinaryExpr>( op.type, std::move( expr ), std::move( right ) );
+			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
 		}
 
 		return expr;
@@ -440,6 +480,8 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseUnary()
 	{
+		SourceLoc loc = Peek().loc;
+
 		if( Match( TOKEN_MINUS ) ||
 			Match( TOKEN_EXCLMARK ) ||
 			Match( TOKEN_TILDE ) ||
@@ -447,7 +489,7 @@ namespace Bat
 		{
 			Token op = Previous();
 			auto right = ParseUnary();
-			return std::make_unique<UnaryExpr>( op.type, std::move( right ) );
+			return std::make_unique<UnaryExpr>( loc, op.type, std::move( right ) );
 		}
 
 		return ParseCall();
@@ -455,6 +497,8 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseCall()
 	{
+		SourceLoc loc = Peek().loc;
+
 		auto func = ParsePrimary();
 
 		while( Match( TOKEN_LPAREN ) )
@@ -470,7 +514,7 @@ namespace Bat
 			}
 			Expect( TOKEN_RPAREN, "Expected ')'" );
 
-			func = std::make_unique<CallExpr>( std::move( func ), std::move( arguments ) );
+			func = std::make_unique<CallExpr>( loc, std::move( func ), std::move( arguments ) );
 		}
 
 		return func;
@@ -478,21 +522,23 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParsePrimary()
 	{
-		if( Match( TOKEN_INT ) ) return std::make_unique<IntLiteral>( Previous().literal.i64 );
-		if( Match( TOKEN_FLOAT ) ) return std::make_unique<FloatLiteral>( Previous().literal.f64 );
-		if( Match( TOKEN_STRING ) ) return std::make_unique<StringLiteral>( Previous().literal.str );
+		SourceLoc loc = Peek().loc;
+
+		if( Match( TOKEN_INT ) ) return std::make_unique<IntLiteral>( loc, Previous().literal.i64 );
+		if( Match( TOKEN_FLOAT ) ) return std::make_unique<FloatLiteral>( loc, Previous().literal.f64 );
+		if( Match( TOKEN_STRING ) ) return std::make_unique<StringLiteral>( loc, Previous().literal.str );
 
 		if( Match( TOKEN_TRUE ) || Match( TOKEN_FALSE ) || Match( TOKEN_NIL ) )
-			return std::make_unique<TokenLiteral>( Previous().type );
+			return std::make_unique<TokenLiteral>( loc, Previous().type );
 
-		if( Match( TOKEN_IDENT ) ) return std::make_unique<VarExpr>( Previous() );
+		if( Match( TOKEN_IDENT ) ) return std::make_unique<VarExpr>( loc, Previous() );
 
 		if( Match( TOKEN_LPAREN ) )
 		{
 			auto expr = ParseExpression();
 			Expect( TOKEN_RPAREN, "Expected ')' after expression." );
 
-			return std::make_unique<GroupExpr>( std::move( expr ) );
+			return std::make_unique<GroupExpr>( loc, std::move( expr ) );
 		}
 
 		Error( std::string( "Unexpected '") + TokenTypeToString( Peek().type ) + "'." );

@@ -3,6 +3,7 @@
 #include <cassert>
 #include "token.h"
 #include "stringlib.h"
+#include "sourceloc.h"
 
 #define AST_TYPES(_) \
 	/* Literals */ \
@@ -52,6 +53,12 @@ namespace Bat
 	class AstNode
 	{
 	public:
+		AstNode() = default;
+		AstNode( const SourceLoc& loc )
+			:
+			m_Loc( loc )
+		{}
+
 		virtual AstType Type() const = 0;
 		virtual void Accept( AstVisitor* visitor ) = 0;
 		virtual const char* Name() const = 0;
@@ -64,6 +71,11 @@ namespace Bat
 		const asttype* To##asttype() const { if ( !Is##asttype() ) return nullptr; return (const asttype*)this; }
 		AST_TYPES(_)
 #undef _
+
+
+		const SourceLoc& Location() const { return m_Loc; }
+	private:
+		SourceLoc m_Loc;
 	};
 
 #define DECLARE_AST_NODE(asttype) \
@@ -71,15 +83,29 @@ namespace Bat
 	virtual void Accept( AstVisitor* visitor ) override { visitor->Visit##asttype( this ); } \
 	virtual const char* Name() const override { return #asttype; }
 
-	class Expression : public AstNode {};
-	class Statement : public AstNode {};
+	class Expression : public AstNode
+	{
+	public:
+		Expression( const SourceLoc& loc )
+			:
+			AstNode( loc )
+		{}
+	};
+	class Statement : public AstNode
+	{
+	public:
+		Statement( const SourceLoc& loc )
+			:
+			AstNode( loc )
+		{}
+	};
 
 	class IntLiteral : public Expression
 	{
 	public:
 		DECLARE_AST_NODE( IntLiteral );
 
-		IntLiteral( int64_t value ) : value( value ) {}
+		IntLiteral( const SourceLoc& loc, int64_t value ) : Expression( loc ), value( value ) {}
 
 		int64_t value;
 	};
@@ -89,7 +115,7 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( FloatLiteral );
 
-		FloatLiteral( double value ) : value( value ) {}
+		FloatLiteral( const SourceLoc& loc, double value ) : Expression( loc ), value( value ) {}
 
 		double value;
 	};
@@ -99,7 +125,7 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( StringLiteral );
 
-		StringLiteral( const char* value ) : value( value ) {}
+		StringLiteral( const SourceLoc& loc, const char* value ) : Expression( loc ), value( value ) {}
 
 		const char* value;
 	};
@@ -109,7 +135,7 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( TokenLiteral );
 
-		TokenLiteral( TokenType value ) : value( value ) {}
+		TokenLiteral( const SourceLoc& loc, TokenType value ) : Expression( loc ), value( value ) {}
 
 		TokenType value;
 	};
@@ -119,8 +145,9 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( BinaryExpr );
 
-		BinaryExpr( TokenType op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right )
+		BinaryExpr( const SourceLoc& loc, TokenType op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right )
 			:
+			Expression( loc ),
 			m_Op( op ),
 			m_pLeft( std::move( left ) ),
 			m_pRight( std::move( right ) )
@@ -140,8 +167,9 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( UnaryExpr );
 
-		UnaryExpr( TokenType op, std::unique_ptr<Expression> right )
+		UnaryExpr( const SourceLoc& loc, TokenType op, std::unique_ptr<Expression> right )
 			:
+			Expression( loc ),
 			m_Op( op ),
 			m_pRight( std::move( right ) )
 		{}
@@ -158,7 +186,11 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( GroupExpr );
 
-		GroupExpr( std::unique_ptr<Expression> expression ) : m_pExpression( std::move( expression ) ) {}
+		GroupExpr( const SourceLoc& loc, std::unique_ptr<Expression> expression )
+			:
+			Expression( loc ),
+			m_pExpression( std::move( expression ) )
+		{}
 
 		Expression* Expr() { return m_pExpression.get(); }
 	private:
@@ -170,7 +202,7 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( VarExpr );
 
-		VarExpr( Token name ) : name( name ) {}
+		VarExpr( const SourceLoc& loc, Token name ) : Expression( loc ), name( name ) {}
 
 		Token name;
 	};
@@ -180,8 +212,9 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( CallExpr );
 
-		CallExpr( std::unique_ptr<Expression> func, std::vector<std::unique_ptr<Expression>> arguments )
+		CallExpr( const SourceLoc& loc, std::unique_ptr<Expression> func, std::vector<std::unique_ptr<Expression>> arguments )
 			:
+			Expression( loc ),
 			m_pFunc( std::move( func ) ),
 			m_pArguments( std::move( arguments ) )
 		{}
@@ -199,7 +232,10 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( ExpressionStmt );
 
-		ExpressionStmt( std::unique_ptr<Expression> expression ) : m_pExpression( std::move( expression ) ) {}
+		ExpressionStmt( const SourceLoc& loc, std::unique_ptr<Expression> expression )
+			:
+			Statement( loc ),
+			m_pExpression( std::move( expression ) ) {}
 
 		Expression* Expr() { return m_pExpression.get(); }
 	private:
@@ -211,7 +247,10 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( BlockStmt );
 
-		BlockStmt( std::vector<std::unique_ptr<Statement>> statements ) : m_Statements( std::move( statements ) ) {}
+		BlockStmt( const SourceLoc& loc, std::vector<std::unique_ptr<Statement>> statements )
+			:
+			Statement( loc ),
+			m_Statements( std::move( statements ) ) {}
 
 		size_t NumStatements() const { return m_Statements.size(); }
 		Statement* Stmt(size_t index) const { return m_Statements[index].get(); }
@@ -224,7 +263,10 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( PrintStmt );
 
-		PrintStmt( std::unique_ptr<Expression> expression ) : m_pExpression( std::move( expression ) ) {}
+		PrintStmt( const SourceLoc& loc, std::unique_ptr<Expression> expression )
+			:
+			Statement( loc ),
+			m_pExpression( std::move( expression ) ) {}
 
 		Expression* Expr() { return m_pExpression.get(); }
 	private:
@@ -236,8 +278,9 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( IfStmt );
 
-		IfStmt( std::unique_ptr<Expression> condition, std::unique_ptr<Statement> then_branch, std::unique_ptr<Statement> else_branch )
+		IfStmt( const SourceLoc& loc, std::unique_ptr<Expression> condition, std::unique_ptr<Statement> then_branch, std::unique_ptr<Statement> else_branch )
 			:
+			Statement( loc ),
 			m_pCondition( std::move( condition ) ),
 			m_pThen( std::move( then_branch ) ),
 			m_pElse( std::move( else_branch ) )
@@ -257,8 +300,9 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( WhileStmt );
 
-		WhileStmt( std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body )
+		WhileStmt( const SourceLoc& loc, std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body )
 			:
+			Statement( loc ),
 			m_pCondition( std::move( condition ) ),
 			m_pBody( std::move( body ) )
 		{}
@@ -275,8 +319,9 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( ForStmt );
 
-		ForStmt( std::unique_ptr<Expression> initializer, std::unique_ptr<Expression> condition, std::unique_ptr<Expression> increment, std::unique_ptr<Statement> body )
+		ForStmt( const SourceLoc& loc, std::unique_ptr<Expression> initializer, std::unique_ptr<Expression> condition, std::unique_ptr<Expression> increment, std::unique_ptr<Statement> body )
 			:
+			Statement( loc ),
 			m_pCondition( std::move( condition ) ),
 			m_pInitializer( std::move( initializer ) ),
 			m_pIncrement( std::move( increment ) ),
@@ -299,8 +344,9 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( ReturnStmt );
 
-		ReturnStmt( std::unique_ptr<Expression> ret_value )
+		ReturnStmt( const SourceLoc& loc, std::unique_ptr<Expression> ret_value )
 			:
+			Statement( loc ),
 			m_pRetValue( std::move( ret_value ) )
 		{}
 
@@ -314,8 +360,9 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( VarDecl );
 
-		VarDecl( Token classifier, Token identifier, std::unique_ptr<Expression> initializer )
+		VarDecl( const SourceLoc& loc, Token classifier, Token identifier, std::unique_ptr<Expression> initializer )
 			:
+			Statement( loc ),
 			m_Classifier( classifier ),
 			m_Identifier( identifier ),
 			m_pInitializer( std::move( initializer ) )
@@ -338,8 +385,9 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( FuncDecl );
 
-		FuncDecl( Token identifier, std::vector<Token> parameters, std::unique_ptr<Statement> body )
+		FuncDecl( const SourceLoc& loc, Token identifier, std::vector<Token> parameters, std::unique_ptr<Statement> body )
 			:
+			Statement( loc ),
 			m_Identifier( identifier ),
 			m_Parameters( std::move( parameters ) ),
 			m_pBody( std::move( body ) )
