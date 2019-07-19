@@ -12,7 +12,7 @@ namespace Bat
 			std::vector<std::unique_ptr<Statement>> statements;
 			while( !AtEnd() )
 			{
-				statements.push_back( ParseDeclaration() );
+				statements.push_back( ParseStatement() );
 			}
 			return statements;
 		}
@@ -109,14 +109,21 @@ namespace Bat
 		}
 	}
 
-	std::unique_ptr<Statement> Parser::ParseDeclaration()
+	std::unique_ptr<Statement> Parser::ParseStatement()
 	{
 		try
 		{
-			if( Match( TOKEN_VAR ) || Match( TOKEN_CONST ) ) return ParseVarDeclaration();
-			if( Match( TOKEN_DEF ) )                         return ParseFuncDeclaration();
+			if( Check( TOKEN_VAR ) ||
+				Check( TOKEN_CONST ) ||
+				Check( TOKEN_DEF ) ||
+				Check( TOKEN_IF ) ||
+				Check( TOKEN_WHILE ) ||
+				Check( TOKEN_FOR ) )
+			{
+				return ParseCompoundStatement();
+			}
 
-			return ParseStatement();
+			return ParseSimpleStatement();
 		}
 		catch( const ParseError& )
 		{
@@ -125,13 +132,23 @@ namespace Bat
 		}
 	}
 
-	std::unique_ptr<Statement> Parser::ParseStatement()
+	std::unique_ptr<Statement> Parser::ParseCompoundStatement()
 	{
 		if( Match( TOKEN_PRINT ) )  return ParsePrint();
-		if( Match( TOKEN_INDENT ) ) return ParseBlock();
+		if( Match( TOKEN_RETURN ) ) return ParseReturn();
 		if( Match( TOKEN_IF ) )     return ParseIf();
 		if( Match( TOKEN_WHILE ) )  return ParseWhile();
 		if( Match( TOKEN_FOR ) )    return ParseFor();
+		if( Match( TOKEN_VAR ) )    return ParseVarDeclaration();
+		if( Match( TOKEN_DEF ) )    return ParseFuncDeclaration();
+
+		Error( std::string( "Unexpected token " + Peek().lexeme ) );
+		throw ParseError();
+	}
+
+	std::unique_ptr<Statement> Parser::ParseSimpleStatement()
+	{
+		if( Match( TOKEN_PRINT ) )  return ParsePrint();
 		if( Match( TOKEN_RETURN ) ) return ParseReturn();
 
 		return ParseExpressionStatement();
@@ -164,7 +181,7 @@ namespace Bat
 		std::vector<std::unique_ptr<Statement>> statements;
 		while( !Check( TOKEN_DEDENT ) && !AtEnd() )
 		{
-			statements.push_back( ParseDeclaration() );
+			statements.push_back( ParseStatement() );
 		}
 
 		if( !AtEnd() )
@@ -181,15 +198,29 @@ namespace Bat
 
 		auto condition = ParseExpression();
 		Expect( TOKEN_COLON, "Expected ':' after if statement" );
-		ExpectTerminator( "Expected newline after if statement" );
-		auto then_branch = ParseBlock();
+		std::unique_ptr<Statement> then_branch;
+		if( Match( TOKEN_ENDOFLINE ) )
+		{
+			then_branch = ParseBlock();
+		}
+		else
+		{
+			then_branch = ParseSimpleStatement();
+		}
 
 		std::unique_ptr<Statement> else_branch = nullptr;
 		if( Match( TOKEN_ELSE ) )
 		{
 			Expect( TOKEN_COLON, "Expected ':' after else statement" );
-			ExpectTerminator( "Expected newline after else statement" );
-			else_branch = ParseStatement();
+
+			if( Match( TOKEN_ENDOFLINE ) )
+			{
+				else_branch = ParseBlock();
+			}
+			else
+			{
+				else_branch = ParseSimpleStatement();
+			}
 		}
 
 		return std::make_unique<IfStmt>( loc, std::move( condition ), std::move( then_branch ), std::move( else_branch ) );
@@ -201,8 +232,15 @@ namespace Bat
 
 		auto condition = ParseExpression();
 		Expect( TOKEN_COLON, "Expected ':' after while statement" );
-		ExpectTerminator( "Expected newline after while statement" );
-		auto body = ParseBlock();
+		std::unique_ptr<Statement> body;
+		if( Match( TOKEN_ENDOFLINE ) )
+		{
+			body = ParseBlock();
+		}
+		else
+		{
+			body = ParseSimpleStatement();
+		}
 
 		return std::make_unique<WhileStmt>( loc, std::move( condition ), std::move( body ) );
 	}
@@ -300,9 +338,16 @@ namespace Bat
 		Expect( TOKEN_RPAREN, "Expected ')' after function parameters" );
 		Expect( TOKEN_COLON, "Expected ':' after function declaration" );
 
-		ExpectTerminator();
+		std::unique_ptr<Statement> body;
+		if( Match( TOKEN_ENDOFLINE ) )
+		{
+			body = ParseBlock();
+		}
+		else
+		{
+			body = ParseSimpleStatement();
+		}
 
-		auto body = ParseBlock();
 		return std::make_unique<FuncDecl>( loc, name, std::move( parameters ), std::move( body ) );
 	}
 

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <limits>
+#include <chrono>
 
 #include "memory_stream.h"
 #include "lexer.h"
@@ -70,11 +71,12 @@ void RunFromPrompt()
 	}
 }
 
+using namespace std::chrono;
+
 int main( int argc, char** argv )
 {
-	interpreter.AddNative( "nativetest", 0, []( const std::vector<BatObject>& args ) {
-		std::cout << "hehe\n";
-		return BatObject();
+	interpreter.AddNative( "time", 0, []( const std::vector<BatObject>& args ) {
+		return BatObject( duration_cast<milliseconds>( system_clock::now().time_since_epoch() ).count() );
 	} );
 
 	if( argc >= 2 )
@@ -84,6 +86,7 @@ int main( int argc, char** argv )
 	else
 	{
 		RunFromPrompt();
+		//RunFromFile( "test2.bat" );
 	}
 
 	system( "pause" );

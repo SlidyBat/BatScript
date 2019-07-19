@@ -1,39 +1,44 @@
-program      -> declaration* EOF
+program       -> statement* EOF
 
-declaration  -> var_decl
-              | function_decl
-              | statement
-var_decl     -> ("var" | "const") IDENTIFIER ("=" expression)? ("," IDENTIFIER ("=" expression)?)* eol
-function_decl -> "def" IDENTIFIER "(" parameters? ")" ":" eol block
-statement    -> expression eol
-              | print_stmt
-              | if_stmt
-              | while_stmt
-              | for_stmt
-              | return_stmt
+statement     -> simple_stmt | compound_stmt
+simple_stmt   -> expression eol
+               | print_stmt
+               | return_stmt
+compound_stmt -> if_stmt
+               | while_stmt
+               | for_stmt
+               | var_decl
+               | function_decl
+
+block         -> indent statement+ dedent
+
+var_decl      -> ("var" | "const") IDENTIFIER ("=" expression)? ("," IDENTIFIER ("=" expression)?)* eol
+function_decl -> "def" IDENTIFIER "(" parameters? ")" ":" (eol block | simple_stmt)
+
 print_stmt    -> "print" expression eol
-block        -> indent declaration* dedent
-if_stmt       -> "if" expression ":" eol block ("else" block)?
-while_stmt    -> "while" expression ":" eol block
-for_stmt      -> "for" "(" expression? ";" expression? ";" expression? ")" block
-returnStmt   -> "return" expression? eol
 
-parameters   -> IDENTIFIER ( "," IDENTIFIER )*
+if_stmt       -> "if" expression ":" (eol block | simple_stmt) ("else" (eol block | simple_stmt))?
+while_stmt    -> "while" expression ":" (eol block | simple_stmt)
+for_stmt      -> "for" "(" expression? ";" expression? ";" expression? ")" block // Ignore me for now :)
 
-expression   -> assign
-assign       -> or ( ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "^=" | "|=" ) or )*
-or           -> and ( "or" and )*
-and          -> bitor ( "and" bitor )*
-bitor        -> bitxor ( "|" bitxor )*
-bitxor       -> bitand ( "^" bitand )*
-bitand       -> equal ( "&" equal )*
-equal        -> comp ( ( "==" | "!=" ) comp )*
-comp         -> shift ( ( "<" | "<=" | ">=" | ">" ) shift )*
-shift        -> add ( ( "<<" | ">>" ) add )*
-add          -> mult ( ( "+" | "-" ) mult )*
-mult         -> unary ( ( "*" | "/" | "%" ) unary )*
-unary        -> ( "+" | "-" | "!" | "~" | "*" | "&" | "print" ) unary
-              | call
-call         -> primary ( "(" arguments? ")" )*
-arguments    -> expression ( "," expression )*
-primary      -> NUMBER | STRING | "false" | "true" | "null" | "(" expression ")" | IDENTIFIER
+return_stmt   -> "return" expression? eol
+
+parameters    -> IDENTIFIER ( "," IDENTIFIER )*
+
+expression    -> assign
+assign        -> or ( ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "^=" | "|=" ) or )*
+or            -> and ( "or" and )*
+and           -> bitor ( "and" bitor )*
+bitor         -> bitxor ( "|" bitxor )*
+bitxor        -> bitand ( "^" bitand )*
+bitand        -> equal ( "&" equal )*
+equal         -> comp ( ( "==" | "!=" ) comp )*
+comp          -> shift ( ( "<" | "<=" | ">=" | ">" ) shift )*
+shift         -> add ( ( "<<" | ">>" ) add )*
+add           -> mult ( ( "+" | "-" ) mult )*
+mult          -> unary ( ( "*" | "/" | "%" ) unary )*
+unary         -> ( "+" | "-" | "!" | "~" | "*" | "&" | "print" ) unary
+               | call
+call          -> primary ( "(" arguments? ")" )*
+arguments     -> expression ( "," expression )*
+primary       -> NUMBER | STRING | "false" | "true" | "null" | "(" expression ")" | IDENTIFIER

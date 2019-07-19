@@ -1,15 +1,10 @@
-var x = 5, y = 2
+var a = "global"
 
-def f(a,
-	  b):
-	print a
-	print b
+def test():
+	def showA(): print a
 	
-	return a + b
+	showA()
+	var a = "local"
+	showA()
 
-def g():
-	if f(x,y) == 7:
-		print "Yay!"
-		
-
-g()
+test()

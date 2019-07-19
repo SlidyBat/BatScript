@@ -34,8 +34,9 @@ namespace Bat
 		void Synchronize();
 	private:
 		// Statement parsing
-		std::unique_ptr<Statement> ParseDeclaration();
 		std::unique_ptr<Statement> ParseStatement();
+		std::unique_ptr<Statement> ParseSimpleStatement();
+		std::unique_ptr<Statement> ParseCompoundStatement();
 		std::unique_ptr<Statement> ParseExpressionStatement();
 		std::unique_ptr<Statement> ParsePrint();
 		std::unique_ptr<Statement> ParseBlock();
