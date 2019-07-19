@@ -7,19 +7,16 @@ namespace Bat
 {
 	std::vector<std::unique_ptr<Statement>> Parser::Parse()
 	{
-		try
+		std::vector<std::unique_ptr<Statement>> statements;
+		while( !AtEnd() )
 		{
-			std::vector<std::unique_ptr<Statement>> statements;
-			while( !AtEnd() )
+			auto stmt = ParseStatement();
+			if( stmt != nullptr )
 			{
-				statements.push_back( ParseStatement() );
+				statements.push_back( std::move( stmt ) );
 			}
-			return statements;
 		}
-		catch( const ParseError& )
-		{
-			return {};
-		}
+		return statements;
 	}
 
 	bool Parser::AtEnd() const
@@ -327,12 +324,29 @@ namespace Bat
 		Expect( TOKEN_LPAREN, "Expected '(' after function name" );
 
 		std::vector<Token> parameters;
+		std::vector<std::unique_ptr<Expression>> defaults;
+		bool found_def = false;
 		if( !Check( TOKEN_RPAREN ) )
 		{
 			do
 			{
 				Token param = Expect( TOKEN_IDENT, "Expected parameter identifier" );
 				parameters.push_back( param );
+
+				if( Match( TOKEN_EQUAL ) )
+				{
+					found_def = true;
+					defaults.push_back( ParseExpression() );
+				}
+				else if( found_def )
+				{
+					Error( "Cannot have non-defaulted parameter after a defaulted parameter" );
+					throw ParseError();
+				}
+				else
+				{
+					defaults.push_back( nullptr );
+				}
 			} while( Match( TOKEN_COMMA ) );
 		}
 		Expect( TOKEN_RPAREN, "Expected ')' after function parameters" );
@@ -348,7 +362,7 @@ namespace Bat
 			body = ParseSimpleStatement();
 		}
 
-		return std::make_unique<FuncDecl>( loc, name, std::move( parameters ), std::move( body ) );
+		return std::make_unique<FuncDecl>( loc, name, std::move( parameters ), std::move( defaults ), std::move( body ) );
 	}
 
 	std::unique_ptr<Expression> Parser::ParseExpression()
@@ -578,8 +592,8 @@ namespace Bat
 	{
 		SourceLoc loc = Peek().loc;
 
-		if( Match( TOKEN_INT ) ) return std::make_unique<IntLiteral>( loc, Previous().literal.i64 );
-		if( Match( TOKEN_FLOAT ) ) return std::make_unique<FloatLiteral>( loc, Previous().literal.f64 );
+		if( Match( TOKEN_INT ) )    return std::make_unique<IntLiteral>( loc, Previous().literal.i64 );
+		if( Match( TOKEN_FLOAT ) )  return std::make_unique<FloatLiteral>( loc, Previous().literal.f64 );
 		if( Match( TOKEN_STRING ) ) return std::make_unique<StringLiteral>( loc, Previous().literal.str );
 
 		if( Match( TOKEN_TRUE ) || Match( TOKEN_FALSE ) || Match( TOKEN_NIL ) )

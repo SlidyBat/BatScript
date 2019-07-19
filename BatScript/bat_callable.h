@@ -19,6 +19,7 @@ namespace Bat
 	{
 	public:
 		virtual size_t Arity() const = 0;
+		virtual size_t NumDefaults() const = 0;
 		virtual BatObject Call( Interpreter& interpreter, const std::vector<BatObject>& args ) = 0;
 	};
 
@@ -28,9 +29,11 @@ namespace Bat
 		BatFunction( FuncDecl* declaration );
 
 		virtual size_t Arity() const override;
+		virtual size_t NumDefaults() const override;
 		virtual BatObject Call( Interpreter& interpreter, const std::vector<BatObject>& args ) override;
 	private:
 		FuncDecl* m_pDeclaration;
+		size_t m_nDefaults;
 	};
 
 	class BatNative : public BatCallable
@@ -39,6 +42,7 @@ namespace Bat
 		BatNative( size_t arity, BatNativeCallback callback );
 
 		virtual size_t Arity() const override;
+		virtual size_t NumDefaults() const override { return 0; } // Default values for params not possible for natives yet
 		virtual BatObject Call( Interpreter& interpreter, const std::vector<BatObject>& args ) override;
 	private:
 		BatNativeCallback m_Callback;

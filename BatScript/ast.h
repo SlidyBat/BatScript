@@ -385,21 +385,24 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( FuncDecl );
 
-		FuncDecl( const SourceLoc& loc, Token identifier, std::vector<Token> parameters, std::unique_ptr<Statement> body )
+		FuncDecl( const SourceLoc& loc, Token identifier, std::vector<Token> parameters, std::vector<std::unique_ptr<Expression>> defaults, std::unique_ptr<Statement> body )
 			:
 			Statement( loc ),
 			m_Identifier( identifier ),
 			m_Parameters( std::move( parameters ) ),
+			m_pDefaults( std::move( defaults ) ),
 			m_pBody( std::move( body ) )
 		{}
 
 		const Token& Identifier() const { return m_Identifier; }
 		size_t NumParams() const { return m_Parameters.size(); }
 		const Token& Param( size_t index ) const { return m_Parameters[index]; }
+		Expression* Default( size_t index ) const { return m_pDefaults[index].get(); }
 		Statement* Body() { return m_pBody.get(); }
 	private:
 		Token m_Identifier;
 		std::vector<Token> m_Parameters;
+		std::vector<std::unique_ptr<Expression>> m_pDefaults;
 		std::unique_ptr<Statement> m_pBody;
 	};
 }

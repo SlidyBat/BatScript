@@ -23,7 +23,8 @@ for_stmt      -> "for" "(" expression? ";" expression? ";" expression? ")" block
 
 return_stmt   -> "return" expression? eol
 
-parameters    -> IDENTIFIER ( "," IDENTIFIER )*
+parameter     -> IDENTIFIER ( "=" expression )?
+parameters    -> parameter ( "," parameter )*
 
 expression    -> assign
 assign        -> or ( ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "^=" | "|=" ) or )*

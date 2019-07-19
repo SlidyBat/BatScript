@@ -14,6 +14,8 @@
 using namespace Bat;
 
 Interpreter interpreter;
+// Stores all parsed statements, needs to be global so that lifetime lasts across REPL commands
+std::vector<std::unique_ptr<Statement>> statements;
 
 void Run( const std::string& src, bool print_expression_results = false )
 {
@@ -40,6 +42,9 @@ void Run( const std::string& src, bool print_expression_results = false )
 			{
 				interpreter.Execute( res[i].get() );
 			}
+
+			// Transfer ownership
+			statements.push_back( std::move( res[i] ) );
 
 			if( ErrorSys::HadError() ) return;
 		}
