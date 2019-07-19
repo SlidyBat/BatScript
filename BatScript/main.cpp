@@ -64,6 +64,7 @@ void RunFromPrompt()
 	std::getline( std::cin, input );
 	while( input != "quit" )
 	{
+		ErrorSys::Reset();
 		Run( input, true );
 
 		std::cout << "> ";

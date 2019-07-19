@@ -100,7 +100,7 @@ namespace Bat
 			{
 				if( !l->IsVarExpr() )
 				{
-					throw RuntimeError( l->Location(), "Tried to assign to a non-lvalue" );
+					throw RuntimeError( l->Location(), "Expression must be a modifiable lvalue" );
 				}
 				std::string name = l->AsVarExpr()->name.lexeme;
 				BatObject current = Evaluate( l );

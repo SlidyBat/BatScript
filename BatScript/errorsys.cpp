@@ -28,4 +28,8 @@ namespace Bat
 	{
 		g_szSource = source;
 	}
+	void ErrorSys::Reset()
+	{
+		g_bHadError = false;
+	}
 }
