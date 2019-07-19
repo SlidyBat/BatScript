@@ -67,7 +67,10 @@ namespace Bat
 			{
 				m_pEnclosing->SetVar( name, value, loc );
 			}
-			throw RuntimeError( loc, name + " is not defined" );
+			else
+			{
+				throw RuntimeError( loc, name + " is not defined" );
+			}
 		}
 		m_mapVariables[name] = value;
 	}

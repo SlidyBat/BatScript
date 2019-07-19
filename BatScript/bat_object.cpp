@@ -23,10 +23,6 @@ namespace Bat
 
 	BatObject::~BatObject()
 	{
-		if( type == TYPE_CALLABLE )
-		{
-			delete value.func;
-		}
 	}
 	BatObject BatObject::Add( const BatObject& rhs, const SourceLoc& loc )
 	{
