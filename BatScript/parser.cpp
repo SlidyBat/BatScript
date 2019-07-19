@@ -69,11 +69,11 @@ namespace Bat
 		throw ParseError();
 	}
 
-	void Parser::ExpectTerminator()
+	void Parser::ExpectTerminator( const std::string& msg )
 	{
-		if( !Match( TOKEN_SEMICOLON ) && !Match( TOKEN_ENDOFLINE ) && !AtEnd() )
+		if( !Match( TOKEN_ENDOFLINE ) && !AtEnd() )
 		{
-			Error( "Expected statement terminator (newline or ';')" );
+			Error( msg );
 			throw ParseError();
 		}
 	}
@@ -86,9 +86,9 @@ namespace Bat
 
 	void Parser::Synchronize()
 	{
-		Advance();
 		while( !AtEnd() )
 		{
+			Advance();
 			switch( Peek().type )
 			{
 				case TOKEN_CLASS:
@@ -128,7 +128,7 @@ namespace Bat
 	std::unique_ptr<Statement> Parser::ParseStatement()
 	{
 		if( Match( TOKEN_PRINT ) )  return ParsePrint();
-		if( Match( TOKEN_LBRACE ) ) return ParseBlock();
+		if( Match( TOKEN_INDENT ) ) return ParseBlock();
 		if( Match( TOKEN_IF ) )     return ParseIf();
 		if( Match( TOKEN_WHILE ) )  return ParseWhile();
 		if( Match( TOKEN_FOR ) )    return ParseFor();
@@ -159,13 +159,18 @@ namespace Bat
 	{
 		SourceLoc loc = Previous().loc;
 
+		Expect( TOKEN_INDENT, "Expected indent" );
+
 		std::vector<std::unique_ptr<Statement>> statements;
-		while( !Check( TOKEN_RBRACE ) && !AtEnd() )
+		while( !Check( TOKEN_DEDENT ) && !AtEnd() )
 		{
 			statements.push_back( ParseDeclaration() );
 		}
 
-		Expect( TOKEN_RBRACE, "Expected '}'." );
+		if( !AtEnd() )
+		{
+			Expect( TOKEN_DEDENT, "Expected dedent after block" );
+		}
 
 		return std::make_unique<BlockStmt>( loc, std::move( statements ) );
 	}
@@ -174,14 +179,16 @@ namespace Bat
 	{
 		SourceLoc loc = Previous().loc;
 
-		Expect( TOKEN_LPAREN, "Expected '('" );
 		auto condition = ParseExpression();
-		Expect( TOKEN_RPAREN, "Expected ')'" );
-		auto then_branch = ParseStatement();
+		Expect( TOKEN_COLON, "Expected ':' after if statement" );
+		ExpectTerminator( "Expected newline after if statement" );
+		auto then_branch = ParseBlock();
 
 		std::unique_ptr<Statement> else_branch = nullptr;
 		if( Match( TOKEN_ELSE ) )
 		{
+			Expect( TOKEN_COLON, "Expected ':' after else statement" );
+			ExpectTerminator( "Expected newline after else statement" );
 			else_branch = ParseStatement();
 		}
 
@@ -192,10 +199,10 @@ namespace Bat
 	{
 		SourceLoc loc = Previous().loc;
 
-		Expect( TOKEN_LPAREN, "Expected '('" );
 		auto condition = ParseExpression();
-		Expect( TOKEN_RPAREN, "Expected ')'" );
-		auto body = ParseStatement();
+		Expect( TOKEN_COLON, "Expected ':' after while statement" );
+		ExpectTerminator( "Expected newline after while statement" );
+		auto body = ParseBlock();
 
 		return std::make_unique<WhileStmt>( loc, std::move( condition ), std::move( body ) );
 	}
@@ -279,7 +286,7 @@ namespace Bat
 		SourceLoc loc = Previous().loc;
 
 		Token name = Expect( TOKEN_IDENT, "Expected function name" );
-		Expect( TOKEN_LPAREN, "Expected '('" );
+		Expect( TOKEN_LPAREN, "Expected '(' after function name" );
 
 		std::vector<Token> parameters;
 		if( !Check( TOKEN_RPAREN ) )
@@ -290,9 +297,11 @@ namespace Bat
 				parameters.push_back( param );
 			} while( Match( TOKEN_COMMA ) );
 		}
-		Expect( TOKEN_RPAREN, "Expected ')'" );
+		Expect( TOKEN_RPAREN, "Expected ')' after function parameters" );
+		Expect( TOKEN_COLON, "Expected ':' after function declaration" );
 
-		Expect( TOKEN_LBRACE, "Expected '{'" );
+		ExpectTerminator();
+
 		auto body = ParseBlock();
 		return std::make_unique<FuncDecl>( loc, name, std::move( parameters ), std::move( body ) );
 	}

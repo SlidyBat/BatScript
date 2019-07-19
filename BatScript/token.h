@@ -82,6 +82,8 @@
 	/* Keywords */                                              \
 	KEYWORD_TYPES(_)                                            \
 	/* Special */                                               \
+	_(INDENT,         "<indent>")                               \
+	_(DEDENT,         "<dedent>")                               \
 	_(ENDOFFILE,      "<end-of-file>")                          \
 	_(ENDOFLINE,      "<end-of-line>")                          \
 	_(COMMENT,        "<comment>")                              \

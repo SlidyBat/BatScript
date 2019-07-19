@@ -28,7 +28,7 @@ namespace Bat
 		bool Match( TokenType type );
 
 		const Token& Expect( TokenType type, const std::string& message );
-		void ExpectTerminator();
+		void ExpectTerminator( const std::string& msg = "Expected newline" );
 		void Error( const std::string& message );
 		// Skips to next statement to avoid cascading errors
 		void Synchronize();

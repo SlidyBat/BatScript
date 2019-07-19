@@ -6,10 +6,9 @@
 
 namespace Bat
 {
-	Lexer::Lexer( const std::string& text, const std::string& source )
+	Lexer::Lexer( const std::string& text )
 		:
-		m_szText( text ),
-		m_szSource( source )
+		m_szText( text )
 	{}
 
 	std::vector<Token> Lexer::Scan()
@@ -21,6 +20,12 @@ namespace Bat
 		}
 
 		m_Tokens.emplace_back( TOKEN_ENDOFFILE, "", m_iLine, 0 );
+
+		if( m_iParenLevel != 0 )
+		{
+			ErrorSys::Report( /*m_iParenLine[m_iParenLevel], m_iParenCol[m_iParenLevel],*/ 0, 0, std::string( "No closing parentheses found for '" ) + m_iParenStack[m_iParenLevel] + "'" );
+		}
+
 		return m_Tokens;
 	}
 
@@ -65,35 +70,116 @@ namespace Bat
 		return false;
 	}
 
+	void Lexer::GoBack()
+	{
+		m_iCurrent--;
+	}
+
 	void Lexer::ScanToken()
 	{
-		char c = Advance();
+		char c = 0;
+		bool blankline = false;
+		if( m_bBeginningOfLine )
+		{
+			int col = 0;
+			m_bBeginningOfLine = false;
+
+			while( true )
+			{
+				c = Advance();
+				if( c == ' ' )
+				{
+					col++;
+				}
+				else if( c == '\t' )
+				{
+					col = (col / TAB_SIZE + 1) * TAB_SIZE;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			GoBack();
+
+			if( (c == '/' && Match( '/' )) ) Comment();
+			if( c == '\n' )
+			{
+				m_bBeginningOfLine = true;
+				m_iLine++;
+				m_iLineStart = m_iCurrent + 1;
+
+				blankline = true;
+			}
+
+			if( !blankline && m_iParenLevel == 0 )
+			{
+				if( col > m_iIndentStack[m_iCurrentIndent] )
+				{
+					m_iCurrentIndent++;
+					m_iIndentStack[m_iCurrentIndent] = col;
+					AddToken( TOKEN_INDENT );
+				}
+				else if( col < m_iIndentStack[m_iCurrentIndent] )
+				{
+					while( m_iCurrentIndent > 0 &&
+						col < m_iIndentStack[m_iCurrentIndent] )
+					{
+						AddToken( TOKEN_DEDENT );
+						m_iCurrentIndent--;
+					}
+
+					if( col != m_iIndentStack[m_iCurrentIndent] )
+					{
+						Error( "Inconsistent indentation" );
+						return;
+					}
+				}
+			}
+
+			if( blankline )
+			{
+				Advance();
+				return;
+			}
+		}
+
+		m_iStart = m_iCurrent;
+
+		c = Advance();
+
 		switch( c )
 		{
-			case '(': AddToken( TOKEN_LPAREN ); break;
-			case ')': AddToken( TOKEN_RPAREN ); break;
-			case '{': AddToken( TOKEN_LBRACE ); break;
-			case '}': AddToken( TOKEN_RBRACE ); break;
-			case '[': AddToken( TOKEN_LPAREN ); break;
-			case ']': AddToken( TOKEN_RPAREN ); break;
-			case '.': AddToken( TOKEN_DOT ); break;
-			case ',': AddToken( TOKEN_COMMA ); break;
-			case '?': AddToken( TOKEN_QUESMARK ); break;
-			case ';': AddToken( TOKEN_SEMICOLON ); break;
-			case ':': AddToken( TOKEN_COLON ); break;
-			case '@': AddToken( TOKEN_AT ); break;
-			case '~': AddToken( TOKEN_TILDE ); break;
+			case '(':
+			case '[':
+			case '{':
+				OpeningParen( c );
+				break;
+			case ')':
+			case ']':
+			case '}':
+				ClosingParen( c );
+				break;
+
+			case '.':  AddToken( TOKEN_DOT ); break;
+			case ',':  AddToken( TOKEN_COMMA ); break;
+			case '?':  AddToken( TOKEN_QUESMARK ); break;
+			case ';':  AddToken( TOKEN_SEMICOLON ); break;
+			case ':':  AddToken( TOKEN_COLON ); break;
+			case '@':  AddToken( TOKEN_AT ); break;
+			case '~':  AddToken( TOKEN_TILDE ); break;
 			case '\\': AddToken( TOKEN_BACKSLASH ); break;
 
-			case '+': Match( '=' ) ? AddToken( TOKEN_PLUS_EQUAL ) : AddToken( TOKEN_PLUS ); break;
-			case '-': Match( '=' ) ? AddToken( TOKEN_MINUS_EQUAL ) : AddToken( TOKEN_MINUS ); break;
+			case '+': Match( '=' ) ? AddToken( TOKEN_PLUS_EQUAL )     : AddToken( TOKEN_PLUS ); break;
+			case '-': Match( '=' ) ? AddToken( TOKEN_MINUS_EQUAL )    : AddToken( TOKEN_MINUS ); break;
 			case '*': Match( '=' ) ? AddToken( TOKEN_ASTERISK_EQUAL ) : AddToken( TOKEN_ASTERISK ); break;
-			case '=': Match( '=' ) ? AddToken( TOKEN_EQUAL_EQUAL ) : AddToken( TOKEN_EQUAL ); break;
+			case '=': Match( '=' ) ? AddToken( TOKEN_EQUAL_EQUAL )    : AddToken( TOKEN_EQUAL ); break;
 			case '!': Match( '=' ) ? AddToken( TOKEN_EXCLMARK_EQUAL ) : AddToken( TOKEN_EXCLMARK ); break;
-			case '%': Match( '=' ) ? AddToken( TOKEN_PERCENT_EQUAL ) : AddToken( TOKEN_PERCENT ); break;
-			case '|': Match( '=' ) ? AddToken( TOKEN_BAR_EQUAL ) : AddToken( TOKEN_BAR ); break;
-			case '&': Match( '=' ) ? AddToken( TOKEN_AMP_EQUAL ) : AddToken( TOKEN_AMP ); break;
-			case '^': Match( '=' ) ? AddToken( TOKEN_HAT_EQUAL ) : AddToken( TOKEN_HAT ); break;
+			case '%': Match( '=' ) ? AddToken( TOKEN_PERCENT_EQUAL )  : AddToken( TOKEN_PERCENT ); break;
+			case '|': Match( '=' ) ? AddToken( TOKEN_BAR_EQUAL )      : AddToken( TOKEN_BAR ); break;
+			case '&': Match( '=' ) ? AddToken( TOKEN_AMP_EQUAL )      : AddToken( TOKEN_AMP ); break;
+			case '^': Match( '=' ) ? AddToken( TOKEN_HAT_EQUAL )      : AddToken( TOKEN_HAT ); break;
 
 			case '>':
 				if( Match( '=' ) )      AddToken( TOKEN_GREATER_EQUAL );
@@ -111,7 +197,7 @@ namespace Bat
 				else                    AddToken( TOKEN_SLASH );
 				break;
 
-			case '"': String( '"' ); break;
+			case '"':  String( '"' ); break;
 			case '\'': String('\''); break;
 
 			case ' ':
@@ -120,7 +206,11 @@ namespace Bat
 				break;
 
 			case '\n':
-				// AddToken( TOKEN_ENDOFLINE );
+				if( m_iParenLevel == 0 )
+				{
+					AddToken( TOKEN_ENDOFLINE );
+				}
+				m_bBeginningOfLine = true;
 				m_iLine++;
 				m_iLineStart = m_iCurrent + 1;
 				break;
@@ -154,6 +244,50 @@ namespace Bat
 	void Lexer::Error( const std::string& message )
 	{
 		ErrorSys::Report( m_iLine, GetCurrColumn(), message );
+	}
+
+	void Lexer::OpeningParen( char paren )
+	{
+		if( m_iParenLevel >= MAX_PAREN_LEVEL )
+		{
+			Error( "Too many nested parentheses" );
+			return;
+		}
+
+		m_iParenLevel++;
+		m_iParenStack[m_iParenLevel] = paren;
+
+		switch( paren )
+		{
+			case '(': AddToken( TOKEN_LPAREN ); break;
+			case '[': AddToken( TOKEN_LBRACKET ); break;
+			case '{': AddToken( TOKEN_LBRACE ); break;
+		}
+	}
+
+	void Lexer::ClosingParen( char paren )
+	{
+		if( m_iParenLevel == 0 )
+		{
+			Error( std::string( "Unmatched closing parentheses '" ) + paren + "'" );
+			return;
+		}
+		if( (paren == ')' && m_iParenStack[m_iParenLevel] != '(') ||
+			(paren == ']' && m_iParenStack[m_iParenLevel] != '[') ||
+			(paren == '}' && m_iParenStack[m_iParenLevel] != '{') )
+		{
+			Error( std::string( "Closing parentheses '" ) + paren + " do not match opening parentheses '" + m_iParenStack[m_iParenLevel] + "'" );
+			return;
+		}
+
+		m_iParenLevel--;
+
+		switch( paren )
+		{
+			case ')': AddToken( TOKEN_RPAREN ); break;
+			case ']': AddToken( TOKEN_RBRACKET ); break;
+			case '}': AddToken( TOKEN_RBRACE ); break;
+		}
 	}
 
 	void Lexer::Comment()
@@ -228,6 +362,7 @@ namespace Bat
 			if( Peek() == '\n' )
 			{
 				m_iLine++;
+				m_iLineStart = m_iCurrent + 1;
 			}
 			Advance();
 		}
