@@ -89,15 +89,15 @@ namespace Bat
 
 	bool IsWhitespace( const char c )
 	{
-		return std::isspace( c );
+		return isspace( c );
 	}
 	bool IsLowercase( const char c )
 	{
-		return std::islower( c );
+		return islower( c );
 	}
 	bool IsUppercase( const char c )
 	{
-		return std::isupper( c );
+		return isupper( c );
 	}
 	bool IsNumeric( const char c )
 	{
@@ -245,7 +245,7 @@ namespace Bat
 	{
 		for( size_t i = 0; i < str.size(); i++ )
 		{
-			str[i] = std::tolower( str[i] );
+			str[i] = tolower( str[i] );
 		}
 
 		return str;
@@ -254,7 +254,7 @@ namespace Bat
 	{
 		for( size_t i = 0; i < str.size(); i++ )
 		{
-			str[i] = std::toupper( str[i] );
+			str[i] = toupper( str[i] );
 		}
 
 		return str;

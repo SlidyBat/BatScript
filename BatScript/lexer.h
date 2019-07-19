@@ -40,10 +40,10 @@ namespace Bat
 		std::vector<Token> m_Tokens;
 		std::string m_szText;
 
-		size_t m_iStart = 0;
-		size_t m_iCurrent = 0;
-		size_t m_iLine = 1;
-		size_t m_iLineStart = 0;
+		int m_iStart = 0;
+		int m_iCurrent = 0;
+		int m_iLine = 1;
+		int m_iLineStart = 0;
 
 		static constexpr int MAX_INDENT_LEVEL = 1024;
 		static constexpr int MAX_PAREN_LEVEL = 256;

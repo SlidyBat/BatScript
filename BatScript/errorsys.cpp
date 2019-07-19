@@ -7,7 +7,7 @@ namespace Bat
 	static bool g_bHadError = false;
 	static std::string g_szSource;
 
-	void ErrorSys::Report( int line, int column, const std::string& message )
+	void ErrorSys::Report( size_t line, size_t column, const std::string& message )
 	{
 		g_bHadError = true;
 		if( g_szSource.empty() )
