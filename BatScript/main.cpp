@@ -5,6 +5,7 @@
 #include "memory_stream.h"
 #include "lexer.h"
 #include "parser.h"
+#include "semantic_analysis.h"
 #include "errorsys.h"
 #include "ast_printer.h"
 #include "interpreter.h"
@@ -26,6 +27,15 @@ void Run( const std::string& src, bool print_expression_results = false )
 
 	Parser p( std::move( tokens ) );
 	std::vector<std::unique_ptr<Statement>> res = p.Parse();
+
+	if( ErrorSys::HadError() ) return;
+
+	SemanticAnalysis sa;
+
+	for( size_t i = 0; i < res.size(); i++ )
+	{
+		sa.Analyze( res[i].get() );
+	}
 
 	if( ErrorSys::HadError() ) return;
 
@@ -91,8 +101,8 @@ int main( int argc, char** argv )
 	}
 	else
 	{
-		RunFromPrompt();
-		//RunFromFile( "test2.bat" );
+		//RunFromPrompt();
+		RunFromFile( "test2.bat" );
 	}
 
 	system( "pause" );

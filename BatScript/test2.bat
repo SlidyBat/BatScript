@@ -1,10 +1,11 @@
-var a = "global"
+var a = "string"
 
-def test():
-	def showA(): print a
-	
-	showA()
-	var a = "local"
-	showA()
+return 10
 
-test()
+string fib(int b):
+	c = b
+	if b <= 1: return true
+	return fib(b - 2) + fib(b - 1)
+
+
+print fib(a)

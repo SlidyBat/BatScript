@@ -4,6 +4,7 @@
 #include "token.h"
 #include "stringlib.h"
 #include "sourceloc.h"
+#include "type.h"
 
 #define AST_TYPES(_) \
 	/* Literals */ \
@@ -380,29 +381,52 @@ namespace Bat
 		std::unique_ptr<VarDecl> m_pNext;
 	};
 
+	class FunctionSignature
+	{
+	public:
+		FunctionSignature( Token return_identifier, Token identifier, std::vector<Token> types, std::vector<Token> parameters, std::vector<std::unique_ptr<Expression>> defaults )
+			:
+			m_ReturnIdentifier( return_identifier ),
+			m_Identifier( identifier ),
+			m_Types( std::move( types ) ),
+			m_Parameters( std::move( parameters ) ),
+			m_pDefaults( std::move( defaults ) )
+		{}
+
+		const Token& ReturnIdentifier() const { return m_ReturnIdentifier; }
+		const Token& Identifier() const { return m_Identifier; }
+		size_t NumParams() const { return m_Parameters.size(); }
+		const Token& ParamType( size_t index ) const { return m_Types[index]; }
+		const Token& ParamIdent( size_t index ) const { return m_Parameters[index]; }
+		Expression* ParamDefault( size_t index ) const { return m_pDefaults[index].get(); }
+		void SetReturnType( Type* rettype ) { m_pReturnType = rettype; }
+		Type* ReturnType() { return m_pReturnType; }
+		const Type* ReturnType() const { return m_pReturnType; }
+	private:
+		Token m_ReturnIdentifier;
+		Token m_Identifier;
+		std::vector<Token> m_Types;
+		std::vector<Token> m_Parameters;
+		std::vector<std::unique_ptr<Expression>> m_pDefaults;
+
+		Type* m_pReturnType = nullptr;
+	};
 	class FuncDecl : public Statement
 	{
 	public:
 		DECLARE_AST_NODE( FuncDecl );
 
-		FuncDecl( const SourceLoc& loc, Token identifier, std::vector<Token> parameters, std::vector<std::unique_ptr<Expression>> defaults, std::unique_ptr<Statement> body )
+		FuncDecl( const SourceLoc& loc, FunctionSignature sig, std::unique_ptr<Statement> body )
 			:
 			Statement( loc ),
-			m_Identifier( identifier ),
-			m_Parameters( std::move( parameters ) ),
-			m_pDefaults( std::move( defaults ) ),
+			m_Signature( std::move( sig ) ),
 			m_pBody( std::move( body ) )
 		{}
 
-		const Token& Identifier() const { return m_Identifier; }
-		size_t NumParams() const { return m_Parameters.size(); }
-		const Token& Param( size_t index ) const { return m_Parameters[index]; }
-		Expression* Default( size_t index ) const { return m_pDefaults[index].get(); }
+		FunctionSignature& Signature() { return m_Signature; }
 		Statement* Body() { return m_pBody.get(); }
 	private:
-		Token m_Identifier;
-		std::vector<Token> m_Parameters;
-		std::vector<std::unique_ptr<Expression>> m_pDefaults;
+		FunctionSignature m_Signature;
 		std::unique_ptr<Statement> m_pBody;
 	};
 }

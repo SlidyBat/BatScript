@@ -46,7 +46,7 @@ namespace Bat
 
 	Token::Token( double f64, const std::string & lexeme, int line, int column )
 		:
-		type( TOKEN_FLOAT ),
+		type( TOKEN_FLOAT_LITERAL ),
 		lexeme( lexeme ),
 		loc( line, column )
 	{
@@ -55,7 +55,7 @@ namespace Bat
 
 	Token::Token( int64_t i64, const std::string& lexeme, int line, int column )
 		:
-		type( TOKEN_INT ),
+		type( TOKEN_INT_LITERAL ),
 		lexeme( lexeme ),
 		loc( line, column )
 	{
@@ -64,7 +64,7 @@ namespace Bat
 
 	Token::Token( const char* str, const std::string& lexeme, int line, int column )
 		:
-		type( TOKEN_STRING ),
+		type( TOKEN_STRING_LITERAL ),
 		lexeme( lexeme ),
 		loc( line, column )
 	{

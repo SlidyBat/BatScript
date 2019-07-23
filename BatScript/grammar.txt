@@ -1,5 +1,7 @@
 program       -> statement* EOF
 
+type          -> ("int" | "float" | "bool" | "string" | identifier)
+
 statement     -> simple_stmt | compound_stmt
 simple_stmt   -> expression eol
                | print_stmt
@@ -12,8 +14,8 @@ compound_stmt -> if_stmt
 
 block         -> indent statement+ dedent
 
-var_decl      -> ("var" | "const") IDENTIFIER ("=" expression)? ("," IDENTIFIER ("=" expression)?)* eol
-function_decl -> "def" IDENTIFIER "(" parameters? ")" ":" (eol block | simple_stmt)
+var_decl      -> ("var" | "const" | type) IDENTIFIER ("=" expression)? ("," IDENTIFIER ("=" expression)?)* eol
+function_decl -> ("def" | type) IDENTIFIER "(" parameters? ")" ":" (eol block | simple_stmt)
 
 print_stmt    -> "print" expression eol
 
@@ -23,7 +25,7 @@ for_stmt      -> "for" "(" expression? ";" expression? ";" expression? ")" block
 
 return_stmt   -> "return" expression? eol
 
-parameter     -> IDENTIFIER ( "=" expression )?
+parameter     -> type IDENTIFIER ( "=" expression )?
 parameters    -> parameter ( "," parameter )*
 
 expression    -> assign

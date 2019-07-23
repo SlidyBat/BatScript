@@ -8,19 +8,21 @@ namespace Bat
 		:
 		m_pDeclaration( declaration )
 	{
+		const auto& sig = m_pDeclaration->Signature();
+
 		size_t i;
-		for( i = 0; i < m_pDeclaration->NumParams(); i++ )
+		for( i = 0; i < sig.NumParams(); i++ )
 		{
-			if( m_pDeclaration->Default( i ) != nullptr )
+			if( sig.ParamDefault( i ) != nullptr )
 			{ 
 				break;
 			}
 		}
-		m_nDefaults = m_pDeclaration->NumParams() - i;
+		m_nDefaults = sig.NumParams() - i;
 	}
 	size_t BatFunction::Arity() const
 	{
-		return m_pDeclaration->NumParams();
+		return m_pDeclaration->Signature().NumParams();
 	}
 	size_t BatFunction::NumDefaults() const
 	{
@@ -28,16 +30,18 @@ namespace Bat
 	}
 	BatObject BatFunction::Call( Interpreter& interpreter, const std::vector<BatObject>& args )
 	{
+		const auto& sig = m_pDeclaration->Signature();
+
 		Environment environment( interpreter.GetEnvironment() );
 		for( size_t i = 0; i < args.size(); i++ )
 		{
-			environment.AddVar( m_pDeclaration->Param( i ).lexeme, args[i], m_pDeclaration->Param( i ).loc );
+			environment.AddVar( sig.ParamIdent( i ).lexeme, args[i], sig.ParamIdent( i ).loc );
 		}
-		for( size_t i = args.size(); i < m_pDeclaration->NumParams(); i++ )
+		for( size_t i = args.size(); i < m_pDeclaration->Signature().NumParams(); i++ )
 		{
-			environment.AddVar( m_pDeclaration->Param( i ).lexeme,
-				interpreter.Evaluate( m_pDeclaration->Default( i ) ),
-				m_pDeclaration->Param( i ).loc );
+			environment.AddVar( sig.ParamIdent( i ).lexeme,
+				interpreter.Evaluate( sig.ParamDefault( i ) ),
+				sig.ParamIdent( i ).loc );
 		}
 
 		try

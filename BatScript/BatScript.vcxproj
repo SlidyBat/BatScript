@@ -141,9 +141,12 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory_stream.cpp" />
     <ClCompile Include="parser.cpp" />
+    <ClCompile Include="semantic_analysis.cpp" />
     <ClCompile Include="stringlib.cpp" />
     <ClCompile Include="stringpool.cpp" />
+    <ClCompile Include="symbol_table.cpp" />
     <ClCompile Include="token.cpp" />
+    <ClCompile Include="type_manager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ast.h" />
@@ -157,10 +160,15 @@
     <ClInclude Include="memory_stream.h" />
     <ClInclude Include="parser.h" />
     <ClInclude Include="runtime_error.h" />
+    <ClInclude Include="semantic_analysis.h" />
     <ClInclude Include="sourceloc.h" />
     <ClInclude Include="stringlib.h" />
     <ClInclude Include="stringpool.h" />
+    <ClInclude Include="symbol.h" />
+    <ClInclude Include="symbol_table.h" />
     <ClInclude Include="token.h" />
+    <ClInclude Include="type.h" />
+    <ClInclude Include="type_manager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

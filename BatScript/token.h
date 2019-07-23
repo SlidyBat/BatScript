@@ -28,6 +28,10 @@
 	_(AND,            "and")                                    \
 	_(OR,             "or")                                     \
 	_(DEF,            "def")                                    \
+	_(BOOL,           "bool")                                   \
+	_(INT,            "int")                                    \
+	_(FLOAT,          "float")                                  \
+	_(STRING,         "string")                                 \
 
 
 #define TOKEN_TYPES(_) \
@@ -76,9 +80,9 @@
 	_(HAT_EQUAL,      "^=")                                     \
 	/* Literals */                                              \
 	_(IDENT,          "<identifier>")                           \
-	_(STRING,         "<string>")                               \
-	_(INT,            "<integer>")                              \
-	_(FLOAT,          "<float>")                                \
+	_(STRING_LITERAL,         "<string>")                               \
+	_(INT_LITERAL,            "<integer>")                              \
+	_(FLOAT_LITERAL,          "<float>")                                \
 	/* Keywords */                                              \
 	KEYWORD_TYPES(_)                                            \
 	/* Special */                                               \

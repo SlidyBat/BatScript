@@ -249,6 +249,6 @@ namespace Bat
 	}
 	void Interpreter::VisitFuncDecl( FuncDecl* node )
 	{
-		m_pEnvironment->AddVar( node->Identifier().lexeme, new BatFunction( node ), node->Identifier().loc );
+		m_pEnvironment->AddVar( node->Signature().Identifier().lexeme, new BatFunction( node ), node->Signature().Identifier().loc );
 	}
 }

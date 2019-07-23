@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "bat_object.h"
 #include "sourceloc.h"
+#include "type.h"
 
 namespace Bat
 {

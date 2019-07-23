@@ -151,13 +151,15 @@ namespace Bat
 	}
 	void AstPrinter::VisitFuncDecl( FuncDecl* node )
 	{
-		std::cout << "def " << node->Identifier().lexeme << std::endl;
-		for( size_t i = 0; i < node->NumParams(); i++ )
+		const auto& sig = node->Signature();
+		std::cout << "def " << node->Signature().Identifier().lexeme << std::endl;
+		for( size_t i = 0; i < sig.NumParams(); i++ )
 		{
-			std::cout << node->Param( i ).lexeme << std::endl;
-			if( node->Default( i ) )
+			std::cout << sig.ParamType( i ).lexeme << std::endl;
+			std::cout << sig.ParamIdent( i ).lexeme << std::endl;
+			if( sig.ParamDefault( i ) )
 			{
-				PrintNode( node->Default( i ) );
+				PrintNode( sig.ParamDefault( i ) );
 			}
 		}
 		PrintNode( node->Body() );

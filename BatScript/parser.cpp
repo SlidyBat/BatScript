@@ -55,9 +55,28 @@ namespace Bat
 		return false;
 	}
 
+	void Parser::GoBack()
+	{
+		m_iCurrent--;
+	}
+
 	const Token& Parser::Expect( TokenType type, const std::string& message )
 	{
 		if( Check( type ) )
+		{
+			return Advance();
+		}
+
+		Error( message );
+		throw ParseError();
+	}
+
+	const Token& Parser::ExpectType( const std::string& message, bool function )
+	{
+		if( Check( TOKEN_BOOL ) ||
+			Check( TOKEN_INT ) ||
+			Check( TOKEN_FLOAT ) ||
+			Check( TOKEN_STRING ) )
 		{
 			return Advance();
 		}
@@ -115,7 +134,11 @@ namespace Bat
 				Check( TOKEN_DEF ) ||
 				Check( TOKEN_IF ) ||
 				Check( TOKEN_WHILE ) ||
-				Check( TOKEN_FOR ) )
+				Check( TOKEN_FOR ) ||
+				Check( TOKEN_BOOL ) ||
+				Check( TOKEN_INT ) ||
+				Check( TOKEN_FLOAT ) ||
+				Check( TOKEN_STRING ) )
 			{
 				return ParseCompoundStatement();
 			}
@@ -138,6 +161,15 @@ namespace Bat
 		if( Match( TOKEN_FOR ) )    return ParseFor();
 		if( Match( TOKEN_VAR ) )    return ParseVarDeclaration();
 		if( Match( TOKEN_DEF ) )    return ParseFuncDeclaration();
+
+		if( Match( TOKEN_BOOL ) ||
+			Match( TOKEN_INT ) ||
+			Match( TOKEN_FLOAT ) ||
+			Match( TOKEN_STRING ) ||
+			Match( TOKEN_IDENT ) )
+		{
+			return ParseDeclaration(); // Generic type declaration, can't tell if its func or var yet
+		}
 
 		Error( std::string( "Unexpected token " + Peek().lexeme ) );
 		throw ParseError();
@@ -283,6 +315,20 @@ namespace Bat
 		return std::make_unique<ReturnStmt>( loc, std::move( ret_value ) );
 	}
 
+	std::unique_ptr<Statement> Parser::ParseDeclaration()
+	{
+		Expect( TOKEN_IDENT, "Expected identifier after type name" );
+
+		if( Check( TOKEN_LPAREN ) )
+		{
+			GoBack();
+			return ParseFuncDeclaration();
+		}
+
+		GoBack();
+		return ParseVarDeclaration();
+	}
+
 	std::unique_ptr<Statement> Parser::ParseVarDeclaration()
 	{
 		SourceLoc loc = Previous().loc;
@@ -320,18 +366,22 @@ namespace Bat
 	{
 		SourceLoc loc = Previous().loc;
 
+		Token return_ident = Previous();
 		Token name = Expect( TOKEN_IDENT, "Expected function name" );
 		Expect( TOKEN_LPAREN, "Expected '(' after function name" );
 
-		std::vector<Token> parameters;
+		std::vector<Token> types;
+		std::vector<Token> params;
 		std::vector<std::unique_ptr<Expression>> defaults;
 		bool found_def = false;
 		if( !Check( TOKEN_RPAREN ) )
 		{
 			do
 			{
+				Token type = ExpectType( "Expected parameter type", true );
+				types.push_back( type );
 				Token param = Expect( TOKEN_IDENT, "Expected parameter identifier" );
-				parameters.push_back( param );
+				params.push_back( param );
 
 				if( Match( TOKEN_EQUAL ) )
 				{
@@ -362,7 +412,7 @@ namespace Bat
 			body = ParseSimpleStatement();
 		}
 
-		return std::make_unique<FuncDecl>( loc, name, std::move( parameters ), std::move( defaults ), std::move( body ) );
+		return std::make_unique<FuncDecl>( loc, FunctionSignature( return_ident, name, types, params, std::move( defaults ) ), std::move( body ) );
 	}
 
 	std::unique_ptr<Expression> Parser::ParseExpression()
@@ -592,9 +642,9 @@ namespace Bat
 	{
 		SourceLoc loc = Peek().loc;
 
-		if( Match( TOKEN_INT ) )    return std::make_unique<IntLiteral>( loc, Previous().literal.i64 );
-		if( Match( TOKEN_FLOAT ) )  return std::make_unique<FloatLiteral>( loc, Previous().literal.f64 );
-		if( Match( TOKEN_STRING ) ) return std::make_unique<StringLiteral>( loc, Previous().literal.str );
+		if( Match( TOKEN_INT_LITERAL ) )    return std::make_unique<IntLiteral>( loc, Previous().literal.i64 );
+		if( Match( TOKEN_FLOAT_LITERAL ) )  return std::make_unique<FloatLiteral>( loc, Previous().literal.f64 );
+		if( Match( TOKEN_STRING_LITERAL ) ) return std::make_unique<StringLiteral>( loc, Previous().literal.str );
 
 		if( Match( TOKEN_TRUE ) || Match( TOKEN_FALSE ) || Match( TOKEN_NIL ) )
 			return std::make_unique<TokenLiteral>( loc, Previous().type );
