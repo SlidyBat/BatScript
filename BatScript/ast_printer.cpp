@@ -144,12 +144,33 @@ namespace Bat
 		PrintNode( node->RetValue() );
 	}
 
+	void AstPrinter::VisitImportStmt( ImportStmt* node )
+	{
+		std::cout << "import " << node->ModuleName();
+	}
+
+	void AstPrinter::VisitNativeStmt( NativeStmt* node )
+	{
+		const auto& sig = node->Signature();
+		std::cout << "native " << node->Signature().Identifier().lexeme << std::endl;
+		for( size_t i = 0; i < sig.NumParams(); i++ )
+		{
+			std::cout << sig.ParamType( i ).lexeme << std::endl;
+			std::cout << sig.ParamIdent( i ).lexeme << std::endl;
+			if( sig.ParamDefault( i ) )
+			{
+				PrintNode( sig.ParamDefault( i ) );
+			}
+		}
+	}
+
 	void AstPrinter::VisitVarDecl( VarDecl* node )
 	{
 		std::cout << "var " << node->Identifier().lexeme;
 		if( node->Initializer() ) PrintNode( node->Initializer() );
 	}
-	void AstPrinter::VisitFuncDecl( FuncDecl* node )
+
+	void  AstPrinter::VisitFuncDecl( FuncDecl* node )
 	{
 		const auto& sig = node->Signature();
 		std::cout << "def " << node->Signature().Identifier().lexeme << std::endl;

@@ -71,7 +71,7 @@ namespace Bat
 		throw ParseError();
 	}
 
-	const Token& Parser::ExpectType( const std::string& message, bool function )
+	const Token& Parser::ExpectType( const std::string& message )
 	{
 		if( Check( TOKEN_BOOL ) ||
 			Check( TOKEN_INT ) ||
@@ -118,6 +118,7 @@ namespace Bat
 				case TOKEN_RETURN:
 				case TOKEN_ENUM:
 				case TOKEN_IMPORT:
+				case TOKEN_NATIVE:
 				case TOKEN_TYPEDEF:
 				case TOKEN_ALIASDEF:
 					return;
@@ -154,8 +155,6 @@ namespace Bat
 
 	std::unique_ptr<Statement> Parser::ParseCompoundStatement()
 	{
-		if( Match( TOKEN_PRINT ) )  return ParsePrint();
-		if( Match( TOKEN_RETURN ) ) return ParseReturn();
 		if( Match( TOKEN_IF ) )     return ParseIf();
 		if( Match( TOKEN_WHILE ) )  return ParseWhile();
 		if( Match( TOKEN_FOR ) )    return ParseFor();
@@ -179,6 +178,8 @@ namespace Bat
 	{
 		if( Match( TOKEN_PRINT ) )  return ParsePrint();
 		if( Match( TOKEN_RETURN ) ) return ParseReturn();
+		if( Match( TOKEN_IMPORT ) ) return ParseImport();
+		if( Match( TOKEN_NATIVE ) ) return ParseNative();
 
 		return ParseExpressionStatement();
 	}
@@ -315,6 +316,27 @@ namespace Bat
 		return std::make_unique<ReturnStmt>( loc, std::move( ret_value ) );
 	}
 
+	std::unique_ptr<Statement> Parser::ParseImport()
+	{
+		SourceLoc loc = Previous().loc;
+
+		auto module_name = Expect( TOKEN_IDENT, "Expected module name to import" );
+		ExpectTerminator();
+		return std::make_unique<ImportStmt>( loc, module_name );
+	}
+
+	std::unique_ptr<Statement> Parser::ParseNative()
+	{
+		SourceLoc loc = Previous().loc;
+
+		// Make sure we're getting a proper type name, ParseFuncSignature doesn't do this check
+		ExpectType( "Expected type name for native function declaration" );
+
+		FunctionSignature sig = ParseFuncSignature();
+		ExpectTerminator();
+		return std::make_unique<NativeStmt>( loc, std::move( sig ) );
+	}
+
 	std::unique_ptr<Statement> Parser::ParseDeclaration()
 	{
 		Expect( TOKEN_IDENT, "Expected identifier after type name" );
@@ -366,6 +388,24 @@ namespace Bat
 	{
 		SourceLoc loc = Previous().loc;
 
+		FunctionSignature sig = ParseFuncSignature();
+		Expect( TOKEN_COLON, "Expected ':' after function declaration" );
+
+		std::unique_ptr<Statement> body;
+		if( Match( TOKEN_ENDOFLINE ) )
+		{
+			body = ParseBlock();
+		}
+		else
+		{
+			body = ParseSimpleStatement();
+		}
+
+		return std::make_unique<FuncDecl>( loc, std::move( sig ), std::move( body ) );
+	}
+
+	FunctionSignature Parser::ParseFuncSignature()
+	{
 		Token return_ident = Previous();
 		Token name = Expect( TOKEN_IDENT, "Expected function name" );
 		Expect( TOKEN_LPAREN, "Expected '(' after function name" );
@@ -378,7 +418,7 @@ namespace Bat
 		{
 			do
 			{
-				Token type = ExpectType( "Expected parameter type", true );
+				Token type = ExpectType( "Expected parameter type" );
 				types.push_back( type );
 				Token param = Expect( TOKEN_IDENT, "Expected parameter identifier" );
 				params.push_back( param );
@@ -400,19 +440,8 @@ namespace Bat
 			} while( Match( TOKEN_COMMA ) );
 		}
 		Expect( TOKEN_RPAREN, "Expected ')' after function parameters" );
-		Expect( TOKEN_COLON, "Expected ':' after function declaration" );
 
-		std::unique_ptr<Statement> body;
-		if( Match( TOKEN_ENDOFLINE ) )
-		{
-			body = ParseBlock();
-		}
-		else
-		{
-			body = ParseSimpleStatement();
-		}
-
-		return std::make_unique<FuncDecl>( loc, FunctionSignature( return_ident, name, types, params, std::move( defaults ) ), std::move( body ) );
+		return FunctionSignature( return_ident, name, types, params, std::move( defaults ) );
 	}
 
 	std::unique_ptr<Expression> Parser::ParseExpression()

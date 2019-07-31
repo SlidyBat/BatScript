@@ -15,8 +15,7 @@
 using namespace Bat;
 
 Interpreter interpreter;
-// Stores all parsed statements, needs to be global so that lifetime lasts across REPL commands
-std::vector<std::unique_ptr<Statement>> statements;
+SemanticAnalysis sa;
 
 void Run( const std::string& src, bool print_expression_results = false )
 {
@@ -29,8 +28,6 @@ void Run( const std::string& src, bool print_expression_results = false )
 	std::vector<std::unique_ptr<Statement>> res = p.Parse();
 
 	if( ErrorSys::HadError() ) return;
-
-	SemanticAnalysis sa;
 
 	for( size_t i = 0; i < res.size(); i++ )
 	{
@@ -50,11 +47,8 @@ void Run( const std::string& src, bool print_expression_results = false )
 			}
 			else
 			{
-				interpreter.Execute( res[i].get() );
+				interpreter.Execute( std::move( res[i] )  );
 			}
-
-			// Transfer ownership
-			statements.push_back( std::move( res[i] ) );
 
 			if( ErrorSys::HadError() ) return;
 		}
@@ -87,11 +81,16 @@ void RunFromPrompt()
 	}
 }
 
+void AddNative( const std::string& name, BatNativeCallback callback )
+{
+	interpreter.AddNative( name, std::move( callback ) );
+}
+
 using namespace std::chrono;
 
 int main( int argc, char** argv )
 {
-	interpreter.AddNative( "time", 0, []( const std::vector<BatObject>& args ) {
+	AddNative( "time", []( const std::vector<BatObject>& args ) {
 		return BatObject( duration_cast<milliseconds>( system_clock::now().time_since_epoch() ).count() );
 	} );
 

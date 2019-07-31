@@ -67,13 +67,36 @@ namespace Bat
 		Type* m_pType;
 	};
 
+	enum class FunctionKind
+	{
+		Script, // Function defined in script
+		Native, // Function defined as native
+	};
+
 	class FunctionSymbol : public Symbol
 	{
 	public:
-		FunctionSymbol( AstNode* node )
+		FunctionSymbol( AstNode* node, FunctionKind kind )
 			:
-			Symbol( node, SymbolKind::Function )
+			Symbol( node, SymbolKind::Function ),
+			m_FuncKind( kind )
 		{}
+
+		FunctionSignature& Signature()
+		{
+			if( FuncKind() == FunctionKind::Script )
+			{
+				return Node()->ToFuncDecl()->Signature();
+			}
+			else if( FuncKind() == FunctionKind::Native )
+			{
+				return Node()->ToNativeStmt()->Signature();
+			}
+		}
+		FunctionKind FuncKind() const { return m_FuncKind; }
+	private:
+		FunctionKind m_FuncKind;
+		bool m_bDeclaredInScript = false;
 	};
 
 	class TypeSymbol : public Symbol

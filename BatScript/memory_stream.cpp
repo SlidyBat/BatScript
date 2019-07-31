@@ -170,8 +170,9 @@ MemoryStream MemoryStream::FromStream( std::istream& stream )
 	}
 
 	MemoryStream ret;
-	ret.m_Bytes.resize( size );
+	ret.m_Bytes.resize( size + 1 );
 	stream.read( &ret.m_Bytes[0], size );
+	ret.m_Bytes[size] = '\0';
 
 	return ret;
 }

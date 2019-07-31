@@ -1,8 +1,13 @@
 #include "interpreter.h"
 
 #include <iostream>
+#include <fstream>
 #include "bat_callable.h"
 #include "runtime_error.h"
+#include "lexer.h"
+#include "parser.h"
+#include "semantic_analysis.h"
+#include "memory_stream.h"
 
 #define BAT_RETURN( value ) do { m_Result = (value); return; } while( false )
 
@@ -42,6 +47,12 @@ namespace Bat
 		return BatObject();
 	}
 
+	void Interpreter::Execute( std::unique_ptr<Statement> s )
+	{
+		Execute( s.get() );
+		m_pStatements.push_back( std::move( s ) );
+	}
+
 	void Interpreter::Execute( Statement* s )
 	{
 		s->Accept( this );
@@ -55,9 +66,9 @@ namespace Bat
 		Execute( s );
 	}
 
-	void Interpreter::AddNative( const std::string& name, size_t arity, BatNativeCallback callback )
+	void Interpreter::AddNative( const std::string& name, BatNativeCallback callback )
 	{
-		m_pEnvironment->AddVar( name, BatObject( new BatNative( arity, std::move( callback ) ) ), SourceLoc( 0, 0 ) );
+		m_pEnvironment->AddVar( name, BatObject( new BatNative( std::move( callback ) ) ), SourceLoc( 0, 0 ) );
 	}
 
 	void Interpreter::VisitIntLiteral( IntLiteral* node )
@@ -231,6 +242,40 @@ namespace Bat
 		ReturnValue ret;
 		ret.value = ret_value;
 		throw ret;
+	}
+	void Interpreter::VisitImportStmt( ImportStmt* node )
+	{
+		std::string filename = node->ModuleName() + ".bat";
+		if( !std::ifstream( filename ) )
+		{
+			filename = node->ModuleName() + ".bs";
+			if( !std::ifstream( filename ) )
+			{
+				ErrorSys::Report( node->Location().Line(), node->Location().Column(), "Module '" + node->ModuleName() + "' not found" );
+			}
+		}
+
+		auto source = MemoryStream::FromFile( filename, FileMode::TEXT );
+
+		Lexer l( source.Base() );
+		auto tokens = l.Scan();
+
+		if( ErrorSys::HadError() ) return;
+
+		Parser p( std::move( tokens ) );
+		std::vector<std::unique_ptr<Statement>> res = p.Parse();
+
+		if( ErrorSys::HadError() ) return;
+
+		for( size_t i = 0; i < res.size(); i++ )
+		{
+			Execute( std::move( res[i] ) );
+		}
+	}
+	void Interpreter::VisitNativeStmt( NativeStmt* node )
+	{
+		// Natives are more like forward declarations as a hint to the compiler for static checks
+		// When executing they aren't needed
 	}
 	void Interpreter::VisitVarDecl( VarDecl* node )
 	{

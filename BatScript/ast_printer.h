@@ -34,6 +34,8 @@ namespace Bat
 		virtual void VisitWhileStmt( WhileStmt* node ) override;
 		virtual void VisitForStmt( ForStmt* node ) override;
 		virtual void VisitReturnStmt( ReturnStmt* node ) override;
+		virtual void VisitImportStmt( ImportStmt* node ) override;
+		virtual void VisitNativeStmt( NativeStmt* node ) override;
 		virtual void VisitVarDecl( VarDecl* node ) override;
 		virtual void VisitFuncDecl( FuncDecl* node ) override;
 	};

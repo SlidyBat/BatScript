@@ -26,6 +26,8 @@
 	_( WhileStmt ) \
 	_( ForStmt ) \
 	_( ReturnStmt ) \
+	_( ImportStmt ) \
+	_( NativeStmt ) \
 	/* Declarations */ \
 	_( VarDecl ) \
 	_( FuncDecl )
@@ -356,29 +358,20 @@ namespace Bat
 		std::unique_ptr<Expression> m_pRetValue;
 	};
 
-	class VarDecl : public Statement
+	class ImportStmt : public Statement
 	{
 	public:
-		DECLARE_AST_NODE( VarDecl );
+		DECLARE_AST_NODE( ImportStmt );
 
-		VarDecl( const SourceLoc& loc, Token classifier, Token identifier, std::unique_ptr<Expression> initializer )
+		ImportStmt( const SourceLoc& loc, Token module_name )
 			:
 			Statement( loc ),
-			m_Classifier( classifier ),
-			m_Identifier( identifier ),
-			m_pInitializer( std::move( initializer ) )
+			m_Module( module_name )
 		{}
 
-		const Token& Classifier() const { return m_Classifier; }
-		const Token& Identifier() const { return m_Identifier; }
-		Expression* Initializer() { return m_pInitializer.get(); }
-		void SetNext( std::unique_ptr<VarDecl> next ) { m_pNext = std::move( next ); }
-		VarDecl* Next() { return m_pNext.get(); }
+		const std::string& ModuleName() const { return m_Module.lexeme; }
 	private:
-		Token m_Classifier;
-		Token m_Identifier;
-		std::unique_ptr<Expression> m_pInitializer;
-		std::unique_ptr<VarDecl> m_pNext;
+		Token m_Module;
 	};
 
 	class FunctionSignature
@@ -411,6 +404,49 @@ namespace Bat
 
 		Type* m_pReturnType = nullptr;
 	};
+
+	class NativeStmt : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( NativeStmt );
+
+		NativeStmt( const SourceLoc& loc, FunctionSignature sig )
+			:
+			Statement( loc ),
+			m_Signature( std::move( sig ) )
+		{}
+
+		const FunctionSignature& Signature() const { return m_Signature; }
+		FunctionSignature& Signature() { return m_Signature; }
+	private:
+		FunctionSignature m_Signature;
+	};
+
+	class VarDecl : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( VarDecl );
+
+		VarDecl( const SourceLoc& loc, Token classifier, Token identifier, std::unique_ptr<Expression> initializer )
+			:
+			Statement( loc ),
+			m_Classifier( classifier ),
+			m_Identifier( identifier ),
+			m_pInitializer( std::move( initializer ) )
+		{}
+
+		const Token& Classifier() const { return m_Classifier; }
+		const Token& Identifier() const { return m_Identifier; }
+		Expression* Initializer() { return m_pInitializer.get(); }
+		void SetNext( std::unique_ptr<VarDecl> next ) { m_pNext = std::move( next ); }
+		VarDecl* Next() { return m_pNext.get(); }
+	private:
+		Token m_Classifier;
+		Token m_Identifier;
+		std::unique_ptr<Expression> m_pInitializer;
+		std::unique_ptr<VarDecl> m_pNext;
+	};
+
 	class FuncDecl : public Statement
 	{
 	public:

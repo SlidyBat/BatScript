@@ -1,7 +1,11 @@
 #include "semantic_analysis.h"
 
+#include <fstream>
 #include "type_manager.h"
 #include "errorsys.h"
+#include "lexer.h"
+#include "parser.h"
+#include "memory_stream.h"
 
 #define BAT_RETURN( value ) do { m_pResult = (value); return; } while( false )
 
@@ -92,7 +96,28 @@ namespace Bat
 	}
 	void SemanticAnalysis::AddFunction( AstNode* node, const std::string& name )
 	{
-		m_pSymTab->AddSymbol( name, std::make_unique<FunctionSymbol>( node ) );
+		m_pSymTab->AddSymbol( name, std::make_unique<FunctionSymbol>( node, FunctionKind::Script ) );
+	}
+	void SemanticAnalysis::AddNative( NativeStmt* node, const std::string& name )
+	{
+		if( Symbol* s = m_pSymTab->GetSymbol( name ) )
+		{
+			if( FunctionSymbol* native = s->ToFunction() )
+			{
+				// Function with this name already exists // TODO: Consider allowing overloading by comparing signature parameters too
+				ErrorSys::Report( node->Location().Line(), node->Location().Column(), "'" + node->Signature().Identifier().lexeme + "' already defined" );
+			}
+			else
+			{
+				// Symbol already exists, but not as a function. Report that.
+				ErrorSys::Report( node->Location().Line(), node->Location().Column(), "'" + node->Signature().Identifier().lexeme + "' already defined as a variable" );
+			}
+		}
+		else
+		{
+			// Symbol does not exist yet and is safe to add
+			m_pSymTab->AddSymbol( name, std::make_unique<FunctionSymbol>( node, FunctionKind::Native ) );
+		}
 	}
 	Type* SemanticAnalysis::TokenToType( const Token& tok )
 	{
@@ -171,20 +196,24 @@ namespace Bat
 		}
 
 		FunctionSymbol* func_symbol = symbol->ToFunction();
-		auto& sig = func_symbol->Node()->ToFuncDecl()->Signature();
+
+		auto& sig = func_symbol->Signature();
 		Type* ret_type = sig.ReturnType();
 
 		if( node->NumArgs() != sig.NumParams() ) // TODO: handle defaults
 		{
-			Error( node->Location(), "Expected " + std::to_string( sig.NumParams() ) + " arguments, got " + std::to_string( node->NumArgs() ) );
+			Error( node->Location(), "Expected " + std::to_string( sig.NumParams() ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
 		}
-		for( size_t i = 0; i < sig.NumParams(); i++ )
+		else
 		{
-			Type* expected_type = TokenToType( sig.ParamType( i ) );
-			Type* arg_type = GetExprType( node->Arg( i ) );
-			if( arg_type != expected_type )
+			for( size_t i = 0; i < sig.NumParams(); i++ )
 			{
-				Error( node->Arg( i )->Location(), "Expected argument of type " + expected_type->ToString() + ", got expression of type " + arg_type->ToString() );
+				Type* expected_type = TokenToType( sig.ParamType( i ) );
+				Type* arg_type = GetExprType( node->Arg( i ) );
+				if( arg_type != expected_type )
+				{
+					Error( node->Arg( i )->Location(), "Expected argument of type " + expected_type->ToString() + ", got expression of type " + arg_type->ToString() );
+				}
 			}
 		}
 
@@ -212,7 +241,7 @@ namespace Bat
 		FunctionSymbol* func_symbol = symbol->AsFunction();
 		if( func_symbol )
 		{
-			BAT_RETURN( func_symbol->Node()->ToFuncDecl()->Signature().ReturnType() );
+			BAT_RETURN( func_symbol->Signature().ReturnType() );
 		}
 
 		Error( node->name.loc, "Unhandled symbol type" );
@@ -271,6 +300,48 @@ namespace Bat
 		}
 
 		m_pCurrentFunc->Signature().SetReturnType( rettype );
+	}
+	void SemanticAnalysis::VisitImportStmt( ImportStmt* node )
+	{
+		std::string filename = node->ModuleName() + ".bat";
+		if( !std::ifstream( filename ) )
+		{
+			filename = node->ModuleName() + ".bs";
+			if( !std::ifstream( filename ) )
+			{
+				ErrorSys::Report( node->Location().Line(), node->Location().Column(), "Module '" + node->ModuleName() + "' not found" );
+			}
+		}
+
+		auto source = MemoryStream::FromFile( filename, FileMode::TEXT );
+
+		Lexer l( source.Base() );
+		auto tokens = l.Scan();
+
+		if( ErrorSys::HadError() ) return;
+
+		Parser p( std::move( tokens ) );
+		std::vector<std::unique_ptr<Statement>> res = p.Parse();
+
+		if( ErrorSys::HadError() ) return;
+
+		for( size_t i = 0; i < res.size(); i++ )
+		{
+			Analyze( res[i].get() );
+			m_pStatements.push_back( std::move( res[i] ) );
+		}
+	}
+	void SemanticAnalysis::VisitNativeStmt( NativeStmt* node )
+	{
+		if( m_pCurrentFunc )
+		{
+			Error( node->Location(), "Natives must be declared in global scope" );
+			return;
+		}
+
+		auto& sig = node->Signature();
+		AddNative( node, sig.Identifier().lexeme );
+		sig.SetReturnType( TokenToType( sig.ReturnIdentifier() ) );
 	}
 	void SemanticAnalysis::VisitVarDecl( VarDecl* node )
 	{

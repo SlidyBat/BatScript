@@ -1,11 +1,11 @@
-var a = "string"
+import core
 
-return 10
+var a = 10
 
-string fib(int b):
-	c = b
-	if b <= 1: return true
-	return fib(b - 2) + fib(b - 1)
+int fib(int n):
+	if n <= 1: return n
+	return fib(n - 2) + fib(n - 1)
 
-
+var start = time()
 print fib(a)
+print time() - start

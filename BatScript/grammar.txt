@@ -6,6 +6,8 @@ statement     -> simple_stmt | compound_stmt
 simple_stmt   -> expression eol
                | print_stmt
                | return_stmt
+               | import_stmt
+               | native_stmt
 compound_stmt -> if_stmt
                | while_stmt
                | for_stmt
@@ -24,6 +26,9 @@ while_stmt    -> "while" expression ":" (eol block | simple_stmt)
 for_stmt      -> "for" "(" expression? ";" expression? ";" expression? ")" block // Ignore me for now :)
 
 return_stmt   -> "return" expression? eol
+
+import_stmt   -> "import" IDENTIFIER eol
+native_stmt   -> "native" type IDENTIFIER "(" parameters? ")" eol
 
 parameter     -> type IDENTIFIER ( "=" expression )?
 parameters    -> parameter ( "," parameter )*

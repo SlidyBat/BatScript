@@ -220,11 +220,6 @@ namespace Bat
 		{
 			throw RuntimeError( loc, std::string( "Cannot call " ) + TypeToStr( type ) );
 		}
-		if( args.size() > value.func->Arity() || args.size() < value.func->Arity() - value.func->NumDefaults() )
-		{
-			throw RuntimeError( loc, std::string( "Argument size mismatch. Expected " +
-				std::to_string( value.func->Arity() - value.func->NumDefaults() ) + " arguments, recieved " + std::to_string( args.size() ) ) );
-		}
 
 		return value.func->Call( interpreter, args );
 	}

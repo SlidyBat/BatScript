@@ -14,6 +14,7 @@
 	_(RETURN,         "return")                                 \
 	_(ENUM,           "enum")                                   \
 	_(IMPORT,         "import")                                 \
+	_(NATIVE,         "native")                                 \
 	_(CONST,          "const")                                  \
 	_(VAR,            "var")                                    \
 	_(TYPEDEF,        "typedef")                                \

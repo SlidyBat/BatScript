@@ -23,6 +23,7 @@ namespace Bat
 
 		void AddVariable( AstNode* node, const std::string& name, Type* type );
 		void AddFunction( AstNode* node, const std::string& name );
+		void AddNative( NativeStmt* node, const std::string& name );
 		void AddType( AstNode* node, const std::string& name );
 		Type* TokenToType( const Token& tok );
 	private:
@@ -42,11 +43,14 @@ namespace Bat
 		virtual void VisitWhileStmt( WhileStmt* node ) override;
 		virtual void VisitForStmt( ForStmt* node ) override;
 		virtual void VisitReturnStmt( ReturnStmt* node ) override;
+		virtual void VisitImportStmt( ImportStmt* node ) override;
+		virtual void VisitNativeStmt( NativeStmt* node ) override;
 		virtual void VisitVarDecl( VarDecl* node ) override;
 		virtual void VisitFuncDecl( FuncDecl* node ) override;
 	private:
-		Type* m_pResult;
-		FuncDecl* m_pCurrentFunc;
-		SymbolTable* m_pSymTab;
+		Type* m_pResult = nullptr;
+		FuncDecl* m_pCurrentFunc = nullptr;
+		SymbolTable* m_pSymTab = nullptr;
+		std::vector<std::unique_ptr<Statement>> m_pStatements;
 	};
 }

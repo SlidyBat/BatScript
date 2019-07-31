@@ -1,0 +1,1 @@
+native float time(int a)

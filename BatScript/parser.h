@@ -29,7 +29,7 @@ namespace Bat
 		void GoBack();
 
 		const Token& Expect( TokenType type, const std::string& message );
-		const Token& ExpectType( const std::string& message, bool function );
+		const Token& ExpectType( const std::string& message );
 		void ExpectTerminator( const std::string& msg = "Expected newline" );
 		void Error( const std::string& message );
 		// Skips to next statement to avoid cascading errors
@@ -46,9 +46,13 @@ namespace Bat
 		std::unique_ptr<Statement> ParseWhile();
 		std::unique_ptr<Statement> ParseFor();
 		std::unique_ptr<Statement> ParseReturn();
+		std::unique_ptr<Statement> ParseImport();
+		std::unique_ptr<Statement> ParseNative();
 		std::unique_ptr<Statement> ParseDeclaration();
 		std::unique_ptr<Statement> ParseVarDeclaration();
 		std::unique_ptr<Statement> ParseFuncDeclaration();
+
+		FunctionSignature ParseFuncSignature();
 
 		// Expression parsing
 		std::unique_ptr<Expression> ParseExpression();

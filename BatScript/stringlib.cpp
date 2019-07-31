@@ -1,14 +1,22 @@
+#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
+
 #include "stringlib.h"
+
+#include <locale>
+#include <codecvt>
+#include <cassert>
 
 namespace Bat
 {
 	std::wstring StringToWide( std::string_view str )
 	{
-		return std::wstring( str.begin(), str.end() );
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		return converter.from_bytes( &*str.cend(), &*str.cend() );
 	}
 	std::string WideToString( std::wstring_view wstr )
 	{
-		return std::string( wstr.begin(), wstr.end() );
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		return converter.to_bytes( &*wstr.cend(), &*wstr.cend() );
 	}
 	std::vector<std::string> SplitString( std::string_view str, const char delim )
 	{

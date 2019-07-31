@@ -20,10 +20,6 @@ namespace Bat
 		}
 		m_nDefaults = sig.NumParams() - i;
 	}
-	size_t BatFunction::Arity() const
-	{
-		return m_pDeclaration->Signature().NumParams();
-	}
 	size_t BatFunction::NumDefaults() const
 	{
 		return m_nDefaults;
@@ -56,15 +52,10 @@ namespace Bat
 		return BatObject();
 	}
 
-	BatNative::BatNative( size_t arity, BatNativeCallback callback )
+	BatNative::BatNative( BatNativeCallback callback )
 		:
-		m_iArity( arity ),
 		m_Callback( std::move( callback ) )
 	{}
-	size_t BatNative::Arity() const
-	{
-		return m_iArity;
-	}
 	BatObject BatNative::Call( Interpreter& interpreter, const std::vector<BatObject>& args )
 	{
 		return m_Callback( args );
