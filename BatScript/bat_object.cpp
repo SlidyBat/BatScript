@@ -7,16 +7,16 @@
 
 namespace Bat
 {
-	static const char* TypeToStr( BatObject::Type type )
+	static const char* TypeToStr( ObjectType type )
 	{
 		switch( type )
 		{
-			case BatObject::TYPE_NULL: return "null";
-			case BatObject::TYPE_INT: return "int";
-			case BatObject::TYPE_FLOAT: return "float";
-			case BatObject::TYPE_BOOL: return "bool";
-			case BatObject::TYPE_STR: return "string";
-			case BatObject::TYPE_CALLABLE: return "function";
+			case TYPE_NULL: return "null";
+			case TYPE_INT: return "int";
+			case TYPE_FLOAT: return "float";
+			case TYPE_BOOL: return "bool";
+			case TYPE_STR: return "string";
+			case TYPE_CALLABLE: return "function";
 			default: return "<error-type>";
 		}
 	}

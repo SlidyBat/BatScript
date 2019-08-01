@@ -94,6 +94,32 @@ int main( int argc, char** argv )
 		return BatObject( duration_cast<milliseconds>( system_clock::now().time_since_epoch() ).count() );
 	} );
 
+	// YUCK! Should make my own format func in the future, this is leaky and disgusting
+	AddNative( "format", []( const std::vector<BatObject>& args ) {
+		auto buffer = new char[4096];
+#define B(obj) obj.value
+		switch( args.size() )
+		{
+		case 1:  return BatObject( args[0].String() );
+		case 2:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ) ); break;
+		case 3:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ) ); break;
+		case 4:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ) ); break;
+		case 5:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ) ); break;
+		case 6:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ), B( args[5] ) ); break;
+		case 7:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ), B( args[5] ), B( args[6] ) ); break;
+		case 8:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ), B( args[5] ), B( args[6] ), B( args[7] ) ); break;
+		case 9:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ), B( args[5] ), B( args[6] ), B( args[7] ), B( args[8] ) ); break;
+		case 10: sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ), B( args[5] ), B( args[6] ), B( args[7] ), B( args[8] ), B( args[9] ) ); break;
+		default:
+			ErrorSys::Report( 0, 0, "Too many arguments to format (max 10 + format string)" ); // TODO: Get lines/stack trace here
+			return BatObject( "ERROR" );
+		}
+
+		
+		return BatObject( buffer );
+#undef B
+	} );
+
 	if( argc >= 2 )
 	{
 		RunFromFile( argv[1] );

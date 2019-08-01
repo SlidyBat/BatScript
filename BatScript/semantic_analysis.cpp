@@ -200,9 +200,13 @@ namespace Bat
 		auto& sig = func_symbol->Signature();
 		Type* ret_type = sig.ReturnType();
 
-		if( node->NumArgs() != sig.NumParams() ) // TODO: handle defaults
+		if( !sig.VarArgs() && (node->NumArgs() != sig.NumParams()) ) // TODO: handle defaults
 		{
 			Error( node->Location(), "Expected " + std::to_string( sig.NumParams() ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
+		}
+		else if( sig.VarArgs() && (node->NumArgs() < sig.NumParams()) ) // It's fine to have more params if its a varargs func
+		{
+			Error( node->Location(), "Expected at least " + std::to_string( sig.NumParams() ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
 		}
 		else
 		{

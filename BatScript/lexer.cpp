@@ -162,7 +162,6 @@ namespace Bat
 				ClosingParen( c );
 				break;
 
-			case '.':  AddToken( TOKEN_DOT ); break;
 			case ',':  AddToken( TOKEN_COMMA ); break;
 			case '?':  AddToken( TOKEN_QUESMARK ); break;
 			case ';':  AddToken( TOKEN_SEMICOLON ); break;
@@ -195,6 +194,24 @@ namespace Bat
 				if( Match( '=' ) )      AddToken( TOKEN_SLASH_EQUAL );
 				else if( Match( '/' ) ) Comment();
 				else                    AddToken( TOKEN_SLASH );
+				break;
+
+			case '.':
+				if( Match( '.' ) )
+				{
+					if( Match( '.' ) )
+					{
+						AddToken( TOKEN_ELLIPSIS );
+					}
+					else
+					{
+						AddToken( TOKEN_DOT_DOT );
+					}
+				}
+				else
+				{
+					AddToken( TOKEN_DOT );
+				}
 				break;
 
 			case '"':  String( '"' ); break;

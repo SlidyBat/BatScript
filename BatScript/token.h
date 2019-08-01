@@ -44,7 +44,6 @@
 	_(RBRACE,         "}")                                      \
 	_(LBRACKET,       "[")                                      \
 	_(RBRACKET,       "]")                                      \
-	_(DOT,            ".")                                      \
 	_(COMMA,          ",")                                      \
 	_(BACKSLASH,      "\\")                                     \
 	_(QUESMARK,       "?")                                      \
@@ -52,7 +51,7 @@
 	_(COLON,          ":")                                      \
 	_(AT,             "@")                                      \
 	_(TILDE,          "~")                                      \
-	/* One/two char */                                          \
+	/* One/two/three char */                                    \
 	_(PLUS,           "+")                                      \
 	_(PLUS_EQUAL,     "+=")                                     \
 	_(MINUS,          "-")                                      \
@@ -79,11 +78,14 @@
 	_(AMP_EQUAL,      "&=")                                     \
 	_(HAT,            "^")                                      \
 	_(HAT_EQUAL,      "^=")                                     \
+	_(DOT,            ".")                                      \
+	_(DOT_DOT,        "..")                                     \
+	_(ELLIPSIS,       "...")                                    \
 	/* Literals */                                              \
 	_(IDENT,          "<identifier>")                           \
-	_(STRING_LITERAL,         "<string>")                               \
-	_(INT_LITERAL,            "<integer>")                              \
-	_(FLOAT_LITERAL,          "<float>")                                \
+	_(STRING_LITERAL, "<string>")                               \
+	_(INT_LITERAL,    "<integer>")                              \
+	_(FLOAT_LITERAL,  "<float>")                                \
 	/* Keywords */                                              \
 	KEYWORD_TYPES(_)                                            \
 	/* Special */                                               \

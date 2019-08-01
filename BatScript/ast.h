@@ -377,17 +377,19 @@ namespace Bat
 	class FunctionSignature
 	{
 	public:
-		FunctionSignature( Token return_identifier, Token identifier, std::vector<Token> types, std::vector<Token> parameters, std::vector<std::unique_ptr<Expression>> defaults )
+		FunctionSignature( Token return_identifier, Token identifier, std::vector<Token> types, std::vector<Token> parameters, std::vector<std::unique_ptr<Expression>> defaults, bool varargs )
 			:
 			m_ReturnIdentifier( return_identifier ),
 			m_Identifier( identifier ),
 			m_Types( std::move( types ) ),
 			m_Parameters( std::move( parameters ) ),
-			m_pDefaults( std::move( defaults ) )
+			m_pDefaults( std::move( defaults ) ),
+			m_bVarArgs( varargs )
 		{}
 
 		const Token& ReturnIdentifier() const { return m_ReturnIdentifier; }
 		const Token& Identifier() const { return m_Identifier; }
+		// Number of parameters, not including vararg ellipsis as one
 		size_t NumParams() const { return m_Parameters.size(); }
 		const Token& ParamType( size_t index ) const { return m_Types[index]; }
 		const Token& ParamIdent( size_t index ) const { return m_Parameters[index]; }
@@ -395,12 +397,14 @@ namespace Bat
 		void SetReturnType( Type* rettype ) { m_pReturnType = rettype; }
 		Type* ReturnType() { return m_pReturnType; }
 		const Type* ReturnType() const { return m_pReturnType; }
+		bool VarArgs() const { return m_bVarArgs; }
 	private:
 		Token m_ReturnIdentifier;
 		Token m_Identifier;
 		std::vector<Token> m_Types;
 		std::vector<Token> m_Parameters;
 		std::vector<std::unique_ptr<Expression>> m_pDefaults;
+		bool m_bVarArgs;
 
 		Type* m_pReturnType = nullptr;
 	};

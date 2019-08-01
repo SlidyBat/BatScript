@@ -4,6 +4,7 @@
 #include <exception>
 #include <string>
 #include <vector>
+#include <cassert>
 #include "sourceloc.h"
 
 namespace Bat
@@ -11,6 +12,16 @@ namespace Bat
 	class BatCallable;
 	class BatObject;
 	class Interpreter;
+
+	enum ObjectType
+	{
+		TYPE_NULL,
+		TYPE_INT,
+		TYPE_FLOAT,
+		TYPE_BOOL,
+		TYPE_STR,
+		TYPE_CALLABLE,
+	};
 
 	class BatObject
 	{
@@ -72,18 +83,14 @@ namespace Bat
 		bool IsTruthy( const SourceLoc& loc );
 
 		std::string ToString();
+
+		int64_t Int() const { assert( type == TYPE_INT ); return value.i64; }
+		double Float() const { assert( type == TYPE_FLOAT ); return value.f64; }
+		const char* String() const { assert( type == TYPE_STR ); return value.str; }
+		BatCallable* Function() const { assert( type == TYPE_CALLABLE ); return value.func; }
 	public:
-		enum Type
-		{
-			TYPE_NULL,
-			TYPE_INT,
-			TYPE_FLOAT,
-			TYPE_BOOL,
-			TYPE_STR,
-			TYPE_CALLABLE,
-		};
-	private:
-		Type type = TYPE_NULL;
+	public:
+		ObjectType type = TYPE_NULL;
 		union
 		{
 			int64_t i64;

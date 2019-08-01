@@ -1,1 +1,2 @@
-native float time(int a)
+native float time()
+native string format(string fmt, ...)

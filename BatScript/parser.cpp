@@ -413,11 +413,18 @@ namespace Bat
 		std::vector<Token> types;
 		std::vector<Token> params;
 		std::vector<std::unique_ptr<Expression>> defaults;
+		bool varargs = false;
 		bool found_def = false;
 		if( !Check( TOKEN_RPAREN ) )
 		{
 			do
 			{
+				if( Match( TOKEN_ELLIPSIS ) )
+				{
+					varargs = true;
+					break; // varargs ellipsis are last parameter, exit out and don't check for more
+				}
+
 				Token type = ExpectType( "Expected parameter type" );
 				types.push_back( type );
 				Token param = Expect( TOKEN_IDENT, "Expected parameter identifier" );
@@ -441,7 +448,7 @@ namespace Bat
 		}
 		Expect( TOKEN_RPAREN, "Expected ')' after function parameters" );
 
-		return FunctionSignature( return_ident, name, types, params, std::move( defaults ) );
+		return FunctionSignature( return_ident, name, types, params, std::move( defaults ), varargs );
 	}
 
 	std::unique_ptr<Expression> Parser::ParseExpression()

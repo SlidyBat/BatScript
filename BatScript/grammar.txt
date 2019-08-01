@@ -31,7 +31,7 @@ import_stmt   -> "import" IDENTIFIER eol
 native_stmt   -> "native" type IDENTIFIER "(" parameters? ")" eol
 
 parameter     -> type IDENTIFIER ( "=" expression )?
-parameters    -> parameter ( "," parameter )*
+parameters    -> parameter ( "," parameter ) ( "," "..." )? *
 
 expression    -> assign
 assign        -> or ( ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "^=" | "|=" ) or )*
