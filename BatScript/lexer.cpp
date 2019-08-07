@@ -103,7 +103,11 @@ namespace Bat
 
 			GoBack();
 
-			if( (c == '/' && Match( '/' )) ) Comment();
+			if( (c == '/' && Match( '/' )) )
+			{
+				Comment();
+				c = Peek();
+			}
 			if( c == '\n' )
 			{
 				m_bBeginningOfLine = true;
@@ -138,9 +142,9 @@ namespace Bat
 				}
 			}
 
-			if( blankline )
+			if( blankline || AtEnd() )
 			{
-				Advance();
+				if( blankline ) Advance();
 				return;
 			}
 		}
