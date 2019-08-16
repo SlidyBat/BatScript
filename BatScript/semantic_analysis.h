@@ -24,16 +24,19 @@ namespace Bat
 		void AddVariable( AstNode* node, const std::string& name, Type* type );
 		void AddFunction( AstNode* node, const std::string& name );
 		void AddNative( NativeStmt* node, const std::string& name );
-		void AddType( AstNode* node, const std::string& name );
-		Type* TokenToType( const Token& tok );
+		Type* TypeSpecifierToType( const TypeSpecifier& tok );
+
+		bool Coerce( Type* from, Type* to );
 	private:
 		virtual void VisitIntLiteral( IntLiteral* node ) override;
 		virtual void VisitFloatLiteral( FloatLiteral* node ) override;
 		virtual void VisitStringLiteral( StringLiteral* node ) override;
 		virtual void VisitTokenLiteral( TokenLiteral* node ) override;
+		virtual void VisitArrayLiteral( ArrayLiteral* node ) override;
 		virtual void VisitBinaryExpr( BinaryExpr* node ) override;
 		virtual void VisitUnaryExpr( UnaryExpr* node ) override;
 		virtual void VisitCallExpr( CallExpr* node ) override;
+		virtual void VisitIndexExpr( IndexExpr* node ) override;
 		virtual void VisitGroupExpr( GroupExpr* node ) override;
 		virtual void VisitVarExpr( VarExpr* node ) override;
 		virtual void VisitExpressionStmt( ExpressionStmt* node ) override;
@@ -47,6 +50,9 @@ namespace Bat
 		virtual void VisitNativeStmt( NativeStmt* node ) override;
 		virtual void VisitVarDecl( VarDecl* node ) override;
 		virtual void VisitFuncDecl( FuncDecl* node ) override;
+	private:
+		Type* PrimitiveBinary( PrimitiveType* left, PrimitiveType* right, TokenType op );
+		Type* ArrayBinary( ArrayType* left, Type* right, TokenType op );
 	private:
 		Type* m_pResult = nullptr;
 		FuncDecl* m_pCurrentFunc = nullptr;

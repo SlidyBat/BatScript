@@ -119,21 +119,85 @@ namespace Bat
 			m_pSymTab->AddSymbol( name, std::make_unique<FunctionSymbol>( node, FunctionKind::Native ) );
 		}
 	}
-	Type* SemanticAnalysis::TokenToType( const Token& tok )
+	Type* SemanticAnalysis::TypeSpecifierToType( const TypeSpecifier& type )
 	{
-		return typeman.GetType( tok.lexeme );
+		Type* t = nullptr;
+		switch( type.TypeName().type )
+		{
+		case TOKEN_INT:    t = typeman.NewPrimitive( PrimitiveKind::Int ); break;
+		case TOKEN_FLOAT:  t = typeman.NewPrimitive( PrimitiveKind::Float ); break;
+		case TOKEN_BOOL:   t = typeman.NewPrimitive( PrimitiveKind::Bool ); break;
+		case TOKEN_STRING: t = typeman.NewPrimitive( PrimitiveKind::String ); break;
+		}
+
+		for( size_t i = 0; i < type.Rank(); i++ )
+		{
+			Expression* rank_size = type.Dimensions( i );
+			if( !rank_size )
+			{
+				t = typeman.NewArray( t, ArrayType::UNSIZED );
+			}
+			else
+			{
+				// TODO: Support constant expressions that evaluate to int for array size
+				if( !rank_size->IsIntLiteral() )
+				{
+					Error( type.TypeName().loc, "Array size must be integer literal" );
+					t = typeman.NewArray( t, ArrayType::UNSIZED ); // Mark as indeterminate length so we can keep going
+				}
+				else
+				{
+					t = typeman.NewArray( t, rank_size->ToIntLiteral()->value );
+				}
+			}
+		}
+
+		return t;
+	}
+	bool SemanticAnalysis::Coerce( Type* from, Type* to )
+	{
+		if( from == to )
+		{
+			return true;
+		}
+
+		if( from->IsPrimitive() && to->IsPrimitive() &&
+			from->AsPrimitive()->PrimKind() == to->AsPrimitive()->PrimKind() )
+		{
+			return true;
+		}
+
+		if( from->IsArray() && to->IsArray() )
+		{
+			ArrayType* from_arr = from->AsArray();
+			ArrayType* to_arr = to->AsArray();
+
+			if( !Coerce( from_arr->Inner(), to_arr->Inner() ) )
+			{
+				return false;
+			}
+
+			if( to_arr->HasFixedSize() && to_arr->FixedSize() < from_arr->FixedSize() )
+			{
+				return false;
+			}
+
+			return true;
+		}
+
+		return false;
 	}
 	void SemanticAnalysis::VisitIntLiteral( IntLiteral* node )
 	{
-		BAT_RETURN( typeman.GetType( PrimitiveKind::Int ) );
+		BAT_RETURN( typeman.NewPrimitive( PrimitiveKind::Int ) );
 	}
 	void SemanticAnalysis::VisitFloatLiteral( FloatLiteral* node )
 	{
-		BAT_RETURN( typeman.GetType( PrimitiveKind::Float ) );
+		BAT_RETURN( typeman.NewPrimitive( PrimitiveKind::Float ) );
 	}
 	void SemanticAnalysis::VisitStringLiteral( StringLiteral* node )
 	{
-		BAT_RETURN( typeman.GetType( PrimitiveKind::String ) );
+		BAT_RETURN( typeman.NewPrimitive( PrimitiveKind::String ) );
 	}
 	void SemanticAnalysis::VisitTokenLiteral( TokenLiteral* node )
 	{
@@ -141,39 +205,136 @@ namespace Bat
 		{
 			case TOKEN_TRUE:
 			case TOKEN_FALSE:
-				BAT_RETURN( typeman.GetType( PrimitiveKind::Bool ) );
+				BAT_RETURN( typeman.NewPrimitive( PrimitiveKind::Bool ) );
 		}
 		assert( false );
-		BAT_RETURN( typeman.GetType( PrimitiveKind::Int ) ); // TODO: ???
+		BAT_RETURN( typeman.NewPrimitive( PrimitiveKind::Int ) ); // TODO: ???
+	}
+	void SemanticAnalysis::VisitArrayLiteral( ArrayLiteral* node )
+	{
+		Type* inner = nullptr;
+		for( size_t i = 0; i < node->NumValues(); i++ )
+		{
+			Type* curr_type = GetExprType( node->ValueAt( i ) );
+			if( !inner )
+			{
+				inner = curr_type;
+			}
+			else if( !Coerce( curr_type, inner ) )
+			{
+				Error( node->ValueAt( i )->Location(), "Expression of type '" + curr_type->ToString() + "' does not match previous type of '" + inner->ToString() + "' in array literal" );
+			}
+		}
+
+		// They evaluate to an array that is unsized so statements like:
+		//   var x = [5, 2, 1]
+		// Will infer to x being a dynamic length array
+		BAT_RETURN( typeman.NewArray( inner, ArrayType::UNSIZED ) );
+	}
+	Type* SemanticAnalysis::PrimitiveBinary( PrimitiveType* left, PrimitiveType* right, TokenType op )
+	{
+		if( left->PrimKind() == right->PrimKind() )
+		{
+			return left;
+		}
+		if( left->PrimKind() == PrimitiveKind::Float )
+		{
+			return left;
+		}
+		if( right->PrimKind() == PrimitiveKind::Float )
+		{
+			return right;
+		}
+
+		assert( false );
+		return nullptr;
+	}
+	Type* SemanticAnalysis::ArrayBinary( ArrayType* left, Type* right, TokenType op )
+	{
+		switch( op )
+		{
+		case TOKEN_MINUS_EQUAL:
+		case TOKEN_ASTERISK_EQUAL:
+		case TOKEN_SLASH_EQUAL:
+		case TOKEN_PERCENT_EQUAL:
+		case TOKEN_AMP_EQUAL:
+		case TOKEN_HAT_EQUAL:
+		case TOKEN_BAR_EQUAL:
+			return nullptr;
+		}
+
+		if( ArrayType* right_arr = right->ToArray() )
+		{
+			// Can only do direct assignment between arrays
+			if( op != TOKEN_EQUAL )
+			{
+				return nullptr;
+			}
+
+			// Can't assign array to a fixed size array, unless its also a fixed array with the same size
+			if( left->HasFixedSize() && left->FixedSize() != right_arr->FixedSize() )
+			{
+				return nullptr;
+			}
+
+			return left;
+		}
+		else if( left->HasFixedSize() )
+		{
+			// No assignment operations allowed on fixed size arrays (unless right hand side is also array with same size)
+			return nullptr;
+		}
+
+		if( !Coerce( right, left->Inner() ) )
+		{
+			return nullptr;
+		}
+
+		return left;
 	}
 	void SemanticAnalysis::VisitBinaryExpr( BinaryExpr* node )
 	{
+		switch( node->Op() )
+		{
+		case TOKEN_EQUAL:
+		case TOKEN_PLUS_EQUAL:
+		case TOKEN_MINUS_EQUAL:
+		case TOKEN_ASTERISK_EQUAL:
+		case TOKEN_SLASH_EQUAL:
+		case TOKEN_PERCENT_EQUAL:
+		case TOKEN_AMP_EQUAL:
+		case TOKEN_HAT_EQUAL:
+		case TOKEN_BAR_EQUAL:
+			if( !node->Left()->IsVarExpr() && !node->Left()->IsIndexExpr() )
+			{
+				Error( node->Left()->Location(), "Expression is not modifiable lvalue" );
+			}
+		}
+
 		Type* left = GetExprType( node->Left() );
 		Type* right = GetExprType( node->Right() );
 
-		if( !IsNumericType( left ) || !IsNumericType( right ) )
+		if( IsNumericType( left ) && IsNumericType( right ) )
 		{
-			Error( node->Location(), std::string( "Cannot use operator '" ) + TokenTypeToString( node->Op() ) + "' on expressions of types " + left->ToString()
-				+ " and " + right->ToString() );
+			Type* result = PrimitiveBinary( left->AsPrimitive(), right->AsPrimitive(), node->Op() );
+			if( result )
+			{
+				BAT_RETURN( result );
+			}
+		}
+		else if( left->IsArray() )
+		{
+			Type* result = ArrayBinary( left->AsArray(), right, node->Op() );
+			if( result )
+			{
+				BAT_RETURN( result );
+			}
 		}
 
-		auto pleft = left->ToPrimitive();
-		auto pright = right->ToPrimitive();
-		if( pleft->PrimKind() == pright->PrimKind() )
-		{
-			BAT_RETURN( left );
-		}
-		if( pleft->PrimKind() == PrimitiveKind::Float )
-		{
-			BAT_RETURN( pleft );
-		}
-		if( pright->PrimKind() == PrimitiveKind::Float )
-		{
-			BAT_RETURN( pright );
-		}
+		Error( node->Location(), std::string( "Cannot use operator '" ) + TokenTypeToString( node->Op() ) + "' on expressions of types " + left->ToString()
+			+ " and " + right->ToString() );
 
-		assert( false );
-		BAT_RETURN( pleft );
+		BAT_RETURN( left );
 	}
 	void SemanticAnalysis::VisitUnaryExpr( UnaryExpr* node )
 	{
@@ -188,10 +349,17 @@ namespace Bat
 	void SemanticAnalysis::VisitCallExpr( CallExpr* node )
 	{
 		Type* t = GetExprType( node->Function() );
-		Symbol* symbol = m_pSymTab->GetSymbol( node->Function()->AsVarExpr()->name.lexeme );
+		// TODO: Find better way to check if expression is callable, not all will be variable expressions
+		VarExpr* callee = node->Function()->ToVarExpr();
+		if( !callee )
+		{
+			Error( node->Location(),  "Expression is not callable" );
+			BAT_RETURN( t );
+		}
+		Symbol* symbol = m_pSymTab->GetSymbol( callee->name.lexeme );
 		if( !symbol || !symbol->IsFunction() )
 		{
-			Error( node->Location(), node->Function()->AsVarExpr()->name.lexeme + " is not a function" );
+			Error( node->Location(), callee->name.lexeme + " is not a function" );
 			BAT_RETURN( t );
 		}
 
@@ -212,9 +380,9 @@ namespace Bat
 		{
 			for( size_t i = 0; i < sig.NumParams(); i++ )
 			{
-				Type* expected_type = TokenToType( sig.ParamType( i ) );
+				Type* expected_type = TypeSpecifierToType( sig.ParamType( i ) );
 				Type* arg_type = GetExprType( node->Arg( i ) );
-				if( arg_type != expected_type )
+				if( !Coerce( arg_type, expected_type ) )
 				{
 					Error( node->Arg( i )->Location(), "Expected argument of type " + expected_type->ToString() + ", got expression of type " + arg_type->ToString() );
 				}
@@ -222,6 +390,25 @@ namespace Bat
 		}
 
 		BAT_RETURN( ret_type );
+	}
+	void SemanticAnalysis::VisitIndexExpr( IndexExpr* node )
+	{
+		Type* arr_type = GetExprType( node->Array() );
+		if( !arr_type->IsArray() )
+		{
+			Error( node->Array()->Location(), "Expression does not evaluate to array" );
+			BAT_RETURN( arr_type );
+		}
+
+		Type* inner = arr_type->AsArray()->Inner();
+
+		Type* index_type = GetExprType( node->Index() );
+		if( !Coerce( index_type, typeman.NewPrimitive( PrimitiveKind::Int ) ) )
+		{
+			Error( node->Index()->Location(), "Array index must evaluate to integer" );
+		}
+
+		BAT_RETURN( inner );
 	}
 	void SemanticAnalysis::VisitGroupExpr( GroupExpr* node )
 	{
@@ -233,7 +420,7 @@ namespace Bat
 		if( !symbol )
 		{
 			Error( node->name.loc, "Undefined variable '" + node->name.lexeme + "'" );
-			BAT_RETURN( typeman.GetType( PrimitiveKind::Int ) );
+			BAT_RETURN( typeman.NewPrimitive( PrimitiveKind::Int ) );
 		}
 
 		VariableSymbol* var_symbol = symbol->AsVariable();
@@ -249,7 +436,7 @@ namespace Bat
 		}
 
 		Error( node->name.loc, "Unhandled symbol type" );
-		BAT_RETURN( typeman.GetType( PrimitiveKind::Int ) );
+		BAT_RETURN( typeman.NewPrimitive( PrimitiveKind::Int ) );
 	}
 	void SemanticAnalysis::VisitExpressionStmt( ExpressionStmt* node )
 	{
@@ -297,7 +484,7 @@ namespace Bat
 		}
 
 		Type* rettype = GetExprType( node->RetValue() );
-		if( m_pCurrentFunc->Signature().ReturnType() != nullptr && rettype != m_pCurrentFunc->Signature().ReturnType() )
+		if( m_pCurrentFunc->Signature().ReturnType() != nullptr && !Coerce( rettype, m_pCurrentFunc->Signature().ReturnType() ) )
 		{
 			Error( node->Location(), "Return value type (" + rettype->ToString() + ") does not match function type (" + m_pCurrentFunc->Signature().ReturnType()->ToString() + ")" );
 			return;
@@ -345,26 +532,24 @@ namespace Bat
 
 		auto& sig = node->Signature();
 		AddNative( node, sig.Identifier().lexeme );
-		sig.SetReturnType( TokenToType( sig.ReturnIdentifier() ) );
+		sig.SetReturnType( TypeSpecifierToType( sig.ReturnTypeSpec() ) );
 	}
 	void SemanticAnalysis::VisitVarDecl( VarDecl* node )
 	{
 		for( VarDecl* decl = node; decl; decl = node->Next() )
 		{
-			if( decl->Classifier().type != TOKEN_VAR )
+			if( decl->TypeSpec().TypeName().type != TOKEN_VAR )
 			{
-				Type* var_type = TokenToType( decl->Classifier() );
+				Type* var_type = TypeSpecifierToType( decl->TypeSpec() );
 				if( decl->Initializer() )
 				{
 					Type* init_type = GetExprType( decl->Initializer() );
-					if( var_type != init_type )
+					if( !Coerce( init_type, var_type ) )
 					{
 						Error( decl->Location(), "Cannot assign expression of type " + init_type->ToString() + " to variable of type " + var_type->ToString() );
 					}
-					else
-					{
-						AddVariable( decl, decl->Identifier().lexeme, var_type );
-					}
+
+					AddVariable( decl, decl->Identifier().lexeme, var_type );
 				}
 				else
 				{
@@ -401,18 +586,17 @@ namespace Bat
 		m_pCurrentFunc = node;
 		for( size_t i = 0; i < sig.NumParams(); i++ )
 		{
-			if( !sig.ParamDefault( i ) && sig.ParamType( i ).type == TOKEN_VAR )
+			if( !sig.ParamDefault( i ) && sig.ParamType( i ).TypeName().type == TOKEN_VAR )
 			{
-				Error( sig.ParamType( i ).loc, "Could not resolve variable type" );
+				Error( sig.ParamType( i ).TypeName().loc, "Could not resolve variable type" );
 			}
-			else if( sig.ParamDefault( i ) &&
-				sig.ParamType( i ).type != TOKEN_VAR )
+			else if( sig.ParamDefault( i ) && sig.ParamType( i ).TypeName().type != TOKEN_VAR )
 			{
-				Type* param_type = TokenToType( sig.ParamType( i ) );
+				Type* param_type = TypeSpecifierToType( sig.ParamType( i ) );
 				Type* default_expr_type = GetExprType( sig.ParamDefault( i ) );
-				if( param_type != default_expr_type )
+				if( !Coerce( default_expr_type, param_type ) )
 				{
-					Error( sig.ParamType( i ).loc, std::string( "Cannot assign expression of type " ) + default_expr_type->ToString() +
+					Error( sig.ParamType( i ).TypeName().loc, std::string( "Cannot assign expression of type " ) + default_expr_type->ToString() +
 						" to parameter of type " + param_type->ToString() );
 				}
 				else
@@ -427,14 +611,14 @@ namespace Bat
 			}
 			else
 			{
-				Type* param_type = TokenToType( sig.ParamType( i ) );
+				Type* param_type = TypeSpecifierToType( sig.ParamType( i ) );
 				AddVariable( node, sig.ParamIdent( i ).lexeme, param_type );
 			}
 		}
 
-		if( sig.ReturnIdentifier().type != TOKEN_DEF )
+		if( sig.ReturnTypeSpec().TypeName().type != TOKEN_DEF )
 		{
-			sig.SetReturnType( TokenToType( sig.ReturnIdentifier() ) );
+			sig.SetReturnType( TypeSpecifierToType( sig.ReturnTypeSpec() ) );
 		}
 
 		Analyze( node->Body() );

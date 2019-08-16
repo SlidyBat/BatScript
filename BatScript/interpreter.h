@@ -23,13 +23,21 @@ namespace Bat
 		Environment* GetEnvironment() { return m_pEnvironment; }
 		const Environment* GetEnvironment() const { return m_pEnvironment; }
 	private:
+		// Helper functions that do error checking, and throw runtime exceptions when stuff goes wrong
+		void AddVar( const std::string& name, const BatObject& value, const SourceLoc& loc );
+		void SetVar( const std::string& name, const BatObject& value, const SourceLoc& loc );
+		const BatObject& GetVar( const std::string& name, const SourceLoc& loc );
+		bool IsTruthy( const BatObject& obj, const SourceLoc& loc );
+
 		virtual void VisitIntLiteral( IntLiteral* node ) override;
 		virtual void VisitFloatLiteral( FloatLiteral* node ) override;
 		virtual void VisitStringLiteral( StringLiteral* node ) override;
 		virtual void VisitTokenLiteral( TokenLiteral* node ) override;
+		virtual void VisitArrayLiteral( ArrayLiteral* node ) override;
 		virtual void VisitBinaryExpr( BinaryExpr* node ) override;
 		virtual void VisitUnaryExpr( UnaryExpr* node ) override;
 		virtual void VisitCallExpr( CallExpr* node ) override;
+		virtual void VisitIndexExpr( IndexExpr* node ) override;
 		virtual void VisitGroupExpr( GroupExpr* node ) override;
 		virtual void VisitVarExpr( VarExpr* node ) override;
 		virtual void VisitExpressionStmt( ExpressionStmt* node ) override;

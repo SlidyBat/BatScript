@@ -12,12 +12,14 @@
 	_( FloatLiteral ) \
 	_( StringLiteral ) \
 	_( TokenLiteral ) /* For any literals that can be represented by their token type (e.g. true, false, null) */ \
+	_( ArrayLiteral ) /* List of values that evaluate to an array. E.g. "[1, 2, 3]" */ \
 	/* Expressions */ \
 	_( BinaryExpr ) \
 	_( UnaryExpr ) \
 	_( GroupExpr ) \
 	_( VarExpr ) \
 	_( CallExpr ) \
+	_( IndexExpr ) \
 	/* Statements */ \
 	_( ExpressionStmt ) \
 	_( BlockStmt ) \
@@ -143,6 +145,19 @@ namespace Bat
 		TokenType value;
 	};
 
+	class ArrayLiteral : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( ArrayLiteral );
+
+		ArrayLiteral( const SourceLoc& loc, std::vector<std::unique_ptr<Expression>> values ) : Expression( loc ), m_pValues( std::move( values ) ) {}
+
+		size_t NumValues() const { return m_pValues.size(); }
+		Expression* ValueAt( size_t index ) const { return m_pValues[index].get(); }
+	private:
+		std::vector<std::unique_ptr<Expression>> m_pValues;
+	};
+
 	class BinaryExpr : public Expression
 	{
 	public:
@@ -228,6 +243,25 @@ namespace Bat
 	private:
 		std::unique_ptr<Expression> m_pFunc;
 		std::vector<std::unique_ptr<Expression>> m_pArguments;
+	};
+
+	class IndexExpr : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( IndexExpr );
+
+		IndexExpr( const SourceLoc& loc, std::unique_ptr<Expression> arr, std::unique_ptr<Expression> index )
+			:
+			Expression( loc ),
+			m_pArray( std::move( arr ) ),
+			m_pIndex( std::move( index ) )
+		{}
+
+		Expression* Array() { return m_pArray.get(); }
+		Expression* Index() { return m_pIndex.get(); }
+	private:
+		std::unique_ptr<Expression> m_pArray;
+		std::unique_ptr<Expression> m_pIndex;
 	};
 
 	class ExpressionStmt : public Statement
@@ -374,12 +408,36 @@ namespace Bat
 		Token m_Module;
 	};
 
+	class TypeSpecifier
+	{
+	public:
+		TypeSpecifier( const Token& type_name )
+			:
+			m_tokTypeName( type_name )
+		{}
+
+		const Token& TypeName() const { return m_tokTypeName; }
+		void SetDimensions( std::vector<std::unique_ptr<Expression>> dims ) { m_Dimensions = std::move( dims ); }
+		size_t Rank() const { return m_Dimensions.size(); }
+		bool IsArray() const { return Rank() > 0; }
+		// Gets expression that evaluates to dimensions of specified rank, or nullptr if dimensions were not specified
+		Expression* Dimensions( size_t rank ) const { assert( rank < Rank() ); return m_Dimensions[rank].get(); }
+	private:
+		Token m_tokTypeName;
+		std::vector<std::unique_ptr<Expression>> m_Dimensions;
+	};
+
 	class FunctionSignature
 	{
 	public:
-		FunctionSignature( Token return_identifier, Token identifier, std::vector<Token> types, std::vector<Token> parameters, std::vector<std::unique_ptr<Expression>> defaults, bool varargs )
+		FunctionSignature( TypeSpecifier return_type_name,
+			const Token& identifier,
+			std::vector<TypeSpecifier> types,
+			std::vector<Token> parameters,
+			std::vector<std::unique_ptr<Expression>> defaults,
+			bool varargs )
 			:
-			m_ReturnIdentifier( return_identifier ),
+			m_ReturnTypeName( std::move( return_type_name ) ),
 			m_Identifier( identifier ),
 			m_Types( std::move( types ) ),
 			m_Parameters( std::move( parameters ) ),
@@ -387,11 +445,11 @@ namespace Bat
 			m_bVarArgs( varargs )
 		{}
 
-		const Token& ReturnIdentifier() const { return m_ReturnIdentifier; }
+		const TypeSpecifier& ReturnTypeSpec() const { return m_ReturnTypeName; }
 		const Token& Identifier() const { return m_Identifier; }
 		// Number of parameters, not including vararg ellipsis as one
 		size_t NumParams() const { return m_Parameters.size(); }
-		const Token& ParamType( size_t index ) const { return m_Types[index]; }
+		const TypeSpecifier& ParamType( size_t index ) const { return m_Types[index]; }
 		const Token& ParamIdent( size_t index ) const { return m_Parameters[index]; }
 		Expression* ParamDefault( size_t index ) const { return m_pDefaults[index].get(); }
 		void SetReturnType( Type* rettype ) { m_pReturnType = rettype; }
@@ -399,9 +457,9 @@ namespace Bat
 		const Type* ReturnType() const { return m_pReturnType; }
 		bool VarArgs() const { return m_bVarArgs; }
 	private:
-		Token m_ReturnIdentifier;
+		TypeSpecifier m_ReturnTypeName;
 		Token m_Identifier;
-		std::vector<Token> m_Types;
+		std::vector<TypeSpecifier> m_Types;
 		std::vector<Token> m_Parameters;
 		std::vector<std::unique_ptr<Expression>> m_pDefaults;
 		bool m_bVarArgs;
@@ -431,21 +489,21 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( VarDecl );
 
-		VarDecl( const SourceLoc& loc, Token classifier, Token identifier, std::unique_ptr<Expression> initializer )
+		VarDecl( const SourceLoc& loc, TypeSpecifier type_name, Token identifier, std::unique_ptr<Expression> initializer )
 			:
 			Statement( loc ),
-			m_Classifier( classifier ),
+			m_TypeName( std::move( type_name ) ),
 			m_Identifier( identifier ),
 			m_pInitializer( std::move( initializer ) )
 		{}
 
-		const Token& Classifier() const { return m_Classifier; }
+		const TypeSpecifier& TypeSpec() const { return m_TypeName; }
 		const Token& Identifier() const { return m_Identifier; }
 		Expression* Initializer() { return m_pInitializer.get(); }
 		void SetNext( std::unique_ptr<VarDecl> next ) { m_pNext = std::move( next ); }
 		VarDecl* Next() { return m_pNext.get(); }
 	private:
-		Token m_Classifier;
+		TypeSpecifier m_TypeName;
 		Token m_Identifier;
 		std::unique_ptr<Expression> m_pInitializer;
 		std::unique_ptr<VarDecl> m_pNext;

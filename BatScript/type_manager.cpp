@@ -12,6 +12,17 @@ namespace Bat
 		AddType( "string", std::make_unique<PrimitiveType>( PrimitiveKind::String ) );
 	}
 
+	Type* TypeManager::GetType( const std::string& name ) const
+	{
+		auto it = m_mapTypes.find( name );
+		if( it != m_mapTypes.end() )
+		{
+			return it->second.get();
+		}
+
+		return nullptr;
+	}
+
 	bool TypeManager::AddType( const std::string& name, std::unique_ptr<Type> type )
 	{
 		auto it = m_mapTypes.find( name );
@@ -24,31 +35,64 @@ namespace Bat
 		return true;
 	}
 
-	Type* TypeManager::GetType( const std::string& name )
-	{
-		auto it = m_mapTypes.find( name );
-		if( it != m_mapTypes.end() )
-		{
-			return it->second.get();
-		}
-
-		return nullptr;
-	}
-	PrimitiveType* TypeManager::GetType( PrimitiveKind primkind )
+	PrimitiveType* TypeManager::NewPrimitive( PrimitiveKind primkind )
 	{
 		switch( primkind )
 		{
-			case PrimitiveKind::Bool:
-				return GetType( "bool" )->ToPrimitive();
-			case PrimitiveKind::Float:
-				return GetType( "float" )->ToPrimitive();
-			case PrimitiveKind::Int:
-				return GetType( "int" )->ToPrimitive();
-			case PrimitiveKind::String:
-				return GetType( "string" )->ToPrimitive();
+		case PrimitiveKind::Bool:
+			return GetType( "bool" )->ToPrimitive();
+		case PrimitiveKind::Float:
+			return GetType( "float" )->ToPrimitive();
+		case PrimitiveKind::Int:
+			return GetType( "int" )->ToPrimitive();
+		case PrimitiveKind::String:
+			return GetType( "string" )->ToPrimitive();
 		}
 
 		assert( false );
 		return nullptr;
+	}
+
+	ArrayType* TypeManager::NewArray( Type* inner, size_t size )
+	{
+		std::string type_name = inner->ToString();
+		if( size != ArrayType::UNSIZED )
+		{
+			type_name += "[" + std::to_string( size ) + "]";
+		}
+		else
+		{
+			type_name += "[]";
+		}
+
+		if( Type* existing = GetType( type_name ) )
+		{
+			return existing->AsArray();
+		}
+
+		auto new_array = std::make_unique<ArrayType>( inner, size );
+		auto res = new_array.get();
+		if( !AddType( type_name, std::move( new_array ) ) )
+		{
+			return nullptr;
+		}
+		return res;
+	}
+
+	NamedType* TypeManager::NewNamed( const std::string& name )
+	{
+		if( Type* existing = GetType( name ) )
+		{
+			return existing->AsNamed();
+		}
+
+		auto new_named = std::make_unique<NamedType>( name );
+		auto res = new_named.get();
+		if( !AddType( name, std::move( new_named ) ) )
+		{
+			return nullptr;
+		}
+
+		return res;
 	}
 }

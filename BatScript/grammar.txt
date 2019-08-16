@@ -1,6 +1,6 @@
 program       -> statement* EOF
 
-type          -> ("int" | "float" | "bool" | "string" | identifier)
+type          -> ( "int" | "float" | "bool" | "string" | IDENTIFIER ) ( "[" ( expression )? "]" )*
 
 statement     -> simple_stmt | compound_stmt
 simple_stmt   -> expression eol
@@ -31,7 +31,7 @@ import_stmt   -> "import" IDENTIFIER eol
 native_stmt   -> "native" type IDENTIFIER "(" parameters? ")" eol
 
 parameter     -> type IDENTIFIER ( "=" expression )?
-parameters    -> parameter ( "," parameter ) ( "," "..." )? *
+parameters    -> parameter ( "," parameter )* ( "," "..." )?
 
 expression    -> assign
 assign        -> or ( ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "^=" | "|=" ) or )*
@@ -47,6 +47,9 @@ add           -> mult ( ( "+" | "-" ) mult )*
 mult          -> unary ( ( "*" | "/" | "%" ) unary )*
 unary         -> ( "+" | "-" | "!" | "~" | "*" | "&" | "print" ) unary
                | call
-call          -> primary ( "(" arguments? ")" )*
+call          -> primary ( ( "(" arguments? ")" ) | ( "[" expression "]" ) )*
 arguments     -> expression ( "," expression )*
-primary       -> NUMBER | STRING | "false" | "true" | "null" | "(" expression ")" | IDENTIFIER
+primary       -> NUMBER | STRING | "false" | "true" | "null" // Literals
+               | "(" expression ")" // Grouping
+               | "[" array_values? "]" // Array literal
+array_values  -> expression ( "," expression )* ","? // Optional trailing comma

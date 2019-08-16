@@ -22,9 +22,11 @@ namespace Bat
 		virtual void VisitFloatLiteral( FloatLiteral* node ) override;
 		virtual void VisitStringLiteral( StringLiteral* node ) override;
 		virtual void VisitTokenLiteral( TokenLiteral* node ) override;
+		virtual void VisitArrayLiteral( ArrayLiteral* node ) override;
 		virtual void VisitBinaryExpr( BinaryExpr* node ) override;
 		virtual void VisitUnaryExpr( UnaryExpr* node ) override;
 		virtual void VisitCallExpr( CallExpr* node ) override;
+		virtual void VisitIndexExpr( IndexExpr* node ) override;
 		virtual void VisitGroupExpr( GroupExpr* node ) override;
 		virtual void VisitVarExpr( VarExpr* node ) override;
 		virtual void VisitExpressionStmt( ExpressionStmt* node ) override;
