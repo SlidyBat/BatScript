@@ -1,7 +1,5 @@
 #include "environment.h"
 
-#include "runtime_error.h"
-
 namespace Bat
 {
 	Environment::Environment( Environment* enclosing )
@@ -34,44 +32,46 @@ namespace Bat
 		return false;
 	}
 
-	void Environment::AddVar( const std::string& name, const BatObject& value, const SourceLoc& loc )
+	bool Environment::AddVar( const std::string& name, const BatObject& value )
 	{
 		if( ExistsLocally( name ) )
 		{
-			throw RuntimeError( loc, name + " already exists in this scope" );
+			return false;
 		}
 
 		m_mapVariables[name] = value;
+		return true;
 	}
 
-	const BatObject& Environment::GetVar( const std::string& name, const SourceLoc& loc ) const
+	const BatObject* Environment::GetVar( const std::string& name ) const
 	{
 		auto it = m_mapVariables.find( name );
 		if( it == m_mapVariables.end() )
 		{
 			if( m_pEnclosing )
 			{
-				return m_pEnclosing->GetVar( name, loc );
+				return m_pEnclosing->GetVar( name );
 			}
-			throw RuntimeError( loc, name + " is not defined" );
+			return nullptr;
 		}
-		return it->second;
+		return &it->second;
 	}
 
-	void Environment::SetVar( const std::string& name, const BatObject& value, const SourceLoc& loc )
+	bool Environment::SetVar( const std::string& name, const BatObject& value )
 	{
 		auto it = m_mapVariables.find( name );
 		if( it == m_mapVariables.end() )
 		{
 			if( m_pEnclosing )
 			{
-				m_pEnclosing->SetVar( name, value, loc );
+				m_pEnclosing->SetVar( name, value );
 			}
 			else
 			{
-				throw RuntimeError( loc, name + " is not defined" );
+				return false;
 			}
 		}
 		m_mapVariables[name] = value;
+		return true;
 	}
 }

@@ -7,6 +7,7 @@
 	_(Primitive) \
 	_(Array) \
 	_(Function) \
+	_(Named) \
 
 namespace Bat
 {
@@ -96,21 +97,29 @@ namespace Bat
 	class ArrayType : public Type
 	{
 	public:
-		ArrayType( Type* inner )
+		static constexpr size_t UNSIZED = 0;
+	public:
+		ArrayType( Type* inner, size_t size = UNSIZED )
 			:
 			m_pInner( inner ),
+			m_iFixedSize( size ),
 			Type( TypeKind::Array )
 		{}
 
 		virtual std::string ToString() const override
 		{
-			return Inner()->ToString() + "[]";
+			return Inner()->ToString() + "[" +
+				(HasFixedSize() ? std::to_string(FixedSize()) : std::string())
+				+ "]";
 		}
 
 		Type* Inner() { return m_pInner; }
 		const Type* Inner() const { return m_pInner; }
+		bool HasFixedSize() const { return m_iFixedSize > 0; }
+		size_t FixedSize() const { return m_iFixedSize; }
 	private:
 		Type* m_pInner;
+		size_t m_iFixedSize;
 	};
 
 	class FunctionType : public Type
@@ -132,5 +141,24 @@ namespace Bat
 		const FunctionSignature* Signature() const { return m_pSignature; }
 	private:
 		FunctionSignature* m_pSignature;
+	};
+
+	class NamedType : public Type
+	{
+	public:
+		NamedType( const std::string& name )
+			:
+			m_szName( name ),
+			Type( TypeKind::Named )
+		{}
+
+		virtual std::string ToString() const override
+		{
+			return m_szName;
+		}
+
+		const std::string& Name() const { return m_szName; }
+	private:
+		std::string m_szName;
 	};
 }

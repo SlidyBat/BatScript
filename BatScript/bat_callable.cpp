@@ -1,9 +1,12 @@
 #include "bat_callable.h"
 
 #include "interpreter.h"
+#include "runtime_error.h"
 
 namespace Bat
 {
+	static void AddVar( Environment& env, const Token& tok, const BatObject& value );
+
 	BatFunction::BatFunction( FuncDecl* declaration )
 		:
 		m_pDeclaration( declaration )
@@ -31,13 +34,11 @@ namespace Bat
 		Environment environment( interpreter.GetEnvironment() );
 		for( size_t i = 0; i < args.size(); i++ )
 		{
-			environment.AddVar( sig.ParamIdent( i ).lexeme, args[i], sig.ParamIdent( i ).loc );
+			AddVar( environment, sig.ParamIdent( i ), args[i] );
 		}
 		for( size_t i = args.size(); i < m_pDeclaration->Signature().NumParams(); i++ )
 		{
-			environment.AddVar( sig.ParamIdent( i ).lexeme,
-				interpreter.Evaluate( sig.ParamDefault( i ) ),
-				sig.ParamIdent( i ).loc );
+			AddVar( environment, sig.ParamIdent( i ), interpreter.Evaluate( sig.ParamDefault( i ) ) );
 		}
 
 		try
@@ -50,6 +51,14 @@ namespace Bat
 		}
 
 		return BatObject();
+	}
+
+	static void AddVar( Environment& env, const Token& tok, const BatObject& value )
+	{
+		if( !env.AddVar( tok.lexeme, value ) )
+		{
+			throw RuntimeError( tok.loc, tok.lexeme + " is already defined in this scope" );
+		}
 	}
 
 	BatNative::BatNative( BatNativeCallback callback )

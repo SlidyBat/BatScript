@@ -71,14 +71,34 @@ namespace Bat
 		throw ParseError();
 	}
 
-	const Token& Parser::ExpectType( const std::string& message )
+	TypeSpecifier Parser::ExpectType( const std::string& message )
 	{
 		if( Check( TOKEN_BOOL ) ||
 			Check( TOKEN_INT ) ||
 			Check( TOKEN_FLOAT ) ||
 			Check( TOKEN_STRING ) )
 		{
-			return Advance();
+			Token type_name = Advance();
+			TypeSpecifier t( type_name );
+
+			std::vector<std::unique_ptr<Expression>> dimensions;
+			while( Match( TOKEN_LBRACKET ) )
+			{
+				if( !Check( TOKEN_RBRACKET ) )
+				{
+					dimensions.push_back( ParseExpression() );
+				}
+				else
+				{
+					dimensions.push_back( nullptr );
+				}
+
+				Expect( TOKEN_RBRACKET, "Expected closing bracket in array declaration" );
+			}
+
+			t.SetDimensions( std::move( dimensions ) );
+
+			return t;
 		}
 
 		Error( message );
@@ -158,20 +178,11 @@ namespace Bat
 		if( Match( TOKEN_IF ) )     return ParseIf();
 		if( Match( TOKEN_WHILE ) )  return ParseWhile();
 		if( Match( TOKEN_FOR ) )    return ParseFor();
-		if( Match( TOKEN_VAR ) )    return ParseVarDeclaration();
-		if( Match( TOKEN_DEF ) )    return ParseFuncDeclaration();
+		if( Match( TOKEN_VAR ) )    return ParseVarDeclaration( TypeSpecifier( Previous() ) );
+		if( Match( TOKEN_DEF ) )    return ParseFuncDeclaration( TypeSpecifier( Previous() ) );
 
-		if( Match( TOKEN_BOOL ) ||
-			Match( TOKEN_INT ) ||
-			Match( TOKEN_FLOAT ) ||
-			Match( TOKEN_STRING ) ||
-			Match( TOKEN_IDENT ) )
-		{
-			return ParseDeclaration(); // Generic type declaration, can't tell if its func or var yet
-		}
-
-		Error( std::string( "Unexpected token " + Peek().lexeme ) );
-		throw ParseError();
+		TypeSpecifier type_name = ExpectType( "Expected type name" );
+		return ParseDeclaration( std::move( type_name ) ); // Generic type declaration, can't tell if its func or var yet
 	}
 
 	std::unique_ptr<Statement> Parser::ParseSimpleStatement()
@@ -330,33 +341,32 @@ namespace Bat
 		SourceLoc loc = Previous().loc;
 
 		// Make sure we're getting a proper type name, ParseFuncSignature doesn't do this check
-		ExpectType( "Expected type name for native function declaration" );
+		TypeSpecifier return_type_name = ExpectType( "Expected type name for native function declaration" );
 
-		FunctionSignature sig = ParseFuncSignature();
+		FunctionSignature sig = ParseFuncSignature( std::move( return_type_name ) );
 		ExpectTerminator();
 		return std::make_unique<NativeStmt>( loc, std::move( sig ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseDeclaration()
+	std::unique_ptr<Statement> Parser::ParseDeclaration( TypeSpecifier type_name )
 	{
 		Expect( TOKEN_IDENT, "Expected identifier after type name" );
 
 		if( Check( TOKEN_LPAREN ) )
 		{
 			GoBack();
-			return ParseFuncDeclaration();
+			return ParseFuncDeclaration( std::move( type_name ) );
 		}
 
 		GoBack();
-		return ParseVarDeclaration();
+		return ParseVarDeclaration( std::move( type_name ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseVarDeclaration()
+	std::unique_ptr<Statement> Parser::ParseVarDeclaration( TypeSpecifier type_name )
 	{
 		SourceLoc loc = Previous().loc;
 
-		Token classifier = Previous();
-		Token ident = Expect( TOKEN_IDENT, "Expected variable name." );
+		Token ident = Expect( TOKEN_IDENT, "Expected variable name" );
 
 		std::unique_ptr<Expression> init = nullptr;
 		if( Match( TOKEN_EQUAL ) )
@@ -364,7 +374,7 @@ namespace Bat
 			init = ParseExpression();
 		}
 		
-		auto first = std::make_unique<VarDecl>( loc, classifier, ident, std::move( init ) );
+		auto first = std::make_unique<VarDecl>( loc, std::move( type_name ), ident, std::move( init ) );
 		VarDecl* curr = first.get();
 
 		// Check for more variable declarations on same line
@@ -375,7 +385,7 @@ namespace Bat
 			{
 				init = ParseExpression();
 			}
-			curr->SetNext( std::make_unique<VarDecl>( ident.loc, classifier, ident, std::move( init ) ) );
+			curr->SetNext( std::make_unique<VarDecl>( ident.loc, std::move( type_name ), ident, std::move( init ) ) );
 			curr = curr->Next();
 		}
 
@@ -384,11 +394,11 @@ namespace Bat
 		return first;
 	}
 
-	std::unique_ptr<Statement> Parser::ParseFuncDeclaration()
+	std::unique_ptr<Statement> Parser::ParseFuncDeclaration( TypeSpecifier return_type_name )
 	{
 		SourceLoc loc = Previous().loc;
 
-		FunctionSignature sig = ParseFuncSignature();
+		FunctionSignature sig = ParseFuncSignature( std::move( return_type_name ) );
 		Expect( TOKEN_COLON, "Expected ':' after function declaration" );
 
 		std::unique_ptr<Statement> body;
@@ -404,13 +414,12 @@ namespace Bat
 		return std::make_unique<FuncDecl>( loc, std::move( sig ), std::move( body ) );
 	}
 
-	FunctionSignature Parser::ParseFuncSignature()
+	FunctionSignature Parser::ParseFuncSignature( TypeSpecifier return_type_name )
 	{
-		Token return_ident = Previous();
 		Token name = Expect( TOKEN_IDENT, "Expected function name" );
 		Expect( TOKEN_LPAREN, "Expected '(' after function name" );
 
-		std::vector<Token> types;
+		std::vector<TypeSpecifier> types;
 		std::vector<Token> params;
 		std::vector<std::unique_ptr<Expression>> defaults;
 		bool varargs = false;
@@ -425,8 +434,8 @@ namespace Bat
 					break; // varargs ellipsis are last parameter, exit out and don't check for more
 				}
 
-				Token type = ExpectType( "Expected parameter type" );
-				types.push_back( type );
+				TypeSpecifier type = ExpectType( "Expected parameter type" );
+				types.push_back( std::move( type ) );
 				Token param = Expect( TOKEN_IDENT, "Expected parameter identifier" );
 				params.push_back( param );
 
@@ -448,7 +457,7 @@ namespace Bat
 		}
 		Expect( TOKEN_RPAREN, "Expected ')' after function parameters" );
 
-		return FunctionSignature( return_ident, name, types, params, std::move( defaults ), varargs );
+		return FunctionSignature( std::move( return_type_name ), name, std::move( types ), params, std::move( defaults ), varargs );
 	}
 
 	std::unique_ptr<Expression> Parser::ParseExpression()
@@ -646,32 +655,57 @@ namespace Bat
 			return std::make_unique<UnaryExpr>( loc, op.type, std::move( right ) );
 		}
 
-		return ParseCall();
+		return ParseCallOrIndex();
 	}
 
-	std::unique_ptr<Expression> Parser::ParseCall()
+	std::unique_ptr<Expression> Parser::ParseCallOrIndex()
 	{
 		SourceLoc loc = Peek().loc;
 
-		auto func = ParsePrimary();
+		auto left = ParsePrimary();
 
-		while( Match( TOKEN_LPAREN ) )
+		while( true )
 		{
-			std::vector<std::unique_ptr<Expression>> arguments;
-			if( !Check( TOKEN_RPAREN ) )
+			switch( Peek().type )
 			{
-				do
-				{
-					auto arg = ParseExpression();
-					arguments.push_back( std::move( arg ) );
-				} while( Match( TOKEN_COMMA ) );
+			case TOKEN_LPAREN:   left = ParseCall( std::move( left ) ); break;
+			case TOKEN_LBRACKET: left = ParseIndex( std::move( left ) ); break;
+			default:             return std::move( left );
 			}
-			Expect( TOKEN_RPAREN, "Expected ')'" );
-
-			func = std::make_unique<CallExpr>( loc, std::move( func ), std::move( arguments ) );
 		}
+	}
 
-		return func;
+	std::unique_ptr<Expression> Parser::ParseCall( std::unique_ptr<Expression> left )
+	{
+		SourceLoc loc = Previous().loc;
+
+		Expect( TOKEN_LPAREN, "Expected '('" );
+
+		std::vector<std::unique_ptr<Expression>> arguments;
+		if( !Check( TOKEN_RPAREN ) )
+		{
+			do
+			{
+				auto arg = ParseExpression();
+				arguments.push_back( std::move( arg ) );
+			} while( Match( TOKEN_COMMA ) );
+		}
+		Expect( TOKEN_RPAREN, "Expected ')'" );
+
+		return std::make_unique<CallExpr>( loc, std::move( left ), std::move( arguments ) );
+	}
+
+	std::unique_ptr<Expression> Parser::ParseIndex( std::unique_ptr<Expression> left )
+	{
+		SourceLoc loc = Previous().loc;
+
+		Expect( TOKEN_LBRACKET, "Expected '['" );
+
+		auto index = ParseExpression();
+
+		Expect( TOKEN_RBRACKET, "Expected ']'" );
+
+		return std::make_unique<IndexExpr>( loc, std::move( left ), std::move( index ) );
 	}
 
 	std::unique_ptr<Expression> Parser::ParsePrimary()
@@ -695,6 +729,21 @@ namespace Bat
 			return std::make_unique<GroupExpr>( loc, std::move( expr ) );
 		}
 
+		if( Match( TOKEN_LBRACKET ) )
+		{
+			std::vector<std::unique_ptr<Expression>> arr_values;
+			if( !Check( TOKEN_RBRACKET ) )
+			{
+				do
+				{
+					arr_values.push_back( ParseExpression() );
+				} while( Match( TOKEN_COMMA ) && !Check( TOKEN_RBRACKET ) );
+			}
+			Expect( TOKEN_RBRACKET, "Expected closing ']' for array literal" );
+
+			return std::make_unique<ArrayLiteral>( loc, std::move( arr_values ) );
+		}
+		
 		Error( std::string( "Unexpected '") + TokenTypeToString( Peek().type ) + "'." );
 		throw ParseError();
 	}

@@ -29,7 +29,7 @@ namespace Bat
 		void GoBack();
 
 		const Token& Expect( TokenType type, const std::string& message );
-		const Token& ExpectType( const std::string& message );
+		TypeSpecifier ExpectType( const std::string& message );
 		void ExpectTerminator( const std::string& msg = "Expected newline" );
 		void Error( const std::string& message );
 		// Skips to next statement to avoid cascading errors
@@ -48,11 +48,11 @@ namespace Bat
 		std::unique_ptr<Statement> ParseReturn();
 		std::unique_ptr<Statement> ParseImport();
 		std::unique_ptr<Statement> ParseNative();
-		std::unique_ptr<Statement> ParseDeclaration();
-		std::unique_ptr<Statement> ParseVarDeclaration();
-		std::unique_ptr<Statement> ParseFuncDeclaration();
+		std::unique_ptr<Statement> ParseDeclaration( TypeSpecifier type_name );
+		std::unique_ptr<Statement> ParseVarDeclaration( TypeSpecifier type_name );
+		std::unique_ptr<Statement> ParseFuncDeclaration( TypeSpecifier return_type_name );
 
-		FunctionSignature ParseFuncSignature();
+		FunctionSignature ParseFuncSignature( TypeSpecifier return_type_name );
 
 		// Expression parsing
 		std::unique_ptr<Expression> ParseExpression();
@@ -68,7 +68,9 @@ namespace Bat
 		std::unique_ptr<Expression> ParseAddition();
 		std::unique_ptr<Expression> ParseMultiplication();
 		std::unique_ptr<Expression> ParseUnary();
-		std::unique_ptr<Expression> ParseCall();
+		std::unique_ptr<Expression> ParseCallOrIndex();
+		std::unique_ptr<Expression> ParseCall( std::unique_ptr<Expression> left );
+		std::unique_ptr<Expression> ParseIndex( std::unique_ptr<Expression> left );
 		std::unique_ptr<Expression> ParsePrimary();
 	private:
 		int m_iCurrent = 0;

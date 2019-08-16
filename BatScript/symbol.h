@@ -92,6 +92,8 @@ namespace Bat
 			{
 				return Node()->ToNativeStmt()->Signature();
 			}
+
+			return Node()->ToFuncDecl()->Signature();
 		}
 		FunctionKind FuncKind() const { return m_FuncKind; }
 	private:

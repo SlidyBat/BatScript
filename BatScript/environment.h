@@ -3,7 +3,6 @@
 #include <string>
 #include <unordered_map>
 #include "bat_object.h"
-#include "sourceloc.h"
 #include "type.h"
 
 namespace Bat
@@ -16,9 +15,9 @@ namespace Bat
 
 		bool Exists( const std::string& name ) const;
 		bool ExistsLocally( const std::string& name ) const;
-		void AddVar( const std::string& name, const BatObject& value, const SourceLoc& loc );
-		const BatObject& GetVar( const std::string& name, const SourceLoc& loc ) const;
-		void SetVar( const std::string& name, const BatObject& value, const SourceLoc& loc );
+		bool AddVar( const std::string& name, const BatObject& value );
+		const BatObject* GetVar( const std::string& name ) const;
+		bool SetVar( const std::string& name, const BatObject& value );
 		Environment* Enclosing() { return m_pEnclosing; }
 	private:
 		Environment* m_pEnclosing = nullptr;
