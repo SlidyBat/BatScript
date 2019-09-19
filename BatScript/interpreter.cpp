@@ -198,7 +198,7 @@ namespace Bat
 				}
 				if( VarExpr* v = l->ToVarExpr() )
 				{
-					SetVar( v->name.lexeme, newval, node->Location() );
+					SetVar( v->Identifier().lexeme, newval, node->Location() );
 				}
 				else if( IndexExpr* i = l->ToIndexExpr() )
 				{
@@ -295,13 +295,82 @@ namespace Bat
 			throw RuntimeError( node->Location(), e.what() );
 		}
 	}
+	void Interpreter::VisitCastExpr( CastExpr* node )
+	{
+		if( !node->Expr()->Type()->IsPrimitive() || !node->TargetType()->IsPrimitive() )
+		{
+			throw RuntimeError( node->Location(), "Cannot cast non-primitive types" );
+		}
+
+		PrimitiveType* base_type = node->Expr()->Type()->AsPrimitive();
+		PrimitiveType* to_type = node->TargetType()->AsPrimitive();
+		BatObject base = Evaluate( node->Expr() );
+		switch( base_type->PrimKind() )
+		{
+		case PrimitiveKind::Bool:
+		{
+			switch( to_type->PrimKind() )
+			{
+			case PrimitiveKind::Int:
+				BAT_RETURN( BatObject( (int64_t)base.Bool() ) );
+			case PrimitiveKind::Bool:
+			case PrimitiveKind::Float:
+			case PrimitiveKind::String:
+			default:
+				assert( false );
+			}
+		}
+		case PrimitiveKind::Int:
+		{
+			switch( to_type->PrimKind() )
+			{
+			case PrimitiveKind::Bool:
+				BAT_RETURN( BatObject( (bool)base.Int() ) );
+			case PrimitiveKind::Float:
+				BAT_RETURN( BatObject( (float)base.Int() ) );
+			case PrimitiveKind::String:
+				BAT_RETURN( BatObject( std::to_string( base.Int() ).c_str() ) );
+			default:
+				assert( false );
+			}
+		}
+		case PrimitiveKind::Float:
+		{
+			switch( to_type->PrimKind() )
+			{
+			case PrimitiveKind::Bool:
+				BAT_RETURN( BatObject( (bool)base.Float() ) );
+			case PrimitiveKind::Int:
+				BAT_RETURN( BatObject( (int64_t)base.Float() ) );
+			case PrimitiveKind::String:
+				BAT_RETURN( BatObject( std::to_string( base.Float() ).c_str() ) );
+			default:
+				assert( false );
+			}
+		}
+		case PrimitiveKind::String:
+		{
+			switch( to_type->PrimKind() )
+			{
+			case PrimitiveKind::Bool:
+				BAT_RETURN( BatObject( true ) );
+			case PrimitiveKind::Int:
+				BAT_RETURN( BatObject( std::stoll( base.String() ) ) );
+			case PrimitiveKind::Float:
+				BAT_RETURN( BatObject( std::stod( base.String() ) ) );
+			default:
+				assert( false );
+			}
+		}
+		}
+	}
 	void Interpreter::VisitGroupExpr( GroupExpr* node )
 	{
 		BAT_RETURN( Evaluate( node->Expr() ) );
 	}
 	void Interpreter::VisitVarExpr( VarExpr* node )
 	{
-		BAT_RETURN( GetVar( node->name.lexeme, node->Location() ) );
+		BAT_RETURN( GetVar( node->Identifier().lexeme, node->Location() ) );
 	}
 	void Interpreter::VisitExpressionStmt( ExpressionStmt* node )
 	{
@@ -350,7 +419,7 @@ namespace Bat
 	}
 	void Interpreter::VisitReturnStmt( ReturnStmt* node )
 	{
-		auto ret_value = Evaluate( node->RetValue() );
+		auto ret_value = Evaluate( node->RetExpr() );
 		ReturnValue ret;
 		ret.value = ret_value;
 		throw ret;
@@ -391,18 +460,12 @@ namespace Bat
 	}
 	void Interpreter::VisitVarDecl( VarDecl* node )
 	{
-		VarDecl* curr = node;
-		while( curr )
+		BatObject initial;
+		if( node->Initializer() )
 		{
-			BatObject initial;
-			if( curr->Initializer() )
-			{
-				initial = Evaluate( curr->Initializer() );
-			}
-			AddVar( curr->Identifier().lexeme, initial, curr->Identifier().loc );
-			
-			curr = curr->Next();
+			initial = Evaluate( node->Initializer() );
 		}
+		AddVar( node->Identifier().lexeme, initial, node->Identifier().loc );
 	}
 	void Interpreter::VisitFuncDecl( FuncDecl* node )
 	{

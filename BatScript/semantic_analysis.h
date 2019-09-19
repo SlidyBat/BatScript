@@ -18,15 +18,18 @@ namespace Bat
 
 		void Error( const SourceLoc& loc, const std::string& message );
 
+		bool InGlobalScope() const { return m_pSymTab->Enclosing() == nullptr; }
 		void PushScope();
 		void PopScope();
 
 		void AddVariable( AstNode* node, const std::string& name, Type* type );
 		void AddFunction( AstNode* node, const std::string& name );
 		void AddNative( NativeStmt* node, const std::string& name );
-		Type* TypeSpecifierToType( const TypeSpecifier& tok );
 
-		bool Coerce( Type* from, Type* to );
+		// Returns `from` if no implicit casting is needed
+		// Returns `to` if an implicit cast is needed
+		// Returned nullptr if no coercion is possible
+		Type* Coerce( Type* from, Type* to );
 	private:
 		virtual void VisitIntLiteral( IntLiteral* node ) override;
 		virtual void VisitFloatLiteral( FloatLiteral* node ) override;
@@ -37,6 +40,7 @@ namespace Bat
 		virtual void VisitUnaryExpr( UnaryExpr* node ) override;
 		virtual void VisitCallExpr( CallExpr* node ) override;
 		virtual void VisitIndexExpr( IndexExpr* node ) override;
+		virtual void VisitCastExpr( CastExpr* node ) override;
 		virtual void VisitGroupExpr( GroupExpr* node ) override;
 		virtual void VisitVarExpr( VarExpr* node ) override;
 		virtual void VisitExpressionStmt( ExpressionStmt* node ) override;

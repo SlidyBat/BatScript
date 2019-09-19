@@ -105,6 +105,11 @@ namespace Bat
 		throw ParseError();
 	}
 
+	bool Parser::CheckTerminator()
+	{
+		return AtEnd() || Check( TOKEN_ENDOFLINE );
+	}
+
 	void Parser::ExpectTerminator( const std::string& msg )
 	{
 		if( !Match( TOKEN_ENDOFLINE ) && !AtEnd() )
@@ -322,7 +327,11 @@ namespace Bat
 	{
 		SourceLoc loc = Previous().loc;
 
-		auto ret_value = ParseExpression();
+		std::unique_ptr<Expression> ret_value = nullptr;
+		if( !CheckTerminator() )
+		{
+			ret_value = ParseExpression();
+		}
 		ExpectTerminator();
 		return std::make_unique<ReturnStmt>( loc, std::move( ret_value ) );
 	}
@@ -373,25 +382,10 @@ namespace Bat
 		{
 			init = ParseExpression();
 		}
-		
-		auto first = std::make_unique<VarDecl>( loc, std::move( type_name ), ident, std::move( init ) );
-		VarDecl* curr = first.get();
-
-		// Check for more variable declarations on same line
-		while( Match( TOKEN_COMMA ) )
-		{
-			ident = Expect( TOKEN_IDENT, "Expected variable name." );
-			if( Match( TOKEN_EQUAL ) )
-			{
-				init = ParseExpression();
-			}
-			curr->SetNext( std::make_unique<VarDecl>( ident.loc, std::move( type_name ), ident, std::move( init ) ) );
-			curr = curr->Next();
-		}
 
 		ExpectTerminator();
 
-		return first;
+		return std::make_unique<VarDecl>( loc, std::move( type_name ), ident, std::move( init ) );
 	}
 
 	std::unique_ptr<Statement> Parser::ParseFuncDeclaration( TypeSpecifier return_type_name )

@@ -10,6 +10,11 @@ namespace Bat
 
 	using BatNativeCallback = std::function<BatObject( const std::vector<BatObject>& )>;
 
+	struct BatNativeDesc
+	{
+		std::vector<ObjectType> param_types;
+	};
+
 	struct ReturnValue
 	{
 		BatObject value;

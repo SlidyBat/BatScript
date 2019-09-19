@@ -2,6 +2,7 @@
 
 #include <string>
 #include <cassert>
+#include "token.h"
 
 #define TYPE_KINDS(_) \
 	_(Primitive) \
@@ -39,6 +40,7 @@ namespace Bat
 		{}
 
 		TypeKind Kind() const { return m_Kind; }
+		virtual size_t Size() const = 0;
 
 		virtual std::string ToString() const = 0;
 
@@ -57,6 +59,7 @@ namespace Bat
 
 	enum class PrimitiveKind
 	{
+		Void,
 		Bool,
 		Int,
 		Float,
@@ -89,6 +92,11 @@ namespace Bat
 			}
 		}
 
+		virtual size_t Size() const override
+		{
+			return sizeof( int64_t );
+		}
+
 		PrimitiveKind PrimKind() const { return m_PrimitiveKind; }
 	private:
 		PrimitiveKind m_PrimitiveKind;
@@ -111,6 +119,16 @@ namespace Bat
 			return Inner()->ToString() + "[" +
 				(HasFixedSize() ? std::to_string(FixedSize()) : std::string())
 				+ "]";
+		}
+
+		virtual size_t Size() const override
+		{
+			if( HasFixedSize() )
+			{
+				return FixedSize() * Inner()->Size();
+			}
+			
+			return sizeof( int64_t );
 		}
 
 		Type* Inner() { return m_pInner; }
@@ -137,6 +155,11 @@ namespace Bat
 			return "function";
 		}
 
+		virtual size_t Size() const override
+		{
+			return sizeof( int64_t );
+		}
+
 		FunctionSignature* Signature() { return m_pSignature; }
 		const FunctionSignature* Signature() const { return m_pSignature; }
 	private:
@@ -157,8 +180,46 @@ namespace Bat
 			return m_szName;
 		}
 
+		virtual size_t Size() const override
+		{
+			assert( false );
+			return 0;
+		}
+
 		const std::string& Name() const { return m_szName; }
 	private:
 		std::string m_szName;
 	};
+
+	inline bool IsSameType( Type* a, Type* b )
+	{
+		if( a == b )
+		{
+			return true;
+		}
+
+		if( a->Kind() != b->Kind() )
+		{
+			return false;
+		}
+
+		if( a->IsPrimitive() && b->IsPrimitive() &&
+			a->AsPrimitive()->PrimKind() == b->ToPrimitive()->PrimKind() )
+		{
+			return true;
+		}
+
+		if( a->IsArray() && b->IsArray() )
+		{
+			return IsSameType( a->ToArray()->Inner(), b->ToArray()->Inner() ) &&
+				a->ToArray()->FixedSize() == b->ToArray()->FixedSize();
+		}
+
+		if( a->IsNamed() && b->IsNamed() )
+		{
+			return a->ToNamed()->Name() == b->ToNamed()->Name();
+		}
+
+		return false;
+	}
 }

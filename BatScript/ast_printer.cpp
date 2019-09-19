@@ -95,6 +95,12 @@ namespace Bat
 		PrintNode( node->Index() );
 	}
 
+	void AstPrinter::VisitCastExpr( CastExpr* node )
+	{
+		std::cout << "cast (" << node->TargetType()->ToString() << ")";
+		PrintNode( node->Expr() );
+	}
+
 	void AstPrinter::VisitGroupExpr( GroupExpr* node )
 	{
 		std::cout << "()";
@@ -103,7 +109,7 @@ namespace Bat
 
 	void AstPrinter::VisitVarExpr( VarExpr* node )
 	{
-		std::cout << "var " << node->name.lexeme;
+		std::cout << "var " << node->Identifier().lexeme;
 	}
 
 	void AstPrinter::VisitExpressionStmt( ExpressionStmt* node )
@@ -157,7 +163,7 @@ namespace Bat
 	void AstPrinter::VisitReturnStmt( ReturnStmt* node )
 	{
 		std::cout << "return";
-		PrintNode( node->RetValue() );
+		PrintNode( node->RetExpr() );
 	}
 
 	void AstPrinter::VisitImportStmt( ImportStmt* node )

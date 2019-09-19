@@ -30,6 +30,7 @@ namespace Bat
 
 		const Token& Expect( TokenType type, const std::string& message );
 		TypeSpecifier ExpectType( const std::string& message );
+		bool CheckTerminator();
 		void ExpectTerminator( const std::string& msg = "Expected newline" );
 		void Error( const std::string& message );
 		// Skips to next statement to avoid cascading errors

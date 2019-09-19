@@ -9,15 +9,16 @@ enum class FileMode
 	TEXT
 };
 
+enum class SeekPosition
+{
+	START,
+	END,
+	CURRENT
+};
+
 class MemoryStream
 {
 public:
-	enum class SeekPosition
-	{
-		Start,
-		End,
-		Current
-	};
 public:
 	MemoryStream() = default;
 	MemoryStream( const char* data, size_t size );
@@ -25,7 +26,7 @@ public:
 
 	void Seek( SeekPosition where );
 	void Seek( size_t pos, SeekPosition dir );
-	size_t Tell();
+	size_t Tell() const;
 
 	char ReadByte();
 	void ReadBytes( char* pBytes, const size_t size );
@@ -34,7 +35,7 @@ public:
 	{
 		T val;
 		char* pStart = reinterpret_cast<char*>(&val);
-		const size_t size = sizeof( T );
+		constexpr size_t size = sizeof( T );
 		ReadBytes( pStart, size );
 
 		return val;
@@ -69,7 +70,7 @@ public:
 	void WriteInt16( int16_t val );
 	void WriteUInt64( uint64_t val );
 	void WriteUInt32( uint32_t val );
-	void WrtieUInt16( uint16_t val );
+	void WriteUInt16( uint16_t val );
 	void WriteChar( char val ); // really just an alias for WriteByte
 	void WriteShort( short val );
 	void WriteInt( int val );

@@ -106,11 +106,14 @@
       <ConformanceMode>true</ConformanceMode>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -123,17 +126,22 @@
       <ConformanceMode>true</ConformanceMode>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ast_printer.cpp" />
     <ClCompile Include="bat_callable.cpp" />
     <ClCompile Include="bat_object.cpp" />
+    <ClCompile Include="compiler.cpp" />
+    <ClCompile Include="disassembler.cpp" />
     <ClCompile Include="environment.cpp" />
     <ClCompile Include="errorsys.cpp" />
     <ClCompile Include="interpreter.cpp" />
@@ -147,14 +155,18 @@
     <ClCompile Include="symbol_table.cpp" />
     <ClCompile Include="token.cpp" />
     <ClCompile Include="type_manager.cpp" />
+    <ClCompile Include="vm.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ast.h" />
     <ClInclude Include="ast_printer.h" />
     <ClInclude Include="bat_callable.h" />
     <ClInclude Include="bat_object.h" />
+    <ClInclude Include="compiler.h" />
+    <ClInclude Include="disassembler.h" />
     <ClInclude Include="environment.h" />
     <ClInclude Include="errorsys.h" />
+    <ClInclude Include="instructions.h" />
     <ClInclude Include="interpreter.h" />
     <ClInclude Include="lexer.h" />
     <ClInclude Include="memory_stream.h" />
@@ -169,6 +181,8 @@
     <ClInclude Include="token.h" />
     <ClInclude Include="type.h" />
     <ClInclude Include="type_manager.h" />
+    <ClInclude Include="util.h" />
+    <ClInclude Include="vm.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

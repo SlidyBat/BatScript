@@ -11,13 +11,18 @@
 #include "interpreter.h"
 #include "bat_callable.h"
 #include "runtime_error.h"
+#include "compiler.h"
+#include "disassembler.h"
+#include "vm.h"
 
 using namespace Bat;
 
 Interpreter interpreter;
 SemanticAnalysis sa;
+Compiler compiler;
+VirtualMachine vm;
 
-void Run( const std::string& src, bool print_expression_results = false )
+void Run( const std::string& src, bool print_expression_results = false, bool use_compiler = true )
 {
 	Lexer l( src );
 	auto tokens = l.Scan();
@@ -45,12 +50,27 @@ void Run( const std::string& src, bool print_expression_results = false )
 				auto expr_res = interpreter.Evaluate( res[i]->AsExpressionStmt()->Expr() );
 				std::cout << expr_res.ToString() << std::endl;
 			}
-			else
+			else if( !use_compiler )
 			{
-				interpreter.Execute( std::move( res[i] )  );
+				// AstPrinter::Print( res[i].get() );
+				interpreter.Execute( std::move( res[i] ) );
 			}
 
 			if( ErrorSys::HadError() ) return;
+		}
+
+		if( use_compiler )
+		{
+			compiler.Compile( std::move( res ) );
+
+			if( ErrorSys::HadError() ) return;
+
+			auto code = compiler.Code();
+
+			Disassembler disasm( code, src );
+			disasm.Disassemble();
+
+			vm.Run( code );
 		}
 	}
 	catch( const RuntimeError& )
@@ -83,10 +103,17 @@ void RunFromPrompt()
 
 void AddNative( const std::string& name, BatNativeCallback callback )
 {
-	interpreter.AddNative( name, std::move( callback ) );
+	interpreter.AddNative( name, callback );
+	vm.AddNative( name, callback );
 }
 
 using namespace std::chrono;
+
+int fib( int n )
+{
+	if( n < 2 ) return n;
+	return fib( n - 2 ) + fib( n - 1 );
+}
 
 int main( int argc, char** argv )
 {
@@ -128,6 +155,26 @@ int main( int argc, char** argv )
 	{
 		//RunFromPrompt();
 		RunFromFile( "test2.bat" );
+
+		//Compiler compiler;
+		//auto x = compiler.EmitJump( OpCode::JZ );
+		//compiler.Emit( OpCode::PUSH, 15 );
+		//compiler.Emit( OpCode::PUSH, 12 );
+		//compiler.Emit( OpCode::ADD );
+		//compiler.Emit( OpCode::PRINT );
+		//compiler.EmitF( OpCode::PUSH, 1 );
+		//compiler.EmitF( OpCode::PUSH, 2 );
+		//compiler.Emit( OpCode::ADDF );
+		//
+		//compiler.Patch( x, 1 );
+		//
+		//auto code = compiler.Code();
+		//
+		//Disassembler disasm( code );
+		//disasm.Disassemble();
+		//
+		//VirtualMachine vm;
+		//vm.Run( code );
 	}
 
 	system( "pause" );
