@@ -2,6 +2,7 @@
 #include <limits>
 #include <chrono>
 
+#include "stringlib.h"
 #include "memory_stream.h"
 #include "lexer.h"
 #include "parser.h"
@@ -14,6 +15,7 @@
 #include "compiler.h"
 #include "disassembler.h"
 #include "vm.h"
+#include "optparse.h"
 
 using namespace Bat;
 
@@ -22,7 +24,19 @@ SemanticAnalysis sa;
 Compiler compiler;
 VirtualMachine vm;
 
-void Run( const std::string& src, bool print_expression_results = false, bool use_compiler = true )
+// Options
+enum class ExecuteMethod
+{
+	NONE,
+	INTERPRETER,
+	VM
+};
+
+bool print_ast = true;
+bool disassemble = false;
+ExecuteMethod exec_method = ExecuteMethod::VM;
+
+void Run( const std::string& src, bool print_expression_results = false )
 {
 	Lexer l( src );
 	auto tokens = l.Scan();
@@ -45,21 +59,25 @@ void Run( const std::string& src, bool print_expression_results = false, bool us
 	{
 		for( size_t i = 0; i < res.size(); i++ )
 		{
+			if( print_ast )
+			{
+				AstPrinter::Print( res[i].get() );
+			}
+
 			if( print_expression_results && res[i]->IsExpressionStmt() )
 			{
 				auto expr_res = interpreter.Evaluate( res[i]->AsExpressionStmt()->Expr() );
 				std::cout << expr_res.ToString() << std::endl;
 			}
-			else if( !use_compiler )
+			else if( exec_method == ExecuteMethod::INTERPRETER )
 			{
-				// AstPrinter::Print( res[i].get() );
 				interpreter.Execute( std::move( res[i] ) );
 			}
 
 			if( ErrorSys::HadError() ) return;
 		}
 
-		if( use_compiler )
+		if( exec_method != ExecuteMethod::INTERPRETER )
 		{
 			compiler.Compile( std::move( res ) );
 
@@ -67,10 +85,16 @@ void Run( const std::string& src, bool print_expression_results = false, bool us
 
 			auto code = compiler.Code();
 
-			Disassembler disasm( code, src );
-			disasm.Disassemble();
+			if( disassemble )
+			{
+				Disassembler disasm( code, src );
+				disasm.Disassemble();
+			}
 
-			vm.Run( code );
+			if( exec_method == ExecuteMethod::VM )
+			{
+				vm.Run( code );
+			}
 		}
 	}
 	catch( const RuntimeError& )
@@ -149,32 +173,50 @@ int main( int argc, char** argv )
 
 	if( argc >= 2 )
 	{
-		RunFromFile( argv[1] );
+		OptParse optparse;
+		optparse.AddFlagOption( "disasm", 'd' )
+			.AddFlagOption( "ast", 'a' )
+			.AddArgOption( "method", 'm' );
+		optparse.Process( argc, argv );
+
+		if( optparse["disasm"] )
+		{
+			disassemble = true;
+		}
+
+		if( optparse["ast"] )
+		{
+			print_ast = true;
+		}
+
+		if( optparse["method"] )
+		{
+			if( optparse["method"] == "vm"s )
+			{
+				exec_method = ExecuteMethod::VM;
+			}
+			else if( optparse["method"] == "interpreter"s )
+			{
+				exec_method = ExecuteMethod::INTERPRETER;
+			}
+			else if( optparse["method"] == "none"s )
+			{
+				exec_method = ExecuteMethod::NONE;
+			}
+			else
+			{
+				std::cerr << "Method muse be one of: none, vm, interpreter\n";
+				return -1;
+			}
+		}
+
+		RunFromFile( optparse.GetArg( 0 ) );
 	}
 	else
 	{
 		//RunFromPrompt();
+		disassemble = true;
 		RunFromFile( "test2.bat" );
-
-		//Compiler compiler;
-		//auto x = compiler.EmitJump( OpCode::JZ );
-		//compiler.Emit( OpCode::PUSH, 15 );
-		//compiler.Emit( OpCode::PUSH, 12 );
-		//compiler.Emit( OpCode::ADD );
-		//compiler.Emit( OpCode::PRINT );
-		//compiler.EmitF( OpCode::PUSH, 1 );
-		//compiler.EmitF( OpCode::PUSH, 2 );
-		//compiler.Emit( OpCode::ADDF );
-		//
-		//compiler.Patch( x, 1 );
-		//
-		//auto code = compiler.Code();
-		//
-		//Disassembler disasm( code );
-		//disasm.Disassemble();
-		//
-		//VirtualMachine vm;
-		//vm.Run( code );
 	}
 
 	system( "pause" );
