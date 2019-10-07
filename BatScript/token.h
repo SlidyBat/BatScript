@@ -33,6 +33,7 @@
 	_(INT,            "int")                                    \
 	_(FLOAT,          "float")                                  \
 	_(STRING,         "string")                                 \
+	_(VOID,           "void")                                   \
 
 
 #define TOKEN_TYPES(_) \

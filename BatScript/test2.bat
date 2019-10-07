@@ -1,9 +1,13 @@
-import core
+var g = 0
 
-int fib(int n):
-    if n < 2: return n
-    return fib(n - 2) + fib(n - 1)
+void test
 
-var start = time()
-print fib(25)
-print (time() - start) / 1000.0
+def f():
+	g += 1
+	return g
+
+def foo(int a, int b):
+	print a
+	print b
+
+foo(f(), f())

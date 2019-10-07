@@ -62,7 +62,7 @@ namespace Bat
 		Void,
 		Bool,
 		Int,
-		Float,
+		Float, 
 		String
 	};
 
@@ -79,6 +79,8 @@ namespace Bat
 		{
 			switch( PrimKind() )
 			{
+				case PrimitiveKind::Void:
+					return "void";
 				case PrimitiveKind::Bool:
 					return "bool";
 				case PrimitiveKind::Int:

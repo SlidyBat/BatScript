@@ -170,6 +170,7 @@
     <ClInclude Include="interpreter.h" />
     <ClInclude Include="lexer.h" />
     <ClInclude Include="memory_stream.h" />
+    <ClInclude Include="optparse.h" />
     <ClInclude Include="parser.h" />
     <ClInclude Include="runtime_error.h" />
     <ClInclude Include="semantic_analysis.h" />

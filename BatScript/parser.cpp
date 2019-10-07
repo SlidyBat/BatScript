@@ -73,6 +73,15 @@ namespace Bat
 
 	TypeSpecifier Parser::ExpectType( const std::string& message )
 	{
+		if( Check( TOKEN_VOID ) )
+		{
+			// void is special case, can't have any type modifiers on void
+			Token type_name = Advance();
+			TypeSpecifier t( type_name );
+
+			return t;
+		}
+
 		if( Check( TOKEN_BOOL ) ||
 			Check( TOKEN_INT ) ||
 			Check( TOKEN_FLOAT ) ||
@@ -164,7 +173,8 @@ namespace Bat
 				Check( TOKEN_BOOL ) ||
 				Check( TOKEN_INT ) ||
 				Check( TOKEN_FLOAT ) ||
-				Check( TOKEN_STRING ) )
+				Check( TOKEN_STRING ) ||
+				Check( TOKEN_VOID ) )
 			{
 				return ParseCompoundStatement();
 			}

@@ -53,6 +53,14 @@ namespace Bat
 		SymbolKind m_Kind;
 	};
 
+	enum class StorageClass
+	{
+		UNKNOWN,
+		LOCAL,
+		GLOBAL,
+		ARGUMENT
+	};
+
 	class VariableSymbol : public Symbol
 	{
 	public:
@@ -69,9 +77,13 @@ namespace Bat
 		// TODO: Store scope as well so we know how to interpret address (globals handled incorrectly atm)
 		virtual int64_t Address() const override { return m_iAddress; }
 		void SetAddress( int64_t addr ) { m_iAddress = addr; }
+
+		StorageClass Storage() const { return m_Storage; }
+		void SetStorage( StorageClass sc ) { m_Storage = sc; }
 	private:
 		Type* m_pType;
 		int64_t m_iAddress = 0;
+		StorageClass m_Storage = StorageClass::UNKNOWN;
 	};
 
 	enum class FunctionKind

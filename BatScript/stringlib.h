@@ -5,6 +5,8 @@
 #include <sstream>
 #include <vector>
 
+using namespace std::string_literals;
+
 namespace Bat
 {
 	std::wstring StringToWide( std::string_view str );

@@ -34,6 +34,7 @@ namespace Bat
 		case TOKEN_FLOAT:  t = typeman.NewPrimitive( PrimitiveKind::Float ); break;
 		case TOKEN_BOOL:   t = typeman.NewPrimitive( PrimitiveKind::Bool ); break;
 		case TOKEN_STRING: t = typeman.NewPrimitive( PrimitiveKind::String ); break;
+		case TOKEN_VOID:   t = typeman.NewPrimitive( PrimitiveKind::Void ); break;
 		}
 
 		for( size_t i = 0; i < type.Rank(); i++ )

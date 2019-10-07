@@ -565,6 +565,14 @@ namespace Bat
 		if( node->TypeSpec().TypeName().type != TOKEN_VAR )
 		{
 			Type* var_type = TypeSpecifierToType( node->TypeSpec() );
+
+			if( var_type->IsPrimitive() && var_type->ToPrimitive()->PrimKind() == PrimitiveKind::Void )
+			{
+				Error( node->Location(), "'" + var_type->ToString() + "' is an invalid variable type" );
+				node->SetType( var_type );
+				return;
+			}
+
 			if( node->Initializer() )
 			{
 				Type* init_type = GetExprType( node->Initializer() );
@@ -659,6 +667,14 @@ namespace Bat
 		}
 
 		Analyze( node->Body() );
+
+		// Couldn't deduce return type from returns because there weren't any
+		// No returns = void function
+		if( sig.ReturnType() == nullptr )
+		{
+			sig.SetReturnType( typeman.NewPrimitive( PrimitiveKind::Void ) );
+		}
+
 		m_pCurrentFunc = nullptr;
 		PopScope();
 	}

@@ -61,6 +61,9 @@ namespace Bat
 		// Patches the jump target of a jump opcode at a given address to point to current instruction pointer
 		void PatchJump( CodeLoc_t addr );
 
+		void EmitLoad( Symbol* sym );
+		void EmitStore( Symbol* sym );
+
 		void Compile( std::unique_ptr<Statement> s );
 		void Compile( Statement* s );
 		void CompileLValue( Expression* e );
@@ -71,12 +74,15 @@ namespace Bat
 		// Compiles a binary operation that has an lvalue for left hand side (in other words, an assignment type operation)
 		void CompileBinaryLValue( BinaryExpr* node );
 
-		VariableSymbol* AddVariable( AstNode* node, const std::string& name, Type* type );
+		VariableSymbol* AddVariable( AstNode* node, const std::string& name, StorageClass storage, Type* type );
 		Symbol* GetSymbol( const std::string& name ) const;
+		Symbol* GetSymbol( Expression* node ) const;
 		FunctionSymbol* AddFunction( AstNode* node, const std::string& name );
 		FunctionSymbol* AddNative( NativeStmt* node, const std::string& name );
 
 		bool InGlobalScope() const { return m_pSymTab->Enclosing() == nullptr; }
+		void AddGlobalInitializer( Symbol* var, Expression* initializer );
+		void CompileGlobalInitializers();
 		void PushScope();
 		void PopScope();
 
@@ -128,6 +134,14 @@ namespace Bat
 		int m_iArgumentsStackSize = 0;
 		ExprType m_CompileType = ExprType::UNKNOWN;
 		bool m_bVisitedReturn = false;
+		bool m_bGlobalVar = false;
 		CodeLoc_t m_iEntryPoint = 0;
+
+		struct GlobalInitializer
+		{
+			Symbol* var;
+			Expression* initializer;
+		};
+		std::vector<GlobalInitializer> m_GlobalInitializers;
 	};
 }

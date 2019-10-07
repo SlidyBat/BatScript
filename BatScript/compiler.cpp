@@ -33,7 +33,7 @@ namespace Bat
 			return TYPE_CALLABLE;
 		}
 
-		if( ArrayType * a = t->ToArray() )
+		if( ArrayType* a = t->ToArray() )
 		{
 			return TYPE_ARRAY;
 		}
@@ -54,40 +54,53 @@ namespace Bat
 		// Do imports first
 		for( const auto& stmt : statements )
 		{
-			if( ImportStmt* imp = stmt->ToImportStmt() )
+			if( ImportStmt* impt = stmt->ToImportStmt() )
 			{
-				imp->Accept( this );
+				Compile( impt );
 			}
 		}
 
-		// Functions second
+		m_iStackSize = 0;
+
+		// Global vars second
+		for( const auto& stmt : statements )
+		{
+			if( VarDecl* var = stmt->ToVarDecl() )
+			{
+				Compile( var );
+			}
+		}
+
+		int globals_stack = m_iStackSize;
+
+		// Functions third
 		for( const auto& stmt : statements )
 		{
 			if( FuncDecl* func = stmt->ToFuncDecl() )
 			{
-				func->Accept( this );
+				Compile( func );
 			}
 		}
 
 		m_iEntryPoint = IP();
-		m_iStackSize = 0;
 
 		Emit( OpCode::PROC );
-		CodeLoc_t global_stack = EmitToPatch( OpCode::STACK );
+		Emit( OpCode::STACK, globals_stack );
+
+		// Initialize all the global variables
+		CompileGlobalInitializers();
 
 		// Everything else gets put into a pseudo-function as the mainline
 		for( const auto& stmt : statements )
 		{
-			if( !stmt->IsImportStmt() && !stmt->IsFuncDecl() )
+			if( !stmt->IsImportStmt() && !stmt->IsFuncDecl() && !stmt->IsVarDecl() )
 			{
-				stmt->Accept( this );
+				Compile( stmt.get() );
 			}
 		}
 
 		Emit( OpCode::ENDPROC );
 		Emit( OpCode::HALT );
-
-		Patch( global_stack, m_iStackSize );
 	}
 	void Compiler::Compile( std::unique_ptr<Statement> s )
 	{
@@ -205,6 +218,44 @@ namespace Bat
 	{
 		Patch( addr, IP() );
 	}
+	void Compiler::EmitLoad( Symbol* sym )
+	{
+		if( VariableSymbol* var = sym->AsVariable() )
+		{
+			bool global = (var->Storage() == StorageClass::GLOBAL);
+			if( global )
+			{
+				Emit( OpCode::LOAD_GLOBAL );
+			}
+			else
+			{
+				Emit( OpCode::LOAD_LOCAL );
+			}
+		}
+		else
+		{
+			assert( false );
+		}
+	}
+	void Compiler::EmitStore( Symbol* sym )
+	{
+		if( VariableSymbol * var = sym->AsVariable() )
+		{
+			bool global = (var->Storage() == StorageClass::GLOBAL);
+			if( global )
+			{
+				Emit( OpCode::STORE_GLOBAL );
+			}
+			else
+			{
+				Emit( OpCode::STORE_LOCAL );
+			}
+		}
+		else
+		{
+			assert( false );
+		}
+	}
 	BatCode Compiler::Code() const
 	{
 		BatCode bc;
@@ -263,12 +314,14 @@ namespace Bat
 	}
 	void Compiler::CompileBinaryLValue( BinaryExpr* node )
 	{
+		Symbol* sym = GetSymbol( node->Left() );
+
 		/* Straight assignment is a simple store operation */
 		if( node->Op() == TOKEN_EQUAL )
 		{
 			CompileLValue( node->Left() );
 			CompileRValue( node->Right() );
-			Emit( OpCode::STORE );
+			EmitStore( sym );
 			return;
 		}
 
@@ -286,7 +339,7 @@ namespace Bat
 		PrimitiveKind kind = node->Type()->ToPrimitive()->PrimKind();
 
 		Emit( OpCode::DUPX1 );
-		Emit( OpCode::LOAD );
+		EmitLoad( sym );
 
 		switch( node->Op() )
 		{
@@ -300,16 +353,28 @@ namespace Bat
 		case TOKEN_BAR_EQUAL:      Emit( OpCode::BITOR ); break;
 		}
 
-		Emit( OpCode::STORE );
+		EmitStore( sym );
 	}
-	VariableSymbol* Compiler::AddVariable( AstNode* node, const std::string& name, Type* type )
+	VariableSymbol* Compiler::AddVariable( AstNode* node, const std::string& name, StorageClass storage, Type* type )
 	{
 		m_pSymTab->AddSymbol( name, std::make_unique<VariableSymbol>( node, type ) );
-		return m_pSymTab->GetSymbol( name )->ToVariable();
+		VariableSymbol* var = m_pSymTab->GetSymbol( name )->ToVariable();
+		var->SetStorage( storage );
+		return var;
 	}
 	Symbol* Compiler::GetSymbol( const std::string& name ) const
 	{
 		return m_pSymTab->GetSymbol( name );
+	}
+	Symbol* Compiler::GetSymbol( Expression* node ) const
+	{
+		assert( node->IsLValue() );
+		if( VarExpr* var = node->AsVarExpr() )
+		{
+			return GetSymbol( var->Identifier().lexeme );
+		}
+
+		assert( false );
 	}
 	FunctionSymbol* Compiler::AddFunction( AstNode* node, const std::string& name )
 	{
@@ -327,6 +392,22 @@ namespace Bat
 		ntv->SetAddress( m_Natives.size() );
 		m_Natives.push_back( name );
 		return ntv;
+	}
+	void Compiler::AddGlobalInitializer( Symbol* var, Expression* initializer )
+	{
+		GlobalInitializer gi;
+		gi.var = var;
+		gi.initializer = initializer;
+		m_GlobalInitializers.push_back( gi );
+	}
+	void Compiler::CompileGlobalInitializers()
+	{
+		for( const GlobalInitializer& gi : m_GlobalInitializers )
+		{
+			Emit( OpCode::PUSH, gi.var->Address() );
+			CompileRValue( gi.initializer );
+			EmitStore( gi.var );
+		}
 	}
 	void Compiler::PushScope()
 	{
@@ -537,12 +618,15 @@ namespace Bat
 		}
 
 		// Clean up arguments on stack
-		size_t args_size = 0;
-		for( size_t i = 0; i < node->NumArgs(); i++ )
+		if( node->NumArgs() > 0 )
 		{
-			args_size += node->Arg( i )->Type()->Size();
+			size_t args_size = 0;
+			for( size_t i = 0; i < node->NumArgs(); i++ )
+			{
+				args_size += node->Arg( i )->Type()->Size();
+			}
+			Emit( OpCode::SSTACK, args_size );
 		}
-		Emit( OpCode::SSTACK, args_size );
 
 		// Push return value if we have one
 		Type* ret_type = sig.ReturnType();
@@ -611,11 +695,11 @@ namespace Bat
 
 		assert( m_CompileType != ExprType::UNKNOWN );
 
-		Symbol* var = GetSymbol( node->Identifier().lexeme );
-		Emit( OpCode::PUSH, var->Address() );
+		Symbol* sym = GetSymbol( node->Identifier().lexeme );
+		Emit( OpCode::PUSH, sym->Address() );
 		if( m_CompileType == ExprType::RVALUE )
 		{
-			Emit( OpCode::LOAD );
+			EmitLoad( sym );
 		}
 	}
 	void Compiler::VisitExpressionStmt( ExpressionStmt* node )
@@ -779,16 +863,25 @@ namespace Bat
 	{
 		UpdateCurrLine( node );
 
-		VariableSymbol* var = AddVariable( node, node->Identifier().lexeme, node->Type() );
+		VariableSymbol* var = AddVariable( node, node->Identifier().lexeme, InGlobalScope() ? StorageClass::GLOBAL : StorageClass::LOCAL, node->Type() );
 		var->SetAddress( m_iStackSize );
 
 		m_iStackSize += (int)node->Type()->Size();
 
 		if( node->Initializer() )
 		{
-			Emit( OpCode::PUSH, var->Address() );
-			CompileRValue( node->Initializer() );
-			Emit( OpCode::STORE );
+			if( InGlobalScope() )
+			{
+				// Globals have to be initialized at start of program
+				AddGlobalInitializer( var, node->Initializer() );
+			}
+			else
+			{
+				// Non-globals can be initialized where they're declared
+				Emit( OpCode::PUSH, var->Address() );
+				CompileRValue( node->Initializer() );
+				EmitStore( var );
+			}
 		}
 	}
 	void Compiler::VisitFuncDecl( FuncDecl* node )
@@ -817,7 +910,7 @@ namespace Bat
 		for( size_t i = 0; i < sig.NumParams(); i++ )
 		{
 			Type* arg_type = TypeSpecifierToType( sig.ParamType( i ) );
-			VariableSymbol* arg = AddVariable( node, sig.ParamIdent( i ).lexeme, arg_type );
+			VariableSymbol* arg = AddVariable( node, sig.ParamIdent( i ).lexeme, StorageClass::ARGUMENT, arg_type );
 			arg->SetAddress( last_arg_addr + i * sizeof( int64_t ) );
 
 			// TODO: defaults are handled wrong, should be handled at caller side
@@ -825,7 +918,7 @@ namespace Bat
 			{
 				Emit( OpCode::PUSH, arg->Address() );
 				CompileRValue( sig.ParamDefault( i ) );
-				Emit( OpCode::STORE );
+				EmitStore( arg );
 			}
 		}
 

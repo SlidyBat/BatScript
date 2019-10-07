@@ -124,7 +124,7 @@ namespace Bat
 				DISPATCH();
 			}
 
-			case TARGET(LOAD):
+			case TARGET(LOAD_LOCAL):
 			{
 				auto addr = Pop();
 				auto value = *reinterpret_cast<int64_t*>(&m_Stack[m_iBasePointer + addr]);
@@ -132,11 +132,27 @@ namespace Bat
 
 				DISPATCH();
 			}
-			case TARGET(STORE):
+			case TARGET(LOAD_GLOBAL):
+			{
+				auto addr = Pop();
+				auto value = *reinterpret_cast<int64_t*>(&m_Stack[addr]);
+				Push( value );
+
+				DISPATCH();
+			}
+			case TARGET(STORE_LOCAL):
 			{
 				auto value = Pop();
 				auto addr = Pop();
 				*reinterpret_cast<int64_t*>(&m_Stack[m_iBasePointer + addr]) = value;
+
+				DISPATCH();
+			}
+			case TARGET(STORE_GLOBAL):
+			{
+				auto value = Pop();
+				auto addr = Pop();
+				*reinterpret_cast<int64_t*>(&m_Stack[addr]) = value;
 
 				DISPATCH();
 			}
@@ -291,7 +307,7 @@ namespace Bat
 
 	void VirtualMachine::GoTo( int64_t addr )
 	{
-		m_iIP = addr;
+		m_iIP = (int)addr;
 	}
 	void VirtualMachine::HandleNative( const BatCode& bc, const BatNativeInfo& native )
 	{
