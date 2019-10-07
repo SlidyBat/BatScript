@@ -38,6 +38,8 @@ namespace Bat
 		const AstNode* Node() const { return m_pNode; }
 		SymbolKind Kind() const { return m_Kind; }
 
+		virtual int64_t Address() const { assert( false ); return 0; }
+
 #define _(symtype) \
 		virtual bool Is##symtype() const { return Kind() == SymbolKind::##symtype; } \
 		virtual symtype##Symbol* As##symtype() { if( !Is##symtype() ) return nullptr; return (symtype##Symbol*)this; } \
@@ -51,6 +53,14 @@ namespace Bat
 		SymbolKind m_Kind;
 	};
 
+	enum class StorageClass
+	{
+		UNKNOWN,
+		LOCAL,
+		GLOBAL,
+		ARGUMENT
+	};
+
 	class VariableSymbol : public Symbol
 	{
 	public:
@@ -60,11 +70,20 @@ namespace Bat
 			m_pType( type )
 		{}
 
-		void SetVarType( Type* type ) { m_pType = type; }
+		void SetVarType( Type* type ) { assert( m_pType == nullptr ); m_pType = type; }
 		Type* VarType() { return m_pType; }
 		const Type* VarType() const { return m_pType; }
+
+		// TODO: Store scope as well so we know how to interpret address (globals handled incorrectly atm)
+		virtual int64_t Address() const override { return m_iAddress; }
+		void SetAddress( int64_t addr ) { m_iAddress = addr; }
+
+		StorageClass Storage() const { return m_Storage; }
+		void SetStorage( StorageClass sc ) { m_Storage = sc; }
 	private:
 		Type* m_pType;
+		int64_t m_iAddress = 0;
+		StorageClass m_Storage = StorageClass::UNKNOWN;
 	};
 
 	enum class FunctionKind
@@ -93,12 +112,17 @@ namespace Bat
 				return Node()->ToNativeStmt()->Signature();
 			}
 
+			assert( false );
 			return Node()->ToFuncDecl()->Signature();
 		}
 		FunctionKind FuncKind() const { return m_FuncKind; }
+
+		virtual int64_t Address() const override { return m_iAddress; }
+		void SetAddress( int64_t addr ) { m_iAddress = addr; }
 	private:
 		FunctionKind m_FuncKind;
 		bool m_bDeclaredInScript = false;
+		int64_t m_iAddress = 0;
 	};
 
 	class TypeSymbol : public Symbol

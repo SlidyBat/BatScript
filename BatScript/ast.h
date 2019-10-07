@@ -20,6 +20,7 @@
 	_( VarExpr ) \
 	_( CallExpr ) \
 	_( IndexExpr ) \
+	_( CastExpr ) \
 	/* Statements */ \
 	_( ExpressionStmt ) \
 	_( BlockStmt ) \
@@ -43,6 +44,7 @@ namespace Bat
 #undef _
 	};
 
+	class LValueExpr;
 #define _(asttype) class asttype;
 	AST_TYPES(_)
 #undef _
@@ -64,12 +66,12 @@ namespace Bat
 			m_Loc( loc )
 		{}
 
-		virtual AstType Type() const = 0;
+		virtual AstType Kind() const = 0;
 		virtual void Accept( AstVisitor* visitor ) = 0;
 		virtual const char* Name() const = 0;
 
 #define _(asttype) \
-		bool Is##asttype() const { return Type() == AstType::asttype; } \
+		bool Is##asttype() const { return Kind() == AstType::asttype; } \
 		asttype* As##asttype() { assert( Is##asttype() ); return (asttype*) this; } \
 		const asttype* As##asttype() const { assert( Is##asttype() ); return (const asttype*)this; } \
 		asttype* To##asttype() { if ( !Is##asttype() ) return nullptr; return (asttype*)this; } \
@@ -84,7 +86,7 @@ namespace Bat
 	};
 
 #define DECLARE_AST_NODE(asttype) \
-	virtual AstType Type() const override { return AstType::##asttype; } \
+	virtual AstType Kind() const override { return AstType::##asttype; } \
 	virtual void Accept( AstVisitor* visitor ) override { visitor->Visit##asttype( this ); } \
 	virtual const char* Name() const override { return #asttype; }
 
@@ -95,7 +97,26 @@ namespace Bat
 			:
 			AstNode( loc )
 		{}
+
+		void SetType( Type* type ) { m_pType = type; }
+		const Bat::Type* Type() const { return m_pType; }
+		Bat::Type* Type() { return m_pType; }
+		virtual bool IsLValue() const { return false; }
+	private:
+		Bat::Type* m_pType = nullptr; // Type gets filled in semantic analysis pass
 	};
+
+	class LValueExpr : public Expression
+	{
+	public:
+		LValueExpr( const SourceLoc& loc )
+			:
+			Expression( loc )
+		{}
+
+		virtual bool IsLValue() const override { return true; }
+	};
+
 	class Statement : public AstNode
 	{
 	public:
@@ -173,7 +194,11 @@ namespace Bat
 
 		TokenType Op() const { return m_Op; }
 		Expression* Left() { return m_pLeft.get(); }
+		std::unique_ptr<Expression> TakeLeft() { return std::move( m_pLeft ); }
+		void SetLeft( std::unique_ptr<Expression> expr ) { m_pLeft = std::move( expr ); }
 		Expression* Right() { return m_pRight.get(); }
+		void SetRight( std::unique_ptr<Expression> expr ) { m_pRight = std::move( expr ); }
+		std::unique_ptr<Expression> TakeRight() { return std::move( m_pRight ); }
 	private:
 		TokenType m_Op;
 		std::unique_ptr<Expression> m_pLeft;
@@ -215,14 +240,16 @@ namespace Bat
 		std::unique_ptr<Expression> m_pExpression;
 	};
 
-	class VarExpr : public Expression
+	class VarExpr : public LValueExpr
 	{
 	public:
 		DECLARE_AST_NODE( VarExpr );
 
-		VarExpr( const SourceLoc& loc, Token name ) : Expression( loc ), name( name ) {}
+		VarExpr( const SourceLoc& loc, Token name ) : LValueExpr( loc ), m_tokName( name ) {}
 
-		Token name;
+		const Token& Identifier() const { return m_tokName; }
+	private:
+		Token m_tokName;
 	};
 
 	class CallExpr : public Expression
@@ -240,28 +267,53 @@ namespace Bat
 		Expression* Function() { return m_pFunc.get(); }
 		size_t NumArgs() const { return m_pArguments.size(); }
 		Expression* Arg( size_t index ) const { return m_pArguments[index].get(); }
+		std::unique_ptr<Expression> TakeArg( size_t index ) { return std::move( m_pArguments[index] ); }
+		void SetArg( size_t index, std::unique_ptr<Expression> expr ) { m_pArguments[index] = std::move( expr ); }
 	private:
 		std::unique_ptr<Expression> m_pFunc;
 		std::vector<std::unique_ptr<Expression>> m_pArguments;
 	};
 
-	class IndexExpr : public Expression
+	class IndexExpr : public LValueExpr
 	{
 	public:
 		DECLARE_AST_NODE( IndexExpr );
 
 		IndexExpr( const SourceLoc& loc, std::unique_ptr<Expression> arr, std::unique_ptr<Expression> index )
 			:
-			Expression( loc ),
+			LValueExpr( loc ),
 			m_pArray( std::move( arr ) ),
 			m_pIndex( std::move( index ) )
 		{}
 
 		Expression* Array() { return m_pArray.get(); }
 		Expression* Index() { return m_pIndex.get(); }
+		std::unique_ptr<Expression> TakeIndex() { return std::move( m_pIndex ); }
+		void SetIndex( std::unique_ptr<Expression> expr ) { m_pIndex = std::move( expr ); }
 	private:
 		std::unique_ptr<Expression> m_pArray;
 		std::unique_ptr<Expression> m_pIndex;
+	};
+
+	class CastExpr : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( CastExpr );
+
+		CastExpr( std::unique_ptr<Expression> expr, Bat::Type* target )
+			:
+			Expression( expr->Location() ),
+			m_pExpr( std::move( expr ) ),
+			m_pTargetType( target )
+		{
+			SetType( target );
+		}
+
+		Expression* Expr() { return m_pExpr.get(); }
+		Bat::Type* TargetType() { return m_pTargetType; }
+	private:
+		std::unique_ptr<Expression> m_pExpr;
+		Bat::Type* m_pTargetType;
 	};
 
 	class ExpressionStmt : public Statement
@@ -384,12 +436,14 @@ namespace Bat
 		ReturnStmt( const SourceLoc& loc, std::unique_ptr<Expression> ret_value )
 			:
 			Statement( loc ),
-			m_pRetValue( std::move( ret_value ) )
+			m_pRetExpr( std::move( ret_value ) )
 		{}
 
-		Expression* RetValue() { return m_pRetValue.get(); }
+		Expression* RetExpr() { return m_pRetExpr.get(); }
+		std::unique_ptr<Expression> TakeRetExpr() { return std::move( m_pRetExpr ); }
+		void SetRetExpr( std::unique_ptr<Expression> expr ) { m_pRetExpr = std::move( m_pRetExpr ); }
 	private:
-		std::unique_ptr<Expression> m_pRetValue;
+		std::unique_ptr<Expression> m_pRetExpr;
 	};
 
 	class ImportStmt : public Statement
@@ -452,6 +506,8 @@ namespace Bat
 		const TypeSpecifier& ParamType( size_t index ) const { return m_Types[index]; }
 		const Token& ParamIdent( size_t index ) const { return m_Parameters[index]; }
 		Expression* ParamDefault( size_t index ) const { return m_pDefaults[index].get(); }
+		std::unique_ptr<Expression> TakeParamDefault( size_t index ) { return std::move( m_pDefaults[index] ); }
+		void SetParamDefault( size_t index, std::unique_ptr<Expression> expr ) { m_pDefaults[index] = std::move( expr ); }
 		void SetReturnType( Type* rettype ) { m_pReturnType = rettype; }
 		Type* ReturnType() { return m_pReturnType; }
 		const Type* ReturnType() const { return m_pReturnType; }
@@ -500,13 +556,16 @@ namespace Bat
 		const TypeSpecifier& TypeSpec() const { return m_TypeName; }
 		const Token& Identifier() const { return m_Identifier; }
 		Expression* Initializer() { return m_pInitializer.get(); }
-		void SetNext( std::unique_ptr<VarDecl> next ) { m_pNext = std::move( next ); }
-		VarDecl* Next() { return m_pNext.get(); }
+		std::unique_ptr<Expression> TakeInitializer() { return std::move( m_pInitializer ); }
+		void SetInitializer( std::unique_ptr<Expression> expr ) { m_pInitializer = std::move( expr ); }
+		void SetType( Type* type ) { assert( m_pType == nullptr ); m_pType = type; }
+		Bat::Type* Type() { return m_pType; }
 	private:
 		TypeSpecifier m_TypeName;
+		Bat::Type* m_pType = nullptr;
 		Token m_Identifier;
 		std::unique_ptr<Expression> m_pInitializer;
-		std::unique_ptr<VarDecl> m_pNext;
+		bool m_bIsLValue = false;
 	};
 
 	class FuncDecl : public Statement

@@ -85,6 +85,7 @@ namespace Bat
 
 		std::string ToString();
 
+		bool Bool() const { assert( type == TYPE_BOOL ); return value.i64; }
 		int64_t Int() const { assert( type == TYPE_INT ); return value.i64; }
 		double Float() const { assert( type == TYPE_FLOAT ); return value.f64; }
 		const char* String() const { assert( type == TYPE_STR ); return value.str; }

@@ -6,6 +6,7 @@ namespace Bat
 
 	TypeManager::TypeManager()
 	{
+		AddType( "void", std::make_unique<PrimitiveType>( PrimitiveKind::Void ) );
 		AddType( "bool", std::make_unique<PrimitiveType>( PrimitiveKind::Bool ) );
 		AddType( "int", std::make_unique<PrimitiveType>( PrimitiveKind::Int ) );
 		AddType( "float", std::make_unique<PrimitiveType>( PrimitiveKind::Float ) );
@@ -39,6 +40,8 @@ namespace Bat
 	{
 		switch( primkind )
 		{
+		case PrimitiveKind::Void:
+			return GetType( "void" )->ToPrimitive();
 		case PrimitiveKind::Bool:
 			return GetType( "bool" )->ToPrimitive();
 		case PrimitiveKind::Float:

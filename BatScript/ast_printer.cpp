@@ -95,6 +95,12 @@ namespace Bat
 		PrintNode( node->Index() );
 	}
 
+	void AstPrinter::VisitCastExpr( CastExpr* node )
+	{
+		std::cout << "cast (" << node->TargetType()->ToString() << ")";
+		PrintNode( node->Expr() );
+	}
+
 	void AstPrinter::VisitGroupExpr( GroupExpr* node )
 	{
 		std::cout << "()";
@@ -103,7 +109,7 @@ namespace Bat
 
 	void AstPrinter::VisitVarExpr( VarExpr* node )
 	{
-		std::cout << "var " << node->name.lexeme;
+		std::cout << "var " << node->Identifier().lexeme;
 	}
 
 	void AstPrinter::VisitExpressionStmt( ExpressionStmt* node )
@@ -157,7 +163,7 @@ namespace Bat
 	void AstPrinter::VisitReturnStmt( ReturnStmt* node )
 	{
 		std::cout << "return";
-		PrintNode( node->RetValue() );
+		PrintNode( node->RetExpr() );
 	}
 
 	void AstPrinter::VisitImportStmt( ImportStmt* node )
@@ -168,16 +174,25 @@ namespace Bat
 	void AstPrinter::VisitNativeStmt( NativeStmt* node )
 	{
 		const auto& sig = node->Signature();
-		std::cout << "native " << node->Signature().Identifier().lexeme << std::endl;
+		std::cout << "native ";
+		if( node->Signature().ReturnType() )
+		{
+			std::cout << node->Signature().ReturnType()->ToString() << ' ';
+		}
+		std::cout << node->Signature().Identifier().lexeme << '(';
+
+		std::vector<std::string> params;
 		for( size_t i = 0; i < sig.NumParams(); i++ )
 		{
-			std::cout << sig.ParamType( i ).TypeName().lexeme << std::endl;
-			std::cout << sig.ParamIdent( i ).lexeme << std::endl;
-			if( sig.ParamDefault( i ) )
-			{
-				PrintNode( sig.ParamDefault( i ) );
-			}
+			std::stringstream ss;
+			ss << sig.ParamType( i ).TypeName().lexeme << ' ';
+			ss << sig.ParamIdent( i ).lexeme;
+			// TODO: Represent default values too
+			params.push_back( ss.str() );
 		}
+
+		std::cout << JoinStrings( params, ", " );
+		std::cout << ")";
 	}
 
 	void AstPrinter::VisitVarDecl( VarDecl* node )
@@ -189,16 +204,22 @@ namespace Bat
 	void  AstPrinter::VisitFuncDecl( FuncDecl* node )
 	{
 		const auto& sig = node->Signature();
-		std::cout << "def " << node->Signature().Identifier().lexeme << std::endl;
+		std::cout << (node->Signature().ReturnType() ? node->Signature().ReturnType()->ToString() : "def"s) << ' ';
+		std::cout << node->Signature().Identifier().lexeme << '(';
+
+		std::vector<std::string> params;
 		for( size_t i = 0; i < sig.NumParams(); i++ )
 		{
-			std::cout << sig.ParamType( i ).TypeName().lexeme << std::endl;
-			std::cout << sig.ParamIdent( i ).lexeme << std::endl;
-			if( sig.ParamDefault( i ) )
-			{
-				PrintNode( sig.ParamDefault( i ) );
-			}
+			std::stringstream ss;
+			ss << sig.ParamType( i ).TypeName().lexeme << ' ';
+			ss << sig.ParamIdent( i ).lexeme;
+			// TODO: Represent default values too
+			params.push_back( ss.str() );
 		}
+
+		std::cout << JoinStrings( params, ", " );
+		std::cout << ")";
+
 		PrintNode( node->Body() );
 	}
 }

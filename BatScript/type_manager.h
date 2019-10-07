@@ -3,6 +3,8 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include "ast.h"
+#include "errorsys.h"
 #include "type.h"
 
 namespace Bat
@@ -22,4 +24,42 @@ namespace Bat
 	};
 
 	extern TypeManager typeman;
+
+	inline Type* TypeSpecifierToType( const TypeSpecifier& type )
+	{
+		Type* t = nullptr;
+		switch( type.TypeName().type )
+		{
+		case TOKEN_INT:    t = typeman.NewPrimitive( PrimitiveKind::Int ); break;
+		case TOKEN_FLOAT:  t = typeman.NewPrimitive( PrimitiveKind::Float ); break;
+		case TOKEN_BOOL:   t = typeman.NewPrimitive( PrimitiveKind::Bool ); break;
+		case TOKEN_STRING: t = typeman.NewPrimitive( PrimitiveKind::String ); break;
+		case TOKEN_VOID:   t = typeman.NewPrimitive( PrimitiveKind::Void ); break;
+		}
+
+		for( size_t i = 0; i < type.Rank(); i++ )
+		{
+			Expression* rank_size = type.Dimensions( i );
+			if( !rank_size )
+			{
+				t = typeman.NewArray( t, ArrayType::UNSIZED );
+			}
+			else
+			{
+				// TODO: Support constant expressions that evaluate to int for array size
+				if( !rank_size->IsIntLiteral() )
+				{
+					auto loc = type.TypeName().loc;
+					ErrorSys::Report( loc.Line(), loc.Column(), "Array size must be integer literal" );
+					t = typeman.NewArray( t, ArrayType::UNSIZED ); // Mark as indeterminate length so we can keep going
+				}
+				else
+				{
+					t = typeman.NewArray( t, rank_size->ToIntLiteral()->value );
+				}
+			}
+		}
+
+		return t;
+	}
 }
