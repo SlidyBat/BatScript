@@ -85,7 +85,10 @@ namespace Bat
 		m_iEntryPoint = IP();
 
 		Emit( OpCode::PROC );
-		Emit( OpCode::STACK, globals_stack );
+		if( globals_stack > 0 )
+		{
+			Emit( OpCode::STACK, globals_stack );
+		}
 
 		// Initialize all the global variables
 		CompileGlobalInitializers();
