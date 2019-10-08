@@ -32,7 +32,7 @@ enum class ExecuteMethod
 	VM
 };
 
-bool print_ast = true;
+bool print_ast = false;
 bool disassemble = false;
 ExecuteMethod exec_method = ExecuteMethod::VM;
 
