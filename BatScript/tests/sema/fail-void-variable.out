@@ -1,0 +1,1 @@
+[sema\fail-void-variable.bat:1:1] Error: 'void' is an invalid variable type
