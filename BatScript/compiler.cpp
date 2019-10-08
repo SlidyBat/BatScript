@@ -375,6 +375,7 @@ namespace Bat
 		}
 
 		assert( false );
+		return nullptr;
 	}
 	FunctionSymbol* Compiler::AddFunction( AstNode* node, const std::string& name )
 	{
