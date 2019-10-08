@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import argparse
 
 def get_tests_impl(tests, root, relroot):
     for filename in os.listdir(root):
@@ -18,7 +19,7 @@ def get_tests():
     get_tests_impl(tests, os.path.dirname(os.path.abspath(__file__)), '')
     return tests
 
-def run_tests(tests):
+def run_tests(tests, method=None):
     for test in tests:
         test_name = os.path.basename(test)
         
@@ -32,6 +33,8 @@ def run_tests(tests):
         
         try:
             argv = ['BatScript.exe', test + '.bat']
+            if method != None:
+                argv += ['--method', method]
             p = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
             stdout, stderr = p.communicate()
             out = stdout if kind == 'ok' else stderr
@@ -61,8 +64,12 @@ def run_tests(tests):
             sys.stderr.write('Failed! %s' % e.message)
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--method', type=str, default='vm')
+    args = parser.parse_args()
+
     tests = get_tests()
-    run_tests(tests)
+    run_tests(tests, method=args.method)
 
 if __name__ == '__main__':
     main()
