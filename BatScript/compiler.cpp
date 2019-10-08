@@ -287,8 +287,8 @@ namespace Bat
 	}
 	void Compiler::CompileBinaryRValue( BinaryExpr* node )
 	{
-		CompileRValue( node->Left() );
 		CompileRValue( node->Right() );
+		CompileRValue( node->Left() );
 
 		PrimitiveKind kind = node->Type()->ToPrimitive()->PrimKind();
 
@@ -443,22 +443,20 @@ namespace Bat
 	{
 		UpdateCurrLine( node );
 
-		Emit( OpCode::PUSH );
-		EmitI64( node->value );
+		Emit( OpCode::PUSH, node->value );
 	}
 	void Compiler::VisitFloatLiteral( FloatLiteral* node )
 	{
 		UpdateCurrLine( node );
 
-		Emit( OpCode::PUSH );
-		EmitDouble( node->value );
+		EmitF( OpCode::PUSH, node->value );
 	}
 	void Compiler::VisitStringLiteral( StringLiteral* node )
 	{
 		UpdateCurrLine( node );
 
 		int64_t index = AddStringLiteral( node->value );
-		EmitI64( index );
+		Emit( OpCode::PUSH, index );
 	}
 	void Compiler::VisitTokenLiteral( TokenLiteral* node )
 	{
@@ -467,17 +465,17 @@ namespace Bat
 		switch( node->value )
 		{
 		case TOKEN_TRUE:
-			EmitI64( 1 );
+			Emit( OpCode::PUSH, 1 );
 			break;
 		case TOKEN_FALSE:
-			EmitI64( 0 );
+			Emit( OpCode::PUSH, 0 );
 			break;
 		case TOKEN_NIL:
-			EmitI64( 0 );
+			Emit( OpCode::PUSH, 0 );
 			break;
 		default:
 			assert( false && "Unhandled token literal" );
-			EmitI64( 0 );
+			Emit( OpCode::PUSH, 0 );
 			break;
 		}
 	}

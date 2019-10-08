@@ -21,9 +21,9 @@ namespace Bat
 			case TypeKind::Primitive:
 				switch( type->AsPrimitive()->PrimKind() )
 				{
-					case PrimitiveKind::Bool:
 					case PrimitiveKind::String:
 						return false;
+					case PrimitiveKind::Bool:
 					case PrimitiveKind::Int:
 					case PrimitiveKind::Float:
 						return true;
@@ -605,6 +605,10 @@ namespace Bat
 			else
 			{
 				Type* init_type = GetExprType( node->Initializer() );
+				if( init_type->IsPrimitive() && init_type->ToPrimitive()->PrimKind() == PrimitiveKind::Void )
+				{
+					Error( node->Location(), "'" + init_type->ToString() + "' is an invalid variable type" );
+				}
 				AddVariable( node, node->Identifier().lexeme, init_type );
 
 				node->SetType( init_type );

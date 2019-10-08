@@ -10,7 +10,7 @@
 	{ \
 		auto a = Pop(); \
 		auto b = Pop(); \
-		Push( b op a ); \
+		Push( a op b ); \
 	} while( false )
 
 #define UNARY_OP(op) \
@@ -25,7 +25,7 @@
 	{ \
 		auto a = PopF(); \
 		auto b = PopF(); \
-		PushF( b op a ); \
+		PushF( a op b ); \
 	} while( false )
 
 #define UNARY_OP_F(op) \
@@ -169,7 +169,7 @@ namespace Bat
 				DISPATCH();
 			}
 
-			case TARGET( BITAND ): BINARY_OP( & ); DISPATCH();
+			case TARGET(BITAND): BINARY_OP( & ); DISPATCH();
 			case TARGET(BITOR):  BINARY_OP( | ); DISPATCH();
 			case TARGET(BITXOR): BINARY_OP( ^ ); DISPATCH();
 			case TARGET(BITNOT): UNARY_OP( ~ ); DISPATCH();
@@ -188,7 +188,7 @@ namespace Bat
 			case TARGET(SUB):    BINARY_OP( - ); DISPATCH();
 			case TARGET(DIV):    BINARY_OP( / ); DISPATCH();
 			case TARGET(MUL):    BINARY_OP( * ); DISPATCH();
-			case TARGET(MOD):    BINARY_OP( & ); DISPATCH();
+			case TARGET(MOD):    BINARY_OP( % ); DISPATCH();
 			case TARGET(NEG):    UNARY_OP( - ); DISPATCH();
 
 			case TARGET(ITOF):
