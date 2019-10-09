@@ -22,7 +22,7 @@ namespace Bat
 		void PushScope();
 		void PopScope();
 
-		void AddVariable( AstNode* node, const std::string& name, Type* type );
+		void AddVariable( AstNode* node, const Token& name, Type* type );
 		void AddFunction( AstNode* node, const std::string& name );
 		void AddNative( NativeStmt* node, const std::string& name );
 

@@ -49,9 +49,13 @@ namespace Bat
 		m_pSymTab = m_pSymTab->Enclosing();
 		delete temp;
 	}
-	void SemanticAnalysis::AddVariable( AstNode* node, const std::string& name, Type* type )
+	void SemanticAnalysis::AddVariable( AstNode* node, const Token& name, Type* type )
 	{
-		m_pSymTab->AddSymbol( name, std::make_unique<VariableSymbol>( node, type ) );
+		if( type->IsPrimitive() && type->ToPrimitive()->PrimKind() == PrimitiveKind::Void )
+		{
+			Error( name.loc, "'" + type->ToString() + "' is an invalid variable type" );
+		}
+		m_pSymTab->AddSymbol( name.lexeme, std::make_unique<VariableSymbol>( node, type ) );
 	}
 	void SemanticAnalysis::AddFunction( AstNode* node, const std::string& name )
 	{
@@ -713,13 +717,6 @@ namespace Bat
 		{
 			Type* var_type = TypeSpecifierToType( node->TypeSpec() );
 
-			if( var_type->IsPrimitive() && var_type->ToPrimitive()->PrimKind() == PrimitiveKind::Void )
-			{
-				Error( node->Location(), "'" + var_type->ToString() + "' is an invalid variable type" );
-				node->SetType( var_type );
-				return;
-			}
-
 			if( node->Initializer() )
 			{
 				Type* init_type = GetExprType( node->Initializer() );
@@ -734,11 +731,11 @@ namespace Bat
 					node->SetInitializer( std::move( cast ) );
 				}
 
-				AddVariable( node, node->Identifier().lexeme, var_type );
+				AddVariable( node, node->Identifier(), var_type );
 			}
 			else
 			{
-				AddVariable( node, node->Identifier().lexeme, var_type );
+				AddVariable( node, node->Identifier(), var_type );
 			}
 
 			node->SetType( var_type );
@@ -752,11 +749,7 @@ namespace Bat
 			else
 			{
 				Type* init_type = GetExprType( node->Initializer() );
-				if( init_type->IsPrimitive() && init_type->ToPrimitive()->PrimKind() == PrimitiveKind::Void )
-				{
-					Error( node->Location(), "'" + init_type->ToString() + "' is an invalid variable type" );
-				}
-				AddVariable( node, node->Identifier().lexeme, init_type );
+				AddVariable( node, node->Identifier(), init_type );
 
 				node->SetType( init_type );
 			}
@@ -798,17 +791,17 @@ namespace Bat
 				}
 
 				// Add the variable regardless of coercion success so that the errors don't pile up
-				AddVariable( node, sig.ParamIdent( i ).lexeme, param_type );
+				AddVariable( node, sig.ParamIdent( i ), param_type );
 			}
 			else if( sig.ParamDefault( i ) )
 			{
 				Type* default_expr_type = GetExprType( sig.ParamDefault( i ) );
-				AddVariable( node, sig.ParamIdent( i ).lexeme, default_expr_type );
+				AddVariable( node, sig.ParamIdent( i ), default_expr_type );
 			}
 			else
 			{
 				Type* param_type = TypeSpecifierToType( sig.ParamType( i ) );
-				AddVariable( node, sig.ParamIdent( i ).lexeme, param_type );
+				AddVariable( node, sig.ParamIdent( i ), param_type );
 			}
 		}
 
