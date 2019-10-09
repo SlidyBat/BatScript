@@ -22,7 +22,7 @@ namespace Bat
 		void PushScope();
 		void PopScope();
 
-		void AddVariable( AstNode* node, const std::string& name, Type* type );
+		void AddVariable( AstNode* node, const Token& name, Type* type );
 		void AddFunction( AstNode* node, const std::string& name );
 		void AddNative( NativeStmt* node, const std::string& name );
 
@@ -55,7 +55,7 @@ namespace Bat
 		virtual void VisitVarDecl( VarDecl* node ) override;
 		virtual void VisitFuncDecl( FuncDecl* node ) override;
 	private:
-		Type* PrimitiveBinary( PrimitiveType* left, PrimitiveType* right, TokenType op );
+		Type* PrimitiveBinary( PrimitiveType* left, PrimitiveType* right, TokenType op, Type** coerce_to );
 		Type* ArrayBinary( ArrayType* left, Type* right, TokenType op );
 	private:
 		Type* m_pResult = nullptr;

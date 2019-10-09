@@ -85,7 +85,10 @@ namespace Bat
 		m_iEntryPoint = IP();
 
 		Emit( OpCode::PROC );
-		Emit( OpCode::STACK, globals_stack );
+		if( globals_stack > 0 )
+		{
+			Emit( OpCode::STACK, globals_stack );
+		}
 
 		// Initialize all the global variables
 		CompileGlobalInitializers();
@@ -287,8 +290,8 @@ namespace Bat
 	}
 	void Compiler::CompileBinaryRValue( BinaryExpr* node )
 	{
-		CompileRValue( node->Left() );
 		CompileRValue( node->Right() );
+		CompileRValue( node->Left() );
 
 		PrimitiveKind kind = node->Type()->ToPrimitive()->PrimKind();
 
@@ -375,6 +378,7 @@ namespace Bat
 		}
 
 		assert( false );
+		return nullptr;
 	}
 	FunctionSymbol* Compiler::AddFunction( AstNode* node, const std::string& name )
 	{
@@ -442,22 +446,20 @@ namespace Bat
 	{
 		UpdateCurrLine( node );
 
-		Emit( OpCode::PUSH );
-		EmitI64( node->value );
+		Emit( OpCode::PUSH, node->value );
 	}
 	void Compiler::VisitFloatLiteral( FloatLiteral* node )
 	{
 		UpdateCurrLine( node );
 
-		Emit( OpCode::PUSH );
-		EmitDouble( node->value );
+		EmitF( OpCode::PUSH, node->value );
 	}
 	void Compiler::VisitStringLiteral( StringLiteral* node )
 	{
 		UpdateCurrLine( node );
 
 		int64_t index = AddStringLiteral( node->value );
-		EmitI64( index );
+		Emit( OpCode::PUSH, index );
 	}
 	void Compiler::VisitTokenLiteral( TokenLiteral* node )
 	{
@@ -466,17 +468,17 @@ namespace Bat
 		switch( node->value )
 		{
 		case TOKEN_TRUE:
-			EmitI64( 1 );
+			Emit( OpCode::PUSH, 1 );
 			break;
 		case TOKEN_FALSE:
-			EmitI64( 0 );
+			Emit( OpCode::PUSH, 0 );
 			break;
 		case TOKEN_NIL:
-			EmitI64( 0 );
+			Emit( OpCode::PUSH, 0 );
 			break;
 		default:
 			assert( false && "Unhandled token literal" );
-			EmitI64( 0 );
+			Emit( OpCode::PUSH, 0 );
 			break;
 		}
 	}
@@ -671,6 +673,16 @@ namespace Bat
 		{
 			Emit( OpCode::FTOI );
 		}
+		else if( base_type->PrimKind() == PrimitiveKind::Int && target->PrimKind() == PrimitiveKind::Bool )
+		{
+			Emit( OpCode::NOT );
+			Emit( OpCode::NOT );
+		}
+		else if( base_type->PrimKind() == PrimitiveKind::Float && target->PrimKind() == PrimitiveKind::Bool )
+		{
+			Emit( OpCode::NOT );
+			Emit( OpCode::NOT );
+		}
 		else
 		{
 			assert( false && "Unhandled cast type" );
@@ -732,6 +744,8 @@ namespace Bat
 		switch( t->PrimKind() )
 		{
 		case PrimitiveKind::Bool:
+			Emit( OpCode::PRINTB );
+			break;
 		case PrimitiveKind::Int:
 			Emit( OpCode::PRINTI );
 			break;

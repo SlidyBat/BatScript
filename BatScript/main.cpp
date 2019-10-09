@@ -32,7 +32,7 @@ enum class ExecuteMethod
 	VM
 };
 
-bool print_ast = true;
+bool print_ast = false;
 bool disassemble = false;
 ExecuteMethod exec_method = ExecuteMethod::VM;
 
@@ -219,7 +219,10 @@ int main( int argc, char** argv )
 		RunFromFile( "test2.bat" );
 	}
 
-	system( "pause" );
+	if( argc < 2 )
+	{
+		system( "pause" );
+	}
 
 	if( ErrorSys::HadError() )
 	{

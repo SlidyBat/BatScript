@@ -1,0 +1,5 @@
+[sema\fail-type-mismatch.bat:5:9] Error: Return value type (bool) does not match function type (int)
+[sema\fail-type-mismatch.bat:11:12] Error: Cannot assign expression of type int to variable of type string
+[sema\fail-type-mismatch.bat:12:8] Error: Cannot assign expression of type string to variable of type int
+[sema\fail-type-mismatch.bat:13:4] Error: 'void' is an invalid variable type
+[sema\fail-type-mismatch.bat:15:11] Error: Cannot use operator '|' on expressions of types float and float
