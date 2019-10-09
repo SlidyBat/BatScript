@@ -673,6 +673,16 @@ namespace Bat
 		{
 			Emit( OpCode::FTOI );
 		}
+		else if( base_type->PrimKind() == PrimitiveKind::Int && target->PrimKind() == PrimitiveKind::Bool )
+		{
+			Emit( OpCode::NOT );
+			Emit( OpCode::NOT );
+		}
+		else if( base_type->PrimKind() == PrimitiveKind::Float && target->PrimKind() == PrimitiveKind::Bool )
+		{
+			Emit( OpCode::NOT );
+			Emit( OpCode::NOT );
+		}
 		else
 		{
 			assert( false && "Unhandled cast type" );
@@ -734,6 +744,8 @@ namespace Bat
 		switch( t->PrimKind() )
 		{
 		case PrimitiveKind::Bool:
+			Emit( OpCode::PRINTB );
+			break;
 		case PrimitiveKind::Int:
 			Emit( OpCode::PRINTI );
 			break;

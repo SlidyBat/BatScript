@@ -68,9 +68,10 @@
 	_(GRTEF,        0, 1, 2, grtef)             \
 	/* Special */                               \
 	_(HALT,         0, 0, 0, halt)              \
-	_(PRINTI,       0, 0, 1, printi)            \
-	_(PRINTF,       0, 0, 1, printf)            \
-	_(PRINTS,       0, 0, 1, prints)            \
+	_(PRINTI,       0, 0, 1, int.print)         \
+	_(PRINTF,       0, 0, 1, float.print)       \
+	_(PRINTS,       0, 0, 1, str.print)         \
+	_(PRINTB,       0, 0, 1, bool.print)        \
 	_(NATIVE,       0, 1, 1, native)
 
 namespace Bat

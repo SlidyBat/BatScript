@@ -9,30 +9,9 @@
 
 namespace Bat
 {
-	static bool IsNumericType( Type* type )
-	{
-		if( !type ) return false;
-
-		switch( type->Kind() )
-		{
-			case TypeKind::Array:
-			case TypeKind::Function:
-				return false;
-			case TypeKind::Primitive:
-				switch( type->AsPrimitive()->PrimKind() )
-				{
-					case PrimitiveKind::String:
-						return false;
-					case PrimitiveKind::Bool:
-					case PrimitiveKind::Int:
-					case PrimitiveKind::Float:
-						return true;
-				}
-		}
-
-		assert( false );
-		return false;
-	}
+	static bool IsNumericType( Type* type );
+	static bool IsIntegralType( Type* type );
+	static bool IsFloatType( Type* type );
 
 	SemanticAnalysis::SemanticAnalysis()
 	{
@@ -191,20 +170,85 @@ namespace Bat
 		// Will infer to x being a dynamic length array
 		node->SetType( typeman.NewArray( inner, ArrayType::UNSIZED ) );
 	}
-	Type* SemanticAnalysis::PrimitiveBinary( PrimitiveType* left, PrimitiveType* right, TokenType op )
+	Type* SemanticAnalysis::PrimitiveBinary( PrimitiveType* left, PrimitiveType* right, TokenType op, Type** coerce_to )
 	{
-		if( left->PrimKind() == right->PrimKind() )
-		{
-			return left;
-		}
-
-		if( left->PrimKind() == PrimitiveKind::Float )
-		{
-			return left;
-		}
+		*coerce_to = nullptr;
 
 		switch( op )
 		{
+		// Arithmetic operators
+		case TOKEN_PLUS:
+		case TOKEN_MINUS:
+		case TOKEN_ASTERISK:
+		case TOKEN_SLASH:
+			if( !IsNumericType( left ) || !IsNumericType( right ) ) return nullptr;
+
+			if( IsFloatType( left ) )
+			{
+				*coerce_to = left;
+				return left;
+			}
+			if( IsFloatType( right ) )
+			{
+				*coerce_to = right;
+				return right;
+			}
+			if( IsIntegralType( left ) )
+			{
+				*coerce_to = left;
+				return left;
+			}
+			if( IsIntegralType( right ) )
+			{
+				*coerce_to = right;
+				return right;
+			}
+
+		// Bitwise operators (+ mod since its also integral type only)
+		case TOKEN_BAR:
+		case TOKEN_HAT:
+		case TOKEN_AMP:
+		case TOKEN_LESS_LESS:
+		case TOKEN_GREATER_GREATER:
+		case TOKEN_PERCENT:
+			if( !IsIntegralType( left ) || !IsIntegralType( right ) ) return nullptr;
+
+			// TODO: Make this return value with larger size when/if more integer types are added
+			//       For now they're both just `int` and doesn't matter which we return
+			*coerce_to = left;
+			return left;
+
+
+		// Comparison operators
+		case TOKEN_EQUAL_EQUAL:
+		case TOKEN_EXCLMARK_EQUAL:
+		case TOKEN_LESS:
+		case TOKEN_LESS_EQUAL:
+		case TOKEN_GREATER:
+		case TOKEN_GREATER_EQUAL:
+			
+			if( !IsNumericType( left ) || !IsNumericType( right ) ) return nullptr;
+
+			if( IsFloatType( left ) )
+			{
+				*coerce_to = left;
+			}
+			else if( IsFloatType( right ) )
+			{
+				*coerce_to = right;
+			}
+			else if( IsIntegralType( left ) )
+			{
+				*coerce_to = left;
+			}
+			else if( IsIntegralType( right ) )
+			{
+				*coerce_to = right;
+			}
+
+			return typeman.NewPrimitive( PrimitiveKind::Bool );
+
+		// Assignment operators
 		case TOKEN_EQUAL:
 		case TOKEN_PLUS_EQUAL:
 		case TOKEN_MINUS_EQUAL:
@@ -214,14 +258,21 @@ namespace Bat
 		case TOKEN_AMP_EQUAL:
 		case TOKEN_HAT_EQUAL:
 		case TOKEN_BAR_EQUAL:
-			// No implicit casting from float to int for assignments
-			return nullptr;
-		}
+			if( !IsNumericType( left ) || !IsNumericType( right ) ) return nullptr;
 
-		// Other operations are ok to implicitly cast
-		if( right->PrimKind() == PrimitiveKind::Float )
-		{
-			return right;
+			// No implicit casting from float to int for assignments
+			if( IsFloatType( left ) )
+			{
+				*coerce_to = left;
+				return left;
+			}
+			else if( IsIntegralType( left ) )
+			{
+				*coerce_to = right;
+				return left;
+			}
+
+			return nullptr;
 		}
 
 		assert( false );
@@ -291,17 +342,18 @@ namespace Bat
 
 		if( IsNumericType( left ) && IsNumericType( right ) )
 		{
-			Type* result = PrimitiveBinary( left->AsPrimitive(), right->AsPrimitive(), node->Op() );
+			Type* coerce_to;
+			Type* result = PrimitiveBinary( left->AsPrimitive(), right->AsPrimitive(), node->Op(), &coerce_to );
 			if( result )
 			{
-				if( !IsSameType( result, left ) )
+				if( !IsSameType( coerce_to, left ) )
 				{
-					auto cast = std::make_unique<CastExpr>( node->TakeLeft(), result );
+					auto cast = std::make_unique<CastExpr>( node->TakeLeft(), coerce_to );
 					node->SetLeft( std::move( cast ) );
 				}
-				if( !IsSameType( result, right ) )
+				if( !IsSameType( coerce_to, right ) )
 				{
-					auto cast = std::make_unique<CastExpr>( node->TakeRight(), result );
+					auto cast = std::make_unique<CastExpr>( node->TakeRight(), coerce_to );
 					node->SetRight( std::move( cast ) );
 				}
 
@@ -324,15 +376,110 @@ namespace Bat
 
 		node->SetType( left );
 	}
+
+	static bool IsNumericType( Type* type )
+	{
+		if( !type ) return false;
+
+		switch( type->Kind() )
+		{
+		case TypeKind::Array:
+		case TypeKind::Function:
+			return false;
+		case TypeKind::Primitive:
+			switch( type->AsPrimitive()->PrimKind() )
+			{
+			case PrimitiveKind::String:
+				return false;
+			case PrimitiveKind::Bool: // (?)
+			case PrimitiveKind::Int:
+			case PrimitiveKind::Float:
+				return true;
+			}
+		}
+
+		assert( false );
+		return false;
+	}
+
+	static bool IsIntegralType( Type* type )
+	{
+		if( !type ) return false;
+
+		switch( type->Kind() )
+		{
+		case TypeKind::Array:
+		case TypeKind::Function:
+			return false;
+		case TypeKind::Primitive:
+			switch( type->AsPrimitive()->PrimKind() )
+			{
+			case PrimitiveKind::Bool:
+			case PrimitiveKind::String:
+			case PrimitiveKind::Float:
+				return false;
+			case PrimitiveKind::Int:
+				return true;
+			}
+		}
+
+		assert( false );
+		return false;
+	}
+
+	static bool IsFloatType( Type* type )
+	{
+		if( !type ) return false;
+
+		switch( type->Kind() )
+		{
+		case TypeKind::Array:
+		case TypeKind::Function:
+			return false;
+		case TypeKind::Primitive:
+			switch( type->AsPrimitive()->PrimKind() )
+			{
+			case PrimitiveKind::Bool:
+			case PrimitiveKind::String:
+			case PrimitiveKind::Int:
+				return false;
+			case PrimitiveKind::Float:
+				return true;
+			}
+		}
+
+		assert( false );
+		return false;
+	}
+
 	void SemanticAnalysis::VisitUnaryExpr( UnaryExpr* node )
 	{
 		Type* right = GetExprType( node->Right() );
-		if( !IsNumericType( right ) )
-		{
-			Error( node->Location(), std::string( "Cannot use operator '" ) + TokenTypeToString( node->Op() ) + "' on expression of type " + right->ToString() );
-		}
 
-		node->SetType( right );
+		switch( node->Op() )
+		{
+		case TOKEN_MINUS:
+			if( !IsNumericType( right ) )
+			{
+				Error( node->Location(), std::string( "Cannot use operator '" ) + TokenTypeToString( node->Op() ) + "' on expression of type " + right->ToString() );
+			}
+			node->SetType( right );
+			break;
+		case TOKEN_EXCLMARK:
+			if( !IsNumericType( right ) )
+			{
+				Error( node->Location(), std::string( "Cannot use operator '" ) + TokenTypeToString( node->Op() ) + "' on expression of type " + right->ToString() );
+			}
+			node->SetType( typeman.NewPrimitive( PrimitiveKind::Bool ) );
+			break;
+		case TOKEN_TILDE:
+			if( !right->IsPrimitive() || right->AsPrimitive()->PrimKind() != PrimitiveKind::Int )
+			{
+				Error( node->Location(), std::string( "Cannot use operator '" ) + TokenTypeToString( node->Op() ) + "' on expression of type " + right->ToString() );
+			}
+			node->SetType( right );
+			break;
+		}
 	}
 	void SemanticAnalysis::VisitCallExpr( CallExpr* node )
 	{

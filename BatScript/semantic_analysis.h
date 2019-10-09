@@ -55,7 +55,7 @@ namespace Bat
 		virtual void VisitVarDecl( VarDecl* node ) override;
 		virtual void VisitFuncDecl( FuncDecl* node ) override;
 	private:
-		Type* PrimitiveBinary( PrimitiveType* left, PrimitiveType* right, TokenType op );
+		Type* PrimitiveBinary( PrimitiveType* left, PrimitiveType* right, TokenType op, Type** coerce_to );
 		Type* ArrayBinary( ArrayType* left, Type* right, TokenType op );
 	private:
 		Type* m_pResult = nullptr;

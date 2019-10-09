@@ -11,3 +11,6 @@ def h(): return
 string x = g()
 int y = "Hi"
 var z = h()
+
+float a = 5.12 | 4.2
+bool b = (5 < 2)

@@ -260,6 +260,13 @@ namespace Bat
 				DISPATCH();
 			}
 
+			case TARGET(PRINTB):
+			{
+				auto val = Pop();
+				std::cout << (val ? "true" : "false") << std::endl;
+
+				DISPATCH();
+			}
 			case TARGET(PRINTI):
 			{
 				auto val = Pop();
@@ -270,7 +277,7 @@ namespace Bat
 			case TARGET(PRINTF):
 			{
 				auto val = PopF();
-				std::cout << val << std::endl;
+				std::cout << std::to_string( val ) << std::endl;
 
 				DISPATCH();
 			}
