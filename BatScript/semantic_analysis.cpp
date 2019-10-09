@@ -656,7 +656,7 @@ namespace Bat
 
 			if( !coerced )
 			{
-				Error( node->Location(), "Return value type (" + rettype->ToString() + ") does not match function type (" + m_pCurrentFunc->Signature().ReturnType()->ToString() + ")" );
+				Error( node->RetExpr()->Location(), "Return value type (" + rettype->ToString() + ") does not match function type (" + m_pCurrentFunc->Signature().ReturnType()->ToString() + ")" );
 			}
 			else if( coerced != rettype )
 			{
@@ -723,7 +723,7 @@ namespace Bat
 				Type* coerced = Coerce( init_type, var_type );
 				if( !coerced )
 				{
-					Error( node->Location(), "Cannot assign expression of type " + init_type->ToString() + " to variable of type " + var_type->ToString() );
+					Error( node->Initializer()->Location(), "Cannot assign expression of type " + init_type->ToString() + " to variable of type " + var_type->ToString() );
 				}
 				else if( coerced != init_type )
 				{
@@ -781,7 +781,7 @@ namespace Bat
 				Type* coerced = Coerce( default_expr_type, param_type );
 				if( !coerced )
 				{
-					Error( sig.ParamType( i ).TypeName().loc, std::string( "Cannot assign expression of type " ) + default_expr_type->ToString() +
+					Error( sig.ParamDefault( i )->Location(), std::string( "Cannot assign expression of type " ) + default_expr_type->ToString() +
 						" to parameter of type " + param_type->ToString() );
 				}
 				else if( coerced != default_expr_type )
