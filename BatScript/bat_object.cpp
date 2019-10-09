@@ -88,8 +88,8 @@ namespace Bat
 		type( TYPE_STR )
 	{
 		size_t len = strlen( s );
-		value.str = new char[len];
-		memcpy( value.str, s, len );
+		value.str = new char[len + 1];
+		memcpy( value.str, s, len + 1 );
 	}
 	BatObject::BatObject( bool s )
 		:
@@ -424,8 +424,9 @@ namespace Bat
 				delete[] value.str;
 
 				size_t len = strlen( other.value.str );
-				value.str = new char[len];
-				memcpy( value.str, other.value.str, len );
+				value.str = new char[len + 1];
+				memcpy( value.str, other.value.str, len + 1 );
+				break;
 			}
 			case TYPE_CALLABLE:
 			{
