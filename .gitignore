@@ -340,3 +340,4 @@ ASALocalRun/
 healthchecksdb
 
 /BatScript/tests/*.exe
+/BatScript/VTune Amplifier Results/BatScript
