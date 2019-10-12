@@ -102,17 +102,24 @@ namespace Bat
 			}
 		}
 
-		Emit( OpCode::ENDPROC );
+		Emit( OpCode::ENDPROC, globals_stack );
 		Emit( OpCode::HALT );
 	}
 	void Compiler::Compile( std::unique_ptr<Statement> s )
 	{
-		s->Accept( this );
+		Compile( s.get() );
 		m_pStatements.push_back( std::move( s ) );
 	}
 	void Compiler::Compile( Statement* s )
 	{
 		s->Accept( this );
+
+		// Expressions push 1 value onto stack, but statements should have no effect on stack
+		// So if this statement just evaluates an expression, pop off the unused value
+		if( s->IsExpressionStmt() )
+		{
+			Emit( OpCode::POP );
+		}
 	}
 	void Compiler::CompileLValue( Expression* e )
 	{
@@ -221,6 +228,19 @@ namespace Bat
 	{
 		Patch( addr, IP() );
 	}
+	void Compiler::EmitReturn()
+	{
+		CodeLoc_t func_end = EmitToPatch( OpCode::JMP );
+		m_ReturnsToPatch.push_back( func_end );
+	}
+	void Compiler::PatchReturns()
+	{
+		for( CodeLoc_t ret : m_ReturnsToPatch )
+		{
+			PatchJump( ret );
+		}
+		m_ReturnsToPatch.clear();
+	}
 	void Compiler::EmitLoad( Symbol* sym )
 	{
 		if( VariableSymbol* var = sym->AsVariable() )
@@ -293,7 +313,7 @@ namespace Bat
 		CompileRValue( node->Right() );
 		CompileRValue( node->Left() );
 
-		PrimitiveKind kind = node->Type()->ToPrimitive()->PrimKind();
+		PrimitiveKind kind = node->Left()->Type()->ToPrimitive()->PrimKind();
 
 		switch( node->Op() )
 		{
@@ -411,6 +431,7 @@ namespace Bat
 			Emit( OpCode::PUSH, gi.var->Address() );
 			CompileRValue( gi.initializer );
 			EmitStore( gi.var );
+			Emit( OpCode::POP );
 		}
 	}
 	void Compiler::PushScope()
@@ -603,6 +624,12 @@ namespace Bat
 
 		auto& sig = func_symbol->Signature();
 		
+		// Reserve space for return value
+		if( func_symbol->FuncKind() == FunctionKind::Script )
+		{
+			Emit( OpCode::PUSH, 0 );
+		}
+
 		for( size_t i = 0; i < node->NumArgs(); i++ )
 		{
 			CompileRValue( node->Arg( i ) );
@@ -616,31 +643,7 @@ namespace Bat
 		else if( func_symbol->FuncKind() == FunctionKind::Native )
 		{
 			Emit( OpCode::NATIVE );
-			Emit( OpCode::SETRET );
 		}
-
-		// Clean up arguments on stack
-		if( node->NumArgs() > 0 )
-		{
-			size_t args_size = 0;
-			for( size_t i = 0; i < node->NumArgs(); i++ )
-			{
-				args_size += node->Arg( i )->Type()->Size();
-			}
-			Emit( OpCode::SSTACK, args_size );
-		}
-
-		// Push return value if we have one
-		Type* ret_type = sig.ReturnType();
-		if( PrimitiveType* prim_ret_type = ret_type->ToPrimitive() )
-		{
-			if( prim_ret_type->PrimKind() == PrimitiveKind::Void )
-			{
-				return;
-			}
-		}
-
-		Emit( OpCode::GETRET );
 	}
 	void Compiler::VisitIndexExpr( IndexExpr* node )
 	{
@@ -828,13 +831,12 @@ namespace Bat
 
 		if( node->RetExpr() )
 		{
+			Emit( OpCode::PUSH, m_iRetAddr );
 			CompileRValue( node->RetExpr() );
-			Emit( OpCode::SETRET );
+			Emit( OpCode::STORE_LOCAL );
+			Emit( OpCode::POP );
+			EmitReturn();
 		}
-		Emit( OpCode::ENDPROC );
-		Emit( OpCode::RET );
-
-		m_bVisitedReturn = true;
 	}
 	void Compiler::VisitImportStmt( ImportStmt* node )
 	{
@@ -895,6 +897,7 @@ namespace Bat
 				Emit( OpCode::PUSH, var->Address() );
 				CompileRValue( node->Initializer() );
 				EmitStore( var );
+				Emit( OpCode::POP );
 			}
 		}
 	}
@@ -906,7 +909,6 @@ namespace Bat
 		AddFunction( node, sig.Identifier().lexeme );
 
 		m_iStackSize = 0;
-		m_bVisitedReturn = false;
 		
 		//  proc
 		//  stack XX
@@ -916,16 +918,20 @@ namespace Bat
 		Emit( OpCode::PROC );
 		CodeLoc_t stack_size = EmitToPatch( OpCode::STACK );
 
-		constexpr int64_t first_arg_addr = -1 * (int64_t)sizeof( int64_t );
-		const int64_t last_arg_addr = (first_arg_addr - (sig.NumParams() - 1) * sizeof( int64_t ));
+		constexpr int64_t arg_size = (int64_t)sizeof( int64_t );
+		constexpr int64_t first_arg_addr = -1 * arg_size;;
+		const int64_t last_arg_addr = (first_arg_addr - (sig.NumParams() - 1) * arg_size);
+		m_iRetAddr = last_arg_addr - arg_size; // Return value is a hidden pseudo-parameter
 
 		PushScope();
 
+		size_t args_size = 0;
 		for( size_t i = 0; i < sig.NumParams(); i++ )
 		{
 			Type* arg_type = TypeSpecifierToType( sig.ParamType( i ) );
 			VariableSymbol* arg = AddVariable( node, sig.ParamIdent( i ).lexeme, StorageClass::ARGUMENT, arg_type );
 			arg->SetAddress( last_arg_addr + i * sizeof( int64_t ) );
+			args_size += arg_type->Size();
 
 			// TODO: defaults are handled wrong, should be handled at caller side
 			if( sig.ParamDefault( i ) )
@@ -933,18 +939,20 @@ namespace Bat
 				Emit( OpCode::PUSH, arg->Address() );
 				CompileRValue( sig.ParamDefault( i ) );
 				EmitStore( arg );
+				Emit( OpCode::POP );
 			}
 		}
 
 		Compile( node->Body() );
+
 		Patch( stack_size, m_iStackSize );
 
-		PopScope();
+		// All the returns in the function just jump to here where cleanup is done, patch their target address
+		PatchReturns();
 
-		if( !m_bVisitedReturn )
-		{
-			Emit( OpCode::ENDPROC );
-			Emit( OpCode::RET );
-		}
+		Emit( OpCode::ENDPROC, args_size );
+		Emit( OpCode::RET );
+
+		PopScope();
 	}
 }

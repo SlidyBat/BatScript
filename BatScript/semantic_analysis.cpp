@@ -375,7 +375,7 @@ namespace Bat
 			}
 		}
 
-		Error( node->Location(), std::string( "Cannot use operator '" ) + TokenTypeToString( node->Op() ) + "' on expressions of types " + left->ToString()
+		Error( node->Left()->Location(), std::string( "Cannot use operator '" ) + TokenTypeToString( node->Op() ) + "' on expressions of types " + left->ToString()
 			+ " and " + right->ToString() );
 
 		node->SetType( left );

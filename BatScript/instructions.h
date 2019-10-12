@@ -13,16 +13,14 @@
 	_(DUP,          0, 1, 0, dup)               \
 	_(DUPX1,        0, 1, 0, dupx1)             \
 	_(PROC,         0, 0, 0, proc)              \
-	_(ENDPROC,      0, 0, 0, endproc)           \
+	_(ENDPROC,      1, 0, 0, endproc)           \
 	_(STACK,        1, 0, 0, stack)             \
 	_(SSTACK,       1, 0, 0, sstack)            \
-	_(SETRET,       0, 0, 1, setret)            \
-	_(GETRET,       0, 1, 0, getret)            \
 	/* Memory operations */                     \
 	_(LOAD_LOCAL,   0, 1, 1, local.load)        \
 	_(LOAD_GLOBAL,  0, 1, 1, global.load)       \
-	_(STORE_LOCAL,  0, 0, 2, local.store)       \
-	_(STORE_GLOBAL, 0, 0, 2, global.store)      \
+	_(STORE_LOCAL,  0, 1, 2, local.store)       \
+	_(STORE_GLOBAL, 0, 1, 2, global.store)      \
 	/* Bitwise operations */                    \
 	_(BITOR,        0, 1, 2, bitor)             \
 	_(BITAND,       0, 1, 2, bitand)            \

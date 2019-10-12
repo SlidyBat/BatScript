@@ -269,7 +269,7 @@ namespace Bat
 
 	void Lexer::OpeningParen( char paren )
 	{
-		if( m_iParenLevel >= MAX_PAREN_LEVEL )
+		if( m_iParenLevel >= MAX_PAREN_LEVEL - 1 )
 		{
 			Error( "Too many nested parentheses" );
 			return;

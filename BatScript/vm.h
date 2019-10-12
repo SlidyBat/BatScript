@@ -69,7 +69,6 @@ namespace Bat
 		int64_t m_iStackPointer = 0;
 		int64_t m_iCallStackPointer = 0;
 		int64_t m_iBasePointer = 0;
-		int64_t m_RetValue = 0;
 		std::unordered_map<std::string, BatNativeCallback> m_Natives;
 	};
 }

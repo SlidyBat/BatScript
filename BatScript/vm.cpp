@@ -109,6 +109,9 @@ namespace Bat
 				m_iStackPointer = m_iBasePointer;
 				m_iBasePointer = PopCallStack();
 
+				auto size = ReadI64();
+				m_iStackPointer -= size;
+
 				DISPATCH();
 			}
 			case TARGET(STACK):
@@ -145,6 +148,7 @@ namespace Bat
 				auto value = Pop();
 				auto addr = Pop();
 				*reinterpret_cast<int64_t*>(&m_Stack[m_iBasePointer + addr]) = value;
+				Push( value );
 
 				DISPATCH();
 			}
@@ -153,18 +157,7 @@ namespace Bat
 				auto value = Pop();
 				auto addr = Pop();
 				*reinterpret_cast<int64_t*>(&m_Stack[addr]) = value;
-
-				DISPATCH();
-			}
-			case TARGET(SETRET):
-			{
-				m_RetValue = Pop();
-
-				DISPATCH();
-			}
-			case TARGET(GETRET):
-			{
-				Push( m_RetValue );
+				Push( value );
 
 				DISPATCH();
 			}

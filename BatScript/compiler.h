@@ -61,6 +61,9 @@ namespace Bat
 		// Patches the jump target of a jump opcode at a given address to point to current instruction pointer
 		void PatchJump( CodeLoc_t addr );
 
+		void EmitReturn();
+		void PatchReturns();
+
 		void EmitLoad( Symbol* sym );
 		void EmitStore( Symbol* sym );
 
@@ -133,8 +136,6 @@ namespace Bat
 		int m_iStackSize = 0;
 		int m_iArgumentsStackSize = 0;
 		ExprType m_CompileType = ExprType::UNKNOWN;
-		bool m_bVisitedReturn = false;
-		bool m_bGlobalVar = false;
 		CodeLoc_t m_iEntryPoint = 0;
 
 		struct GlobalInitializer
@@ -143,5 +144,8 @@ namespace Bat
 			Expression* initializer;
 		};
 		std::vector<GlobalInitializer> m_GlobalInitializers;
+
+		int64_t m_iRetAddr = 0;
+		std::vector<CodeLoc_t> m_ReturnsToPatch;
 	};
 }
