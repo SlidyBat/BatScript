@@ -1,0 +1,22 @@
+name: C/C++ CI
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: windows-2019
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build project
+      run: |
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        devenv BatScript.sln /build "Release|x64"
+    - name: Run tests (using VM)
+      run: python BatScript/tests/run_tests.py --compiler x64/Release/BatScript.exe --method vm
+    - name: Run tests (using interpreter)
+      run: python BatScript/tests/run_tests.py --compiler x64/Release/BatScript.exe --method interpreter
+      
