@@ -67,7 +67,7 @@ namespace Bat
 		{
 			if( VarDecl* var = stmt->ToVarDecl() )
 			{
-				Compile( var );
+				AllocateGlobalVariable( var );
 			}
 		}
 
@@ -90,13 +90,10 @@ namespace Bat
 			Emit( OpCode::STACK, globals_stack );
 		}
 
-		// Initialize all the global variables
-		CompileGlobalInitializers();
-
 		// Everything else gets put into a pseudo-function as the mainline
 		for( const auto& stmt : statements )
 		{
-			if( !stmt->IsImportStmt() && !stmt->IsFuncDecl() && !stmt->IsVarDecl() )
+			if( !stmt->IsImportStmt() && !stmt->IsFuncDecl() )
 			{
 				Compile( stmt.get() );
 			}
@@ -417,22 +414,14 @@ namespace Bat
 		m_Natives.push_back( name );
 		return ntv;
 	}
-	void Compiler::AddGlobalInitializer( Symbol* var, Expression* initializer )
+	void Compiler::AllocateGlobalVariable( VarDecl* node )
 	{
-		GlobalInitializer gi;
-		gi.var = var;
-		gi.initializer = initializer;
-		m_GlobalInitializers.push_back( gi );
-	}
-	void Compiler::CompileGlobalInitializers()
-	{
-		for( const GlobalInitializer& gi : m_GlobalInitializers )
-		{
-			Emit( OpCode::PUSH, gi.var->Address() );
-			CompileRValue( gi.initializer );
-			EmitStore( gi.var );
-			Emit( OpCode::POP );
-		}
+		UpdateCurrLine( node );
+
+		VariableSymbol* var = AddVariable( node, node->Identifier().lexeme, StorageClass::GLOBAL, node->Type() );
+		var->SetAddress( m_iStackSize );
+
+		m_iStackSize += (int)node->Type()->Size();
 	}
 	void Compiler::PushScope()
 	{
@@ -879,26 +868,24 @@ namespace Bat
 	{
 		UpdateCurrLine( node );
 
-		VariableSymbol* var = AddVariable( node, node->Identifier().lexeme, InGlobalScope() ? StorageClass::GLOBAL : StorageClass::LOCAL, node->Type() );
-		var->SetAddress( m_iStackSize );
+		// Allocate address for local variables
+		// Global variables are specially handled
+		if( !InGlobalScope() )
+		{
+			VariableSymbol* var = AddVariable( node, node->Identifier().lexeme, StorageClass::LOCAL, node->Type() );
+			var->SetAddress( m_iStackSize );
 
-		m_iStackSize += (int)node->Type()->Size();
+			m_iStackSize += (int)node->Type()->Size();
+		}
+
+		VariableSymbol* var = GetSymbol( node->Identifier().lexeme )->AsVariable();
 
 		if( node->Initializer() )
 		{
-			if( InGlobalScope() )
-			{
-				// Globals have to be initialized at start of program
-				AddGlobalInitializer( var, node->Initializer() );
-			}
-			else
-			{
-				// Non-globals can be initialized where they're declared
-				Emit( OpCode::PUSH, var->Address() );
-				CompileRValue( node->Initializer() );
-				EmitStore( var );
-				Emit( OpCode::POP );
-			}
+			Emit( OpCode::PUSH, var->Address() );
+			CompileRValue( node->Initializer() );
+			EmitStore( var );
+			Emit( OpCode::POP );
 		}
 	}
 	void Compiler::VisitFuncDecl( FuncDecl* node )

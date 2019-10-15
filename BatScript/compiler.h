@@ -84,8 +84,7 @@ namespace Bat
 		FunctionSymbol* AddNative( NativeStmt* node, const std::string& name );
 
 		bool InGlobalScope() const { return m_pSymTab->Enclosing() == nullptr; }
-		void AddGlobalInitializer( Symbol* var, Expression* initializer );
-		void CompileGlobalInitializers();
+		void AllocateGlobalVariable( VarDecl* decl );
 		void PushScope();
 		void PopScope();
 
@@ -137,13 +136,6 @@ namespace Bat
 		int m_iArgumentsStackSize = 0;
 		ExprType m_CompileType = ExprType::UNKNOWN;
 		CodeLoc_t m_iEntryPoint = 0;
-
-		struct GlobalInitializer
-		{
-			Symbol* var;
-			Expression* initializer;
-		};
-		std::vector<GlobalInitializer> m_GlobalInitializers;
 
 		int64_t m_iRetAddr = 0;
 		std::vector<CodeLoc_t> m_ReturnsToPatch;
