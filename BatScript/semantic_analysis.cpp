@@ -230,7 +230,6 @@ namespace Bat
 		case TOKEN_LESS_EQUAL:
 		case TOKEN_GREATER:
 		case TOKEN_GREATER_EQUAL:
-			
 			if( !IsNumericType( left ) || !IsNumericType( right ) ) return nullptr;
 
 			if( IsFloatType( left ) )
@@ -322,25 +321,6 @@ namespace Bat
 	}
 	void SemanticAnalysis::VisitBinaryExpr( BinaryExpr* node )
 	{
-		switch( node->Op() )
-		{
-		case TOKEN_EQUAL:
-		case TOKEN_PLUS_EQUAL:
-		case TOKEN_MINUS_EQUAL:
-		case TOKEN_ASTERISK_EQUAL:
-		case TOKEN_SLASH_EQUAL:
-		case TOKEN_PERCENT_EQUAL:
-		case TOKEN_AMP_EQUAL:
-		case TOKEN_HAT_EQUAL:
-		case TOKEN_BAR_EQUAL:
-			if( !node->Left()->IsLValue() )
-			{
-				Error( node->Left()->Location(), "Expression is not modifiable lvalue" );
-			}
-
-			break;
-		}
-
 		Type* left = GetExprType( node->Left() );
 		Type* right = GetExprType( node->Right() );
 
@@ -607,6 +587,30 @@ namespace Bat
 	void SemanticAnalysis::VisitExpressionStmt( ExpressionStmt* node )
 	{
 		Analyze( node->Expr() );
+	}
+	void SemanticAnalysis::VisitAssignStmt( AssignStmt* node )
+	{
+		if( !node->Left()->IsLValue() )
+		{
+			Error( node->Left()->Location(), "Expression is not modifiable lvalue" );
+		}
+
+		Type* left = GetExprType( node->Left() );
+		Type* right = GetExprType( node->Right() );
+
+		if( IsNumericType( left ) && IsNumericType( right ) )
+		{
+			Type* coerce_to;
+			Type* result = PrimitiveBinary( left->AsPrimitive(), right->AsPrimitive(), node->Op(), &coerce_to );
+			if( result )
+			{
+				if( !IsSameType( coerce_to, right ) )
+				{
+					auto cast = std::make_unique<CastExpr>( node->TakeRight(), coerce_to );
+					node->SetRight( std::move( cast ) );
+				}
+			}
+		}
 	}
 	void SemanticAnalysis::VisitBlockStmt( BlockStmt* node )
 	{

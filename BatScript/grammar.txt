@@ -2,8 +2,10 @@ program       -> statement* EOF
 
 type          -> ( "int" | "float" | "bool" | "string" | IDENTIFIER ) ( "[" ( expression )? "]" )*
 
+// Simple statements can be used in single line compound statements
 statement     -> simple_stmt | compound_stmt
-simple_stmt   -> expression eol
+simple_stmt   -> expr_stmt
+               | assign_stmt
                | print_stmt
                | return_stmt
                | import_stmt
@@ -15,15 +17,20 @@ compound_stmt -> if_stmt
                | function_decl
 
 block         -> indent statement+ dedent
+suite         -> (eol block | simple_stmt)
 
 var_decl      -> ("var" | "const" | type) IDENTIFIER ("=" expression)? eol
-function_decl -> ("def" | type) IDENTIFIER "(" parameters? ")" ":" (eol block | simple_stmt)
+function_decl -> ("def" | type) IDENTIFIER "(" parameters? ")" ":" suite
+
+expr_stmt     -> expression eol
+assign_stmt   -> expression ( assign ) expression ) eol
+assign        -> ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "^=" | "|=" )
 
 print_stmt    -> "print" expression eol
 
-if_stmt       -> "if" expression ":" (eol block | simple_stmt) ("else" (eol block | simple_stmt))?
-while_stmt    -> "while" expression ":" (eol block | simple_stmt)
-for_stmt      -> "for" "(" expression? ";" expression? ";" expression? ")" block // Ignore me for now :)
+if_stmt       -> "if" expression ":" suite ("else" suite)?
+while_stmt    -> "while" expression ":" suite
+for_stmt      -> "for" "(" expression? ";" expression? ";" expression? ")" ":" suite // Ignore me for now :)
 
 return_stmt   -> "return" expression? eol
 
@@ -33,8 +40,7 @@ native_stmt   -> "native" type IDENTIFIER "(" parameters? ")" eol
 parameter     -> type IDENTIFIER ( "=" expression )?
 parameters    -> parameter ( "," parameter )* ( "," "..." )?
 
-expression    -> assign
-assign        -> or ( ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "^=" | "|=" ) or )*
+expression    -> or
 or            -> and ( "or" and )*
 and           -> bitor ( "and" bitor )*
 bitor         -> bitxor ( "|" bitxor )*

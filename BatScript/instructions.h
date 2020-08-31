@@ -19,8 +19,8 @@
 	/* Memory operations */                     \
 	_(LOAD_LOCAL,   0, 1, 1, local.load)        \
 	_(LOAD_GLOBAL,  0, 1, 1, global.load)       \
-	_(STORE_LOCAL,  0, 1, 2, local.store)       \
-	_(STORE_GLOBAL, 0, 1, 2, global.store)      \
+	_(STORE_LOCAL,  0, 0, 2, local.store)       \
+	_(STORE_GLOBAL, 0, 0, 2, global.store)      \
 	/* Bitwise operations */                    \
 	_(BITOR,        0, 1, 2, bitor)             \
 	_(BITAND,       0, 1, 2, bitand)            \

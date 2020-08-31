@@ -207,16 +207,32 @@ namespace Bat
 		if( Match( TOKEN_IMPORT ) ) return ParseImport();
 		if( Match( TOKEN_NATIVE ) ) return ParseNative();
 
-		return ParseExpressionStatement();
+		return ParseAssign();
 	}
 
-	std::unique_ptr<Statement> Parser::ParseExpressionStatement()
+	std::unique_ptr<Statement> Parser::ParseAssign()
 	{
 		SourceLoc loc = Peek().loc;
 
-		auto stmt = std::make_unique<ExpressionStmt>( loc, ParseExpression() );
+		auto expr = ParseExpression();
+		if( Match( TOKEN_EQUAL )
+			|| Match( TOKEN_PLUS_EQUAL )
+			|| Match( TOKEN_MINUS_EQUAL )
+			|| Match( TOKEN_ASTERISK_EQUAL )
+			|| Match( TOKEN_SLASH_EQUAL )
+			|| Match( TOKEN_PERCENT_EQUAL )
+			|| Match( TOKEN_AMP_EQUAL )
+			|| Match( TOKEN_HAT_EQUAL )
+			|| Match( TOKEN_BAR_EQUAL ) )
+		{
+			Token op = Previous();
+			auto right = ParseExpression();
+			ExpectTerminator();
+			return std::make_unique<AssignStmt>( loc, std::move( expr ), op.type, std::move( right ) );
+		}
+
 		ExpectTerminator();
-		return stmt;
+		return std::make_unique<ExpressionStmt>( loc, std::move( expr ) );
 	}
 
 	std::unique_ptr<Statement> Parser::ParsePrint()
@@ -466,30 +482,7 @@ namespace Bat
 
 	std::unique_ptr<Expression> Parser::ParseExpression()
 	{
-		return ParseAssign();
-	}
-
-	std::unique_ptr<Expression> Parser::ParseAssign()
-	{
-		SourceLoc loc = Peek().loc;
-
-		auto expr = ParseOr();
-		while( Match( TOKEN_EQUAL ) ||
-			Match( TOKEN_PLUS_EQUAL ) ||
-			Match( TOKEN_MINUS_EQUAL ) ||
-			Match( TOKEN_ASTERISK_EQUAL ) ||
-			Match( TOKEN_SLASH_EQUAL ) ||
-			Match( TOKEN_PERCENT_EQUAL ) ||
-			Match( TOKEN_AMP_EQUAL ) ||
-			Match( TOKEN_HAT_EQUAL ) ||
-			Match( TOKEN_BAR_EQUAL ) )
-		{
-			Token op = Previous();
-			auto right = ParseOr();
-			expr = std::make_unique<BinaryExpr>( loc, op.type, std::move( expr ), std::move( right ) );
-		}
-
-		return expr;
+		return ParseOr();
 	}
 
 	std::unique_ptr<Expression> Parser::ParseOr()

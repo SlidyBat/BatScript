@@ -23,6 +23,7 @@
 	_( CastExpr ) \
 	/* Statements */ \
 	_( ExpressionStmt ) \
+	_( AssignStmt ) \
 	_( BlockStmt ) \
 	_( PrintStmt ) \
 	_( IfStmt ) \
@@ -329,6 +330,32 @@ namespace Bat
 		Expression* Expr() { return m_pExpression.get(); }
 	private:
 		std::unique_ptr<Expression> m_pExpression;
+	};
+
+	class AssignStmt : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( AssignStmt );
+
+		AssignStmt( const SourceLoc& loc, std::unique_ptr<Expression> lhs, TokenType op, std::unique_ptr<Expression> rhs )
+			:
+			Statement( loc ),
+			m_pLeft( std::move( lhs ) ),
+			m_Op( op ),
+			m_pRight( std::move( rhs ) )
+		{}
+
+		TokenType Op() const { return m_Op; }
+		Expression* Left() { return m_pLeft.get(); }
+		std::unique_ptr<Expression> TakeLeft() { return std::move( m_pLeft ); }
+		void SetLeft( std::unique_ptr<Expression> expr ) { m_pLeft = std::move( expr ); }
+		Expression* Right() { return m_pRight.get(); }
+		void SetRight( std::unique_ptr<Expression> expr ) { m_pRight = std::move( expr ); }
+		std::unique_ptr<Expression> TakeRight() { return std::move( m_pRight ); }
+	private:
+		TokenType m_Op;
+		std::unique_ptr<Expression> m_pLeft;
+		std::unique_ptr<Expression> m_pRight;
 	};
 
 	class BlockStmt : public Statement

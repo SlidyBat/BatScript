@@ -216,7 +216,7 @@ int main( int argc, char** argv )
 	{
 		//RunFromPrompt();
 		disassemble = true;
-		RunFromFile( "test2.bat" );
+		RunFromFile( "tests/exec/ok-operators.bat" );
 	}
 
 	if( argc < 2 )
