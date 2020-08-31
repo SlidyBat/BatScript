@@ -15,7 +15,6 @@
 	_(PROC,         0, 0, 0, proc)              \
 	_(ENDPROC,      1, 0, 0, endproc)           \
 	_(STACK,        1, 0, 0, stack)             \
-	_(SSTACK,       1, 0, 0, sstack)            \
 	/* Memory operations */                     \
 	_(LOAD_LOCAL,   0, 1, 1, local.load)        \
 	_(LOAD_GLOBAL,  0, 1, 1, global.load)       \
