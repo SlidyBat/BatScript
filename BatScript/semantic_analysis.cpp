@@ -816,11 +816,34 @@ namespace Bat
 
 		Analyze( node->Body() );
 
+		if( !node->Body()->IsBlockStmt() )
+		{
+			std::vector<std::unique_ptr<Statement>> body;
+			body.push_back( node->TakeBody() );
+			auto loc = body[0]->Location();
+			node->SetBody( std::make_unique<BlockStmt>( loc, std::move( body ) ) );
+		}
+
 		// Couldn't deduce return type from returns because there weren't any
 		// No returns = void function
 		if( sig.ReturnType() == nullptr )
 		{
 			sig.SetReturnType( typeman.NewPrimitive( PrimitiveKind::Void ) );
+		}
+
+		auto body = node->Body()->AsBlockStmt();
+		auto last_stmt = body->Stmt( body->NumStatements() - 1 );
+		if( !last_stmt->IsReturnStmt() )
+		{
+			// Any non-void function must end in return
+			if( !(sig.ReturnType()->IsPrimitive() &&
+				sig.ReturnType()->AsPrimitive()->PrimKind() == PrimitiveKind::Void) )
+			{
+				Error( last_stmt->Location(), "Function missing return value" );
+			}
+
+			// Add a return here if it doesn't exist, compiler expects one
+			body->Add( std::make_unique<ReturnStmt>( last_stmt->Location(), nullptr ) );
 		}
 
 		m_pCurrentFunc = nullptr;

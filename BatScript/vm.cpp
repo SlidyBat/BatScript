@@ -104,16 +104,6 @@ namespace Bat
 
 				DISPATCH();
 			}
-			case TARGET(ENDPROC):
-			{
-				m_iStackPointer = m_iBasePointer;
-				m_iBasePointer = PopCallStack();
-
-				auto size = ReadI64();
-				m_iStackPointer -= size;
-
-				DISPATCH();
-			}
 			case TARGET(STACK):
 			{
 				m_iStackPointer += ReadI64();
@@ -239,8 +229,18 @@ namespace Bat
 			}
 			case TARGET(RET):
 			{
+				auto retval = Pop();
+
+				m_iStackPointer = m_iBasePointer;
+				m_iBasePointer = PopCallStack();
+
+				auto size = ReadI64();
+				m_iStackPointer -= size;
+
 				auto ret_addr = PopCallStack();
 				GoTo( ret_addr );
+
+				Push( retval );
 
 				DISPATCH();
 			}

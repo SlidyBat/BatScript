@@ -1,4 +1,4 @@
-var g = 0
+g := 0
 
 def f():
 	g += 1
@@ -7,9 +7,9 @@ def f():
 def f2():
 	g += 1
 
-var a = f()
+a := f()
 f2()
-var b = f()
+b := f()
 
 print a
 print b

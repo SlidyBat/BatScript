@@ -368,6 +368,7 @@ namespace Bat
 			Statement( loc ),
 			m_Statements( std::move( statements ) ) {}
 
+		void Add( std::unique_ptr<Statement> stmt ) { m_Statements.push_back( std::move( stmt ) ); }
 		size_t NumStatements() const { return m_Statements.size(); }
 		Statement* Stmt(size_t index) const { return m_Statements[index].get(); }
 	private:
@@ -616,6 +617,8 @@ namespace Bat
 
 		FunctionSignature& Signature() { return m_Signature; }
 		Statement* Body() { return m_pBody.get(); }
+		std::unique_ptr<Statement> TakeBody() { return std::move( m_pBody ); }
+		void SetBody( std::unique_ptr<Statement> body ) { m_pBody = std::move( body ); }
 	private:
 		FunctionSignature m_Signature;
 		std::unique_ptr<Statement> m_pBody;

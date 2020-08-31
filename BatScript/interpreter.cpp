@@ -421,9 +421,12 @@ namespace Bat
 	}
 	void Interpreter::VisitReturnStmt( ReturnStmt* node )
 	{
-		auto ret_value = Evaluate( node->RetExpr() );
 		ReturnValue ret;
-		ret.value = ret_value;
+		if( node->RetExpr() )
+		{
+			ret.value = Evaluate( node->RetExpr() );
+		}
+
 		throw ret;
 	}
 	void Interpreter::VisitImportStmt( ImportStmt* node )

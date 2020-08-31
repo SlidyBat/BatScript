@@ -99,7 +99,7 @@ namespace Bat
 			}
 		}
 
-		Emit( OpCode::ENDPROC, globals_stack );
+		Emit( OpCode::STACK, -globals_stack );
 		Emit( OpCode::HALT );
 	}
 	void Compiler::Compile( std::unique_ptr<Statement> s )
@@ -227,16 +227,7 @@ namespace Bat
 	}
 	void Compiler::EmitReturn()
 	{
-		CodeLoc_t func_end = EmitToPatch( OpCode::JMP );
-		m_ReturnsToPatch.push_back( func_end );
-	}
-	void Compiler::PatchReturns()
-	{
-		for( CodeLoc_t ret : m_ReturnsToPatch )
-		{
-			PatchJump( ret );
-		}
-		m_ReturnsToPatch.clear();
+		Emit( OpCode::RET, m_iArgsSize );
 	}
 	void Compiler::EmitLoad( Symbol* sym )
 	{
@@ -576,12 +567,6 @@ namespace Bat
 
 		auto& sig = func_symbol->Signature();
 		
-		// Reserve space for return value
-		if( func_symbol->FuncKind() == FunctionKind::Script )
-		{
-			Emit( OpCode::PUSH, 0 );
-		}
-
 		for( size_t i = 0; i < node->NumArgs(); i++ )
 		{
 			CompileRValue( node->Arg( i ) );
@@ -789,11 +774,14 @@ namespace Bat
 
 		if( node->RetExpr() )
 		{
-			Emit( OpCode::PUSH, m_iRetAddr );
 			CompileRValue( node->RetExpr() );
-			Emit( OpCode::STORE_LOCAL );
-			EmitReturn();
 		}
+		else
+		{
+			// Even void functions have to return a value for overall consistent pushes/pops
+			Emit( OpCode::PUSH, 0 );
+		}
+		EmitReturn();
 	}
 	void Compiler::VisitImportStmt( ImportStmt* node )
 	{
@@ -873,19 +861,18 @@ namespace Bat
 		CodeLoc_t stack_size = EmitToPatch( OpCode::STACK );
 
 		constexpr int64_t arg_size = (int64_t)sizeof( int64_t );
-		constexpr int64_t first_arg_addr = -1 * arg_size;;
+		constexpr int64_t first_arg_addr = -1 * arg_size;
 		const int64_t last_arg_addr = (first_arg_addr - (sig.NumParams() - 1) * arg_size);
-		m_iRetAddr = last_arg_addr - arg_size; // Return value is a hidden pseudo-parameter
 
 		PushScope();
 
-		size_t args_size = 0;
+		m_iArgsSize = 0;
 		for( size_t i = 0; i < sig.NumParams(); i++ )
 		{
 			Type* arg_type = TypeSpecifierToType( sig.ParamType( i ) );
 			VariableSymbol* arg = AddVariable( node, sig.ParamIdent( i ).lexeme, StorageClass::ARGUMENT, arg_type );
 			arg->SetAddress( last_arg_addr + i * sizeof( int64_t ) );
-			args_size += arg_type->Size();
+			m_iArgsSize += (int)arg_type->Size();
 
 			// TODO: defaults are handled wrong, should be handled at caller side
 			if( sig.ParamDefault( i ) )
@@ -899,12 +886,6 @@ namespace Bat
 		Compile( node->Body() );
 
 		Patch( stack_size, m_iStackSize );
-
-		// All the returns in the function just jump to here where cleanup is done, patch their target address
-		PatchReturns();
-
-		Emit( OpCode::ENDPROC, args_size );
-		Emit( OpCode::RET );
 
 		PopScope();
 	}
