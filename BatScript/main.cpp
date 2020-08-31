@@ -205,7 +205,7 @@ int main( int argc, char** argv )
 			}
 			else
 			{
-				std::cerr << "Method muse be one of: none, vm, interpreter\n";
+				std::cerr << "Method must be one of: none, vm, interpreter\n";
 				return -1;
 			}
 		}
