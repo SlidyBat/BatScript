@@ -120,12 +120,6 @@ namespace Bat
 
 				DISPATCH();
 			}
-			case TARGET(SSTACK):
-			{
-				m_iStackPointer -= ReadI64();
-
-				DISPATCH();
-			}
 
 			case TARGET(LOAD_LOCAL):
 			{
