@@ -1,2 +1,2 @@
-def foo(void arg):
+def foo(arg : void):
 	return
