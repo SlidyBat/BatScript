@@ -492,11 +492,17 @@ namespace Bat
 	class TypeSpecifier
 	{
 	public:
+		TypeSpecifier()
+			:
+			m_tokTypeName( "<unknown>", "<unknown>", -1, -1 )
+		{}
 		TypeSpecifier( const Token& type_name )
 			:
-			m_tokTypeName( type_name )
+			m_tokTypeName( type_name ),
+			m_bHasTypeName( true )
 		{}
 
+		bool HasTypeName() const { return m_bHasTypeName; }
 		const Token& TypeName() const { return m_tokTypeName; }
 		void SetDimensions( std::vector<std::unique_ptr<Expression>> dims ) { m_Dimensions = std::move( dims ); }
 		size_t Rank() const { return m_Dimensions.size(); }
@@ -504,6 +510,7 @@ namespace Bat
 		// Gets expression that evaluates to dimensions of specified rank, or nullptr if dimensions were not specified
 		Expression* Dimensions( size_t rank ) const { assert( rank < Rank() ); return m_Dimensions[rank].get(); }
 	private:
+		bool m_bHasTypeName = false;
 		Token m_tokTypeName;
 		std::vector<std::unique_ptr<Expression>> m_Dimensions;
 	};

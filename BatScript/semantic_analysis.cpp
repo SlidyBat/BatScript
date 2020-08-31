@@ -717,7 +717,7 @@ namespace Bat
 	}
 	void SemanticAnalysis::VisitVarDecl( VarDecl* node )
 	{
-		if( node->TypeSpec().TypeName().type != TOKEN_VAR )
+		if( node->TypeSpec().HasTypeName() )
 		{
 			Type* var_type = TypeSpecifierToType( node->TypeSpec() );
 
@@ -774,11 +774,11 @@ namespace Bat
 		m_pCurrentFunc = node;
 		for( size_t i = 0; i < sig.NumParams(); i++ )
 		{
-			if( !sig.ParamDefault( i ) && sig.ParamType( i ).TypeName().type == TOKEN_VAR )
+			if( !sig.ParamDefault( i ) && !sig.ParamType( i ).HasTypeName() )
 			{
 				Error( sig.ParamType( i ).TypeName().loc, "Could not resolve variable type" );
 			}
-			else if( sig.ParamDefault( i ) && sig.ParamType( i ).TypeName().type != TOKEN_VAR )
+			else if( sig.ParamDefault( i ) && sig.ParamType( i ).HasTypeName() )
 			{
 				Type* param_type = TypeSpecifierToType( sig.ParamType( i ) );
 				Type* default_expr_type = GetExprType( sig.ParamDefault( i ) );
@@ -809,7 +809,7 @@ namespace Bat
 			}
 		}
 
-		if( sig.ReturnTypeSpec().TypeName().type != TOKEN_DEF )
+		if( sig.ReturnTypeSpec().HasTypeName() )
 		{
 			sig.SetReturnType( TypeSpecifierToType( sig.ReturnTypeSpec() ) );
 		}

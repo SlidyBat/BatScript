@@ -10,17 +10,17 @@ simple_stmt   -> expr_stmt
                | return_stmt
                | import_stmt
                | native_stmt
+               | var_decl
 compound_stmt -> if_stmt
                | while_stmt
                | for_stmt
-               | var_decl
                | function_decl
 
 block         -> indent statement+ dedent
 suite         -> (eol block | simple_stmt)
 
-var_decl      -> ("var" | "const" | type) IDENTIFIER ("=" expression)? eol
-function_decl -> ("def" | type) IDENTIFIER "(" parameters? ")" ":" suite
+var_decl      -> IDENTIFIER ( ":=" expression | ":" type ("=" expression)? ) eol
+function_decl -> "def" IDENTIFIER "(" parameters? ")" ( "->" type )? ":" suite
 
 expr_stmt     -> expression eol
 assign_stmt   -> expression ( assign ) expression ) eol
@@ -35,9 +35,9 @@ for_stmt      -> "for" "(" expression? ";" expression? ";" expression? ")" ":" s
 return_stmt   -> "return" expression? eol
 
 import_stmt   -> "import" IDENTIFIER eol
-native_stmt   -> "native" type IDENTIFIER "(" parameters? ")" eol
+native_stmt   -> "native" IDENTIFIER "(" parameters? ")" "->" type eol
 
-parameter     -> type IDENTIFIER ( "=" expression )?
+parameter     -> IDENTIFIER ":" type ( "=" expression )?
 parameters    -> parameter ( "," parameter )* ( "," "..." )?
 
 expression    -> or

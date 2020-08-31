@@ -1,1 +1,1 @@
-void invalid_variable
+invalid_variable : void

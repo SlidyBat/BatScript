@@ -16,7 +16,6 @@
 	_(IMPORT,         "import")                                 \
 	_(NATIVE,         "native")                                 \
 	_(CONST,          "const")                                  \
-	_(VAR,            "var")                                    \
 	_(TYPEDEF,        "typedef")                                \
 	_(ALIASDEF,       "aliasdef")                               \
 	_(ASYNC,          "async")                                  \
@@ -49,14 +48,16 @@
 	_(BACKSLASH,      "\\")                                     \
 	_(QUESMARK,       "?")                                      \
 	_(SEMICOLON,      ";")                                      \
-	_(COLON,          ":")                                      \
 	_(AT,             "@")                                      \
 	_(TILDE,          "~")                                      \
 	/* One/two/three char */                                    \
+	_(COLON,          ":")                                      \
+	_(COLON_EQUAL,    ":=")                                      \
 	_(PLUS,           "+")                                      \
 	_(PLUS_EQUAL,     "+=")                                     \
 	_(MINUS,          "-")                                      \
 	_(MINUS_EQUAL,    "-=")                                     \
+	_(ARROW,          "->")                                     \
 	_(ASTERISK,       "*")                                      \
 	_(ASTERISK_EQUAL, "*=")                                     \
 	_(SLASH,          "/")                                      \

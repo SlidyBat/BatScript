@@ -49,11 +49,10 @@ namespace Bat
 		std::unique_ptr<Statement> ParseReturn();
 		std::unique_ptr<Statement> ParseImport();
 		std::unique_ptr<Statement> ParseNative();
-		std::unique_ptr<Statement> ParseDeclaration( TypeSpecifier type_name );
-		std::unique_ptr<Statement> ParseVarDeclaration( TypeSpecifier type_name );
-		std::unique_ptr<Statement> ParseFuncDeclaration( TypeSpecifier return_type_name );
+		std::unique_ptr<Statement> ParseVarDeclaration();
+		std::unique_ptr<Statement> ParseFuncDeclaration();
 
-		FunctionSignature ParseFuncSignature( TypeSpecifier return_type_name );
+		FunctionSignature ParseFuncSignature();
 
 		// Expression parsing
 		std::unique_ptr<Expression> ParseExpression();

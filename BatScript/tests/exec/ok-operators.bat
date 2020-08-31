@@ -45,9 +45,9 @@ print 10.0 == 5.0
 print 10.0 == 10.0
 print 10.0 == 20.0
 
-int a = 5
+a : int = 5
 print a
-int b = 10
+b : int = 10
 print b
 b += a
 print b

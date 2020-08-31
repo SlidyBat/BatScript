@@ -4,13 +4,13 @@ def f():
 	else:
 		return true
 
-int g(): return 10
+def g() -> int: return 10
 
 def h(): return
 
-string x = g()
-int y = "Hi"
-var z = h()
+x : string = g()
+y : int = "Hi"
+z := h()
 
-float a = 5.12 | 4.2
-bool b = (5 < 2)
+a : float = 5.12 | 4.2
+b : bool = (5 < 2)

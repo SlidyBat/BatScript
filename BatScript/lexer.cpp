@@ -169,13 +169,12 @@ namespace Bat
 			case ',':  AddToken( TOKEN_COMMA ); break;
 			case '?':  AddToken( TOKEN_QUESMARK ); break;
 			case ';':  AddToken( TOKEN_SEMICOLON ); break;
-			case ':':  AddToken( TOKEN_COLON ); break;
 			case '@':  AddToken( TOKEN_AT ); break;
 			case '~':  AddToken( TOKEN_TILDE ); break;
 			case '\\': AddToken( TOKEN_BACKSLASH ); break;
 
+			case ':': Match( '=' ) ? AddToken( TOKEN_COLON_EQUAL )    : AddToken( TOKEN_COLON ); break;
 			case '+': Match( '=' ) ? AddToken( TOKEN_PLUS_EQUAL )     : AddToken( TOKEN_PLUS ); break;
-			case '-': Match( '=' ) ? AddToken( TOKEN_MINUS_EQUAL )    : AddToken( TOKEN_MINUS ); break;
 			case '*': Match( '=' ) ? AddToken( TOKEN_ASTERISK_EQUAL ) : AddToken( TOKEN_ASTERISK ); break;
 			case '=': Match( '=' ) ? AddToken( TOKEN_EQUAL_EQUAL )    : AddToken( TOKEN_EQUAL ); break;
 			case '!': Match( '=' ) ? AddToken( TOKEN_EXCLMARK_EQUAL ) : AddToken( TOKEN_EXCLMARK ); break;
@@ -184,6 +183,11 @@ namespace Bat
 			case '&': Match( '=' ) ? AddToken( TOKEN_AMP_EQUAL )      : AddToken( TOKEN_AMP ); break;
 			case '^': Match( '=' ) ? AddToken( TOKEN_HAT_EQUAL )      : AddToken( TOKEN_HAT ); break;
 
+			case '-':
+				if( Match( '=' ) )      AddToken( TOKEN_MINUS_EQUAL );
+				else if( Match( '>' ) ) AddToken( TOKEN_ARROW );
+				else                    AddToken( TOKEN_MINUS );
+				break;
 			case '>':
 				if( Match( '=' ) )      AddToken( TOKEN_GREATER_EQUAL );
 				else if( Match( '>' ) ) AddToken( TOKEN_GREATER_GREATER );
