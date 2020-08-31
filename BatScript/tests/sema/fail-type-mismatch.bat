@@ -1,8 +1,7 @@
 def f():
 	if true:
 		return 1
-	else:
-		return true
+	return true
 
 def g() -> int: return 10
 

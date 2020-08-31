@@ -13,7 +13,6 @@
 	_(DUP,          0, 1, 0, dup)               \
 	_(DUPX1,        0, 1, 0, dupx1)             \
 	_(PROC,         0, 0, 0, proc)              \
-	_(ENDPROC,      1, 0, 0, endproc)           \
 	_(STACK,        1, 0, 0, stack)             \
 	/* Memory operations */                     \
 	_(LOAD_LOCAL,   0, 1, 1, local.load)        \
@@ -40,7 +39,7 @@
 	_(JZ,           1, 0, 2, jz)                \
 	_(JNZ,          1, 0, 2, jnz)               \
 	_(CALL,         0, 1, 1, call)              \
-	_(RET,          0, 0, 0, ret)               \
+	_(RET,          1, 1, 1, ret)               \
 	/* Integer arithmetic */                    \
 	_(ADD,          0, 1, 2, add)               \
 	_(SUB,          0, 1, 2, sub)               \

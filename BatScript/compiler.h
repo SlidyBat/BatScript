@@ -62,7 +62,6 @@ namespace Bat
 		void PatchJump( CodeLoc_t addr );
 
 		void EmitReturn();
-		void PatchReturns();
 
 		void EmitLoad( Symbol* sym );
 		void EmitStore( Symbol* sym );
@@ -132,11 +131,8 @@ namespace Bat
 		std::vector<std::unique_ptr<Statement>> m_pStatements;
 		SymbolTable* m_pSymTab;
 		int m_iStackSize = 0;
-		int m_iArgumentsStackSize = 0;
 		ExprType m_CompileType = ExprType::UNKNOWN;
 		CodeLoc_t m_iEntryPoint = 0;
-
-		int64_t m_iRetAddr = 0;
-		std::vector<CodeLoc_t> m_ReturnsToPatch;
+		int m_iArgsSize;
 	};
 }

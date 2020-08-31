@@ -34,7 +34,7 @@ enum class ExecuteMethod
 
 bool print_ast = false;
 bool disassemble = false;
-ExecuteMethod exec_method = ExecuteMethod::VM;
+ExecuteMethod exec_method = ExecuteMethod::INTERPRETER;
 
 void Run( const std::string& src, bool print_expression_results = false )
 {
@@ -216,7 +216,7 @@ int main( int argc, char** argv )
 	{
 		//RunFromPrompt();
 		disassemble = true;
-		RunFromFile( "tests/exec/ok-operators.bat" );
+		RunFromFile( "tests/exec/ok-global-exec-order.bat" );
 	}
 
 	if( argc < 2 )
