@@ -72,10 +72,8 @@ namespace Bat
 		void CompileLValue( Expression* e );
 		void CompileRValue( Expression* e );
 
-		// Compiles a binary operation that has an rvalue for left hand side
-		void CompileBinaryRValue( BinaryExpr* node );
-		// Compiles a binary operation that has an lvalue for left hand side (in other words, an assignment type operation)
-		void CompileBinaryLValue( BinaryExpr* node );
+		void CompileBinaryExpr( BinaryExpr* node );
+		void CompileAssign( AssignStmt* node );
 
 		VariableSymbol* AddVariable( AstNode* node, const std::string& name, StorageClass storage, Type* type );
 		Symbol* GetSymbol( const std::string& name ) const;
@@ -107,6 +105,7 @@ namespace Bat
 		virtual void VisitGroupExpr( GroupExpr* node ) override;
 		virtual void VisitVarExpr( VarExpr* node ) override;
 		virtual void VisitExpressionStmt( ExpressionStmt* node ) override;
+		virtual void VisitAssignStmt( AssignStmt* node ) override;
 		virtual void VisitBlockStmt( BlockStmt* node ) override;
 		virtual void VisitPrintStmt( PrintStmt* node ) override;
 		virtual void VisitIfStmt( IfStmt* node ) override;

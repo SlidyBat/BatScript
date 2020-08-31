@@ -148,7 +148,6 @@ namespace Bat
 				auto value = Pop();
 				auto addr = Pop();
 				*reinterpret_cast<int64_t*>(&m_Stack[m_iBasePointer + addr]) = value;
-				Push( value );
 
 				DISPATCH();
 			}
@@ -157,7 +156,6 @@ namespace Bat
 				auto value = Pop();
 				auto addr = Pop();
 				*reinterpret_cast<int64_t*>(&m_Stack[addr]) = value;
-				Push( value );
 
 				DISPATCH();
 			}

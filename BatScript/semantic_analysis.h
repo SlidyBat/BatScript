@@ -44,6 +44,7 @@ namespace Bat
 		virtual void VisitGroupExpr( GroupExpr* node ) override;
 		virtual void VisitVarExpr( VarExpr* node ) override;
 		virtual void VisitExpressionStmt( ExpressionStmt* node ) override;
+		virtual void VisitAssignStmt( AssignStmt* node ) override;
 		virtual void VisitBlockStmt( BlockStmt* node ) override;
 		virtual void VisitPrintStmt( PrintStmt* node ) override;
 		virtual void VisitIfStmt( IfStmt* node ) override;

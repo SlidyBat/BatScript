@@ -305,7 +305,7 @@ namespace Bat
 
 		return bc;
 	}
-	void Compiler::CompileBinaryRValue( BinaryExpr* node )
+	void Compiler::CompileBinaryExpr( BinaryExpr* node )
 	{
 		CompileRValue( node->Right() );
 		CompileRValue( node->Left() );
@@ -330,9 +330,10 @@ namespace Bat
 		case TOKEN_ASTERISK:        (kind == PrimitiveKind::Int) ? Emit( OpCode::MUL ) : Emit( OpCode::MULF ); break;
 		case TOKEN_SLASH:           (kind == PrimitiveKind::Int) ? Emit( OpCode::DIV ) : Emit( OpCode::DIVF ); break;
 		case TOKEN_PERCENT:         Emit( OpCode::MOD ); break;
+		default:                    assert( false && "Unhandled binary op" );
 		}
 	}
-	void Compiler::CompileBinaryLValue( BinaryExpr* node )
+	void Compiler::CompileAssign( AssignStmt* node )
 	{
 		Symbol* sym = GetSymbol( node->Left() );
 
@@ -356,7 +357,7 @@ namespace Bat
 		//  store  ; stack: [added, addr]
 		//  ; ...    stack: []
 
-		PrimitiveKind kind = node->Type()->ToPrimitive()->PrimKind();
+		PrimitiveKind kind = node->Left()->Type()->ToPrimitive()->PrimKind();
 
 		Emit( OpCode::DUPX1 );
 		EmitLoad( sym );
@@ -371,6 +372,7 @@ namespace Bat
 		case TOKEN_AMP_EQUAL:      Emit( OpCode::BITAND ); break;
 		case TOKEN_HAT_EQUAL:      Emit( OpCode::BITXOR ); break;
 		case TOKEN_BAR_EQUAL:      Emit( OpCode::BITOR ); break;
+		default:                   assert( false && "Unhandled assign op" );
 		}
 
 		EmitStore( sym );
@@ -544,46 +546,7 @@ namespace Bat
 			return;
 		}
 
-		switch( node->Op() )
-		{
-		case TOKEN_BAR:
-		case TOKEN_HAT:
-		case TOKEN_AMP:
-		case TOKEN_LESS_LESS:
-		case TOKEN_GREATER_GREATER:
-		case TOKEN_EQUAL_EQUAL:
-		case TOKEN_EXCLMARK_EQUAL:
-		case TOKEN_LESS:
-		case TOKEN_LESS_EQUAL:
-		case TOKEN_GREATER:
-		case TOKEN_GREATER_EQUAL:
-		case TOKEN_PLUS:
-		case TOKEN_MINUS:
-		case TOKEN_ASTERISK:
-		case TOKEN_SLASH:
-		case TOKEN_PERCENT:
-		{
-			CompileBinaryRValue( node );
-			break;
-		}
-
-		case TOKEN_EQUAL:
-		case TOKEN_PLUS_EQUAL:
-		case TOKEN_MINUS_EQUAL:
-		case TOKEN_ASTERISK_EQUAL:
-		case TOKEN_SLASH_EQUAL:
-		case TOKEN_PERCENT_EQUAL:
-		case TOKEN_AMP_EQUAL:
-		case TOKEN_HAT_EQUAL:
-		case TOKEN_BAR_EQUAL:
-		{
-			CompileBinaryLValue( node );
-			break;
-		}
-
-		default:
-			assert( false && "Unhandled binary op" );
-		}
+		CompileBinaryExpr( node );
 	}
 	void Compiler::VisitUnaryExpr( UnaryExpr* node )
 	{
@@ -712,6 +675,12 @@ namespace Bat
 
 		CompileRValue( node->Expr() );
 	}
+	void Compiler::VisitAssignStmt( AssignStmt* node )
+	{
+		UpdateCurrLine( node );
+
+		CompileAssign( node );
+	}
 	void Compiler::VisitBlockStmt( BlockStmt* node )
 	{
 		UpdateCurrLine( node );
@@ -823,7 +792,6 @@ namespace Bat
 			Emit( OpCode::PUSH, m_iRetAddr );
 			CompileRValue( node->RetExpr() );
 			Emit( OpCode::STORE_LOCAL );
-			Emit( OpCode::POP );
 			EmitReturn();
 		}
 	}
@@ -885,7 +853,6 @@ namespace Bat
 			Emit( OpCode::PUSH, var->Address() );
 			CompileRValue( node->Initializer() );
 			EmitStore( var );
-			Emit( OpCode::POP );
 		}
 	}
 	void Compiler::VisitFuncDecl( FuncDecl* node )
@@ -926,7 +893,6 @@ namespace Bat
 				Emit( OpCode::PUSH, arg->Address() );
 				CompileRValue( sig.ParamDefault( i ) );
 				EmitStore( arg );
-				Emit( OpCode::POP );
 			}
 		}
 

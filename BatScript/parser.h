@@ -40,7 +40,7 @@ namespace Bat
 		std::unique_ptr<Statement> ParseStatement();
 		std::unique_ptr<Statement> ParseSimpleStatement();
 		std::unique_ptr<Statement> ParseCompoundStatement();
-		std::unique_ptr<Statement> ParseExpressionStatement();
+		std::unique_ptr<Statement> ParseAssign();
 		std::unique_ptr<Statement> ParsePrint();
 		std::unique_ptr<Statement> ParseBlock();
 		std::unique_ptr<Statement> ParseIf();
@@ -57,7 +57,6 @@ namespace Bat
 
 		// Expression parsing
 		std::unique_ptr<Expression> ParseExpression();
-		std::unique_ptr<Expression> ParseAssign();
 		std::unique_ptr<Expression> ParseOr();
 		std::unique_ptr<Expression> ParseAnd();
 		std::unique_ptr<Expression> ParseBitOr();

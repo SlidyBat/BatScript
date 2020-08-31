@@ -118,6 +118,13 @@ namespace Bat
 		PrintNode( node->Expr() );
 	}
 
+	void AstPrinter::VisitAssignStmt( AssignStmt* node )
+	{
+		std::cout << TokenTypeToString( node->Op() );
+		PrintNode( node->Left() );
+		PrintNode( node->Right() );
+	}
+
 	void AstPrinter::VisitBlockStmt( BlockStmt* node )
 	{
 		std::cout << "{}";

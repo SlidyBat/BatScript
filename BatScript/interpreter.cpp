@@ -154,61 +154,6 @@ namespace Bat
 			Expression* r = node->Right();
 			switch( node->Op() )
 			{
-			case TOKEN_EQUAL:
-			case TOKEN_PLUS_EQUAL:
-			case TOKEN_MINUS_EQUAL:
-			case TOKEN_ASTERISK_EQUAL:
-			case TOKEN_SLASH_EQUAL:
-			case TOKEN_PERCENT_EQUAL:
-			case TOKEN_AMP_EQUAL:
-			case TOKEN_HAT_EQUAL:
-			case TOKEN_BAR_EQUAL:
-			{
-				if( !l->IsVarExpr() && !l->IsIndexExpr() )
-				{
-					throw RuntimeError( l->Location(), "Expression must be a modifiable lvalue" );
-				}
-
-				BatObject current;
-
-				if( VarExpr * v = l->ToVarExpr() )
-				{
-					current = Evaluate( l );
-				}
-				else if( IndexExpr * i = l->ToIndexExpr() )
-				{
-					BatObject arr = Evaluate( i->Array() );
-					BatObject index = Evaluate( i->Index() );
-					current = arr.Index( index );
-				}
-				BatObject assign = Evaluate( r );
-
-				BatObject newval;
-				switch( node->Op() )
-				{
-				case TOKEN_EQUAL:          newval = assign; break;
-				case TOKEN_PLUS_EQUAL:     newval = current.Add( assign ); break;
-				case TOKEN_MINUS_EQUAL:    newval = current.Sub( assign ); break;
-				case TOKEN_ASTERISK_EQUAL: newval = current.Mul( assign ); break;
-				case TOKEN_SLASH_EQUAL:    newval = current.Div( assign ); break;
-				case TOKEN_PERCENT_EQUAL:  newval = current.Mod( assign ); break;
-				case TOKEN_AMP_EQUAL:      newval = current.BitAnd( assign ); break;
-				case TOKEN_HAT_EQUAL:      newval = current.BitXor( assign ); break;
-				case TOKEN_BAR_EQUAL:      newval = current.BitOr( assign ); break;
-				}
-				if( VarExpr* v = l->ToVarExpr() )
-				{
-					SetVar( v->Identifier().lexeme, newval, node->Location() );
-				}
-				else if( IndexExpr* i = l->ToIndexExpr() )
-				{
-					BatObject arr = Evaluate( i->Array() );
-					BatObject index = Evaluate( i->Index() );
-					arr.Index( index ) = newval;
-				}
-				BAT_RETURN( newval );
-			}
-
 			case TOKEN_BAR:              BAT_RETURN( Evaluate( l ).BitOr( Evaluate( r ) ) );
 			case TOKEN_HAT:              BAT_RETURN( Evaluate( l ).BitXor( Evaluate( r ) ) );
 			case TOKEN_AMP:              BAT_RETURN( Evaluate( l ).BitAnd( Evaluate( r ) ) );
@@ -375,6 +320,63 @@ namespace Bat
 	void Interpreter::VisitExpressionStmt( ExpressionStmt* node )
 	{
 		Evaluate( node->Expr() );
+	}
+	void Interpreter::VisitAssignStmt( AssignStmt* node )
+	{
+		try
+		{
+			Expression* l = node->Left();
+			Expression* r = node->Right();
+			if( !l->IsVarExpr() && !l->IsIndexExpr() )
+			{
+				throw RuntimeError( l->Location(), "Expression must be a modifiable lvalue" );
+			}
+
+			BatObject current;
+
+			if( VarExpr* v = l->ToVarExpr() )
+			{
+				current = Evaluate( l );
+			}
+			else if( IndexExpr* i = l->ToIndexExpr() )
+			{
+				BatObject arr = Evaluate( i->Array() );
+				BatObject index = Evaluate( i->Index() );
+				current = arr.Index( index );
+			}
+			BatObject assign = Evaluate( r );
+
+			BatObject newval;
+			switch( node->Op() )
+			{
+				case TOKEN_EQUAL:          newval = assign; break;
+				case TOKEN_PLUS_EQUAL:     newval = current.Add( assign ); break;
+				case TOKEN_MINUS_EQUAL:    newval = current.Sub( assign ); break;
+				case TOKEN_ASTERISK_EQUAL: newval = current.Mul( assign ); break;
+				case TOKEN_SLASH_EQUAL:    newval = current.Div( assign ); break;
+				case TOKEN_PERCENT_EQUAL:  newval = current.Mod( assign ); break;
+				case TOKEN_AMP_EQUAL:      newval = current.BitAnd( assign ); break;
+				case TOKEN_HAT_EQUAL:      newval = current.BitXor( assign ); break;
+				case TOKEN_BAR_EQUAL:      newval = current.BitOr( assign ); break;
+			}
+			if( VarExpr* v = l->ToVarExpr() )
+			{
+				SetVar( v->Identifier().lexeme, newval, node->Location() );
+			}
+			else if( IndexExpr* i = l->ToIndexExpr() )
+			{
+				BatObject arr = Evaluate( i->Array() );
+				BatObject index = Evaluate( i->Index() );
+				arr.Index( index ) = newval;
+			}
+			BAT_RETURN( newval );
+		}
+		catch( const BatObjectError& e )
+		{
+			throw RuntimeError( node->Location(), e.what() );
+		}
+
+		throw RuntimeError( node->Location(), "Unexpected assign statement" );
 	}
 	void Interpreter::VisitBlockStmt( BlockStmt* node )
 	{
