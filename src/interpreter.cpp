@@ -131,8 +131,9 @@ namespace Bat
 			case TOKEN_TRUE:  BAT_RETURN( true );
 			case TOKEN_FALSE: BAT_RETURN( false );
 			case TOKEN_NIL:   BAT_RETURN( BatObject() );
+			default:
+				throw RuntimeError( node->Location(), std::string( "Unexpected token '" ) + TokenTypeToString( node->value ) + "'" );
 		}
-		throw RuntimeError( node->Location(), std::string( "Unexpected token '" ) + TokenTypeToString( node->value ) + "'" );
 	}
 	void Interpreter::VisitArrayLiteral( ArrayLiteral* node )
 	{
@@ -179,14 +180,14 @@ namespace Bat
 				if( !Evaluate( l ).IsTruthy() ) BAT_RETURN( false );
 				if( !Evaluate( r ).IsTruthy() ) BAT_RETURN( false );
 				BAT_RETURN( true );
+			default:
+				throw RuntimeError( node->Location(), "Unexpected binary expression" );
 			}
 		}
 		catch( const BatObjectError& e )
 		{
 			throw RuntimeError( node->Location(), e.what() );
 		}
-
-		throw RuntimeError( node->Location(), "Unexpected binary expression" );
 	}
 	void Interpreter::VisitUnaryExpr( UnaryExpr* node )
 	{
@@ -198,14 +199,14 @@ namespace Bat
 				case TOKEN_EXCLMARK: BAT_RETURN( Evaluate( node->Right() ).Not() );
 				case TOKEN_TILDE:    BAT_RETURN( Evaluate( node->Right() ).BitNeg() );
 					// case TOKEN_AMP:
+				default:
+					throw RuntimeError( node->Location(), "Unexpected binary expression" );
 			}
 		}
 		catch( const BatObjectError& e )
 		{
 			throw RuntimeError( node->Location(), e.what() );
 		}
-
-		throw RuntimeError( node->Location(), "Unexpected binary expression" );
 	}
 	void Interpreter::VisitCallExpr( CallExpr* node )
 	{
@@ -252,6 +253,10 @@ namespace Bat
 		BatObject base = Evaluate( node->Expr() );
 		switch( base_type->PrimKind() )
 		{
+		case PrimitiveKind::Void:
+		{
+			throw RuntimeError( node->Location(), "Cannot cast void type" );
+		}
 		case PrimitiveKind::Bool:
 		{
 			switch( to_type->PrimKind() )
@@ -358,6 +363,8 @@ namespace Bat
 				case TOKEN_AMP_EQUAL:      newval = current.BitAnd( assign ); break;
 				case TOKEN_HAT_EQUAL:      newval = current.BitXor( assign ); break;
 				case TOKEN_BAR_EQUAL:      newval = current.BitOr( assign ); break;
+				default:
+					throw RuntimeError( node->Location(), "Unexpected assign statement" );
 			}
 			if( VarExpr* v = l->ToVarExpr() )
 			{
@@ -375,8 +382,6 @@ namespace Bat
 		{
 			throw RuntimeError( node->Location(), e.what() );
 		}
-
-		throw RuntimeError( node->Location(), "Unexpected assign statement" );
 	}
 	void Interpreter::VisitBlockStmt( BlockStmt* node )
 	{

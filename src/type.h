@@ -38,6 +38,7 @@ namespace Bat
 			:
 			m_Kind( kind )
 		{}
+		virtual ~Type() = default;
 
 		TypeKind Kind() const { return m_Kind; }
 		virtual size_t Size() const = 0;

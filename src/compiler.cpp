@@ -689,6 +689,10 @@ namespace Bat
 
 		switch( t->PrimKind() )
 		{
+		case PrimitiveKind::Void:
+			assert( !"Invalid node type for print" );
+			Emit( OpCode::POP );
+			break;
 		case PrimitiveKind::Bool:
 			Emit( OpCode::PRINTB );
 			break;

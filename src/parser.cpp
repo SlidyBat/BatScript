@@ -155,6 +155,9 @@ namespace Bat
 				case TOKEN_TYPEDEF:
 				case TOKEN_ALIASDEF:
 					return;
+				
+				default:
+					break;
 			}
 		}
 	}

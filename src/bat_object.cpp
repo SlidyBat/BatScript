@@ -11,15 +11,17 @@ namespace Bat
 	{
 		switch( type )
 		{
-			case TYPE_NULL:     return "null";
-			case TYPE_INT:      return "int";
-			case TYPE_FLOAT:    return "float";
-			case TYPE_BOOL:     return "bool";
-			case TYPE_STR:      return "string";
-			case TYPE_CALLABLE: return "function";
-			case TYPE_ARRAY:    return "array";
-			default: return "<error-type>";
+			case TYPE_UNDEFINED: return "undefined";
+			case TYPE_NULL:      return "null";
+			case TYPE_INT:       return "int";
+			case TYPE_FLOAT:     return "float";
+			case TYPE_BOOL:      return "bool";
+			case TYPE_STR:       return "string";
+			case TYPE_CALLABLE:  return "function";
+			case TYPE_ARRAY:     return "array";
 		}
+		
+		return "<error-type>";
 	}
 
 	BatObject::BatObject()
@@ -210,6 +212,7 @@ namespace Bat
 		{
 			switch( type )
 			{
+				case TYPE_UNDEFINED:
 				case TYPE_NULL:
 					return true;
 				case TYPE_INT:
@@ -220,6 +223,15 @@ namespace Bat
 					return value.f64 == rhs.value.f64;
 				case TYPE_STR:
 					return std::string( value.str ) == rhs.value.str;
+				case TYPE_ARRAY:
+					if ( arr_size != rhs.arr_size )
+						return false;
+					for ( size_t i = 0; i < arr_size; i++ )
+						if ( !value.arr[i].CmpEq( rhs.value.arr[i] ).IsTruthy() )
+							return false;
+					return true;
+				case TYPE_CALLABLE:
+					return value.func == rhs.value.func;
 			}
 		}
 
@@ -239,6 +251,15 @@ namespace Bat
 					return value.i64 < rhs.value.i64;
 				case TYPE_FLOAT:
 					return value.f64 < rhs.value.f64;
+				case TYPE_STR:
+					return std::string( value.str ) < std::string( rhs.value.str );
+				
+				case TYPE_UNDEFINED:
+				case TYPE_NULL:
+				case TYPE_BOOL:
+				case TYPE_CALLABLE:
+				case TYPE_ARRAY:
+					break;
 			}
 		}
 
@@ -254,6 +275,15 @@ namespace Bat
 					return value.i64 <= rhs.value.i64;
 				case TYPE_FLOAT:
 					return value.f64 <= rhs.value.f64;
+				case TYPE_STR:
+					return std::string( value.str ) <= std::string( rhs.value.str );
+				
+				case TYPE_UNDEFINED:
+				case TYPE_NULL:
+				case TYPE_BOOL:
+				case TYPE_CALLABLE:
+				case TYPE_ARRAY:
+					break;
 			}
 		}
 
@@ -269,6 +299,15 @@ namespace Bat
 					return value.i64 > rhs.value.i64;
 				case TYPE_FLOAT:
 					return value.f64 > rhs.value.f64;
+				case TYPE_STR:
+					return std::string( value.str ) > std::string( rhs.value.str );
+				
+				case TYPE_UNDEFINED:
+				case TYPE_NULL:
+				case TYPE_BOOL:
+				case TYPE_CALLABLE:
+				case TYPE_ARRAY:
+					break;
 			}
 		}
 
@@ -284,6 +323,15 @@ namespace Bat
 					return value.i64 >= rhs.value.i64;
 				case TYPE_FLOAT:
 					return value.f64 >= rhs.value.f64;
+				case TYPE_STR:
+					return std::string( value.str ) >= std::string( rhs.value.str );
+				
+				case TYPE_UNDEFINED:
+				case TYPE_NULL:
+				case TYPE_BOOL:
+				case TYPE_CALLABLE:
+				case TYPE_ARRAY:
+					break;
 			}
 		}
 
@@ -296,6 +344,14 @@ namespace Bat
 			case TYPE_BOOL:
 			case TYPE_INT:
 				return !value.i64;
+			
+			case TYPE_UNDEFINED:
+			case TYPE_NULL:
+			case TYPE_FLOAT:
+			case TYPE_STR:
+			case TYPE_CALLABLE:
+			case TYPE_ARRAY:
+				break;
 		}
 
 		throw BatObjectError( std::string( "Cannot invert " ) + TypeToStr( type ) );
@@ -308,9 +364,17 @@ namespace Bat
 				return -value.f64;
 			case TYPE_INT:
 				return -value.i64;
+			
+			case TYPE_UNDEFINED:
+			case TYPE_NULL:
+			case TYPE_BOOL:
+			case TYPE_STR:
+			case TYPE_CALLABLE:
+			case TYPE_ARRAY:
+				break;
 		}
 
-		throw BatObjectError( std::string( "Cannot netage " ) + TypeToStr( type ) );
+		throw BatObjectError( std::string( "Cannot negate " ) + TypeToStr( type ) );
 	}
 	BatObject BatObject::BitNeg()
 	{
@@ -318,6 +382,15 @@ namespace Bat
 		{
 			case TYPE_INT:
 				return ~value.i64;
+			
+			case TYPE_UNDEFINED:
+			case TYPE_NULL:
+			case TYPE_BOOL:
+			case TYPE_FLOAT:
+			case TYPE_STR:
+			case TYPE_CALLABLE:
+			case TYPE_ARRAY:
+				break;
 		}
 
 		throw BatObjectError( std::string( "Cannot bitwise-negate " ) + TypeToStr( type ) );
@@ -374,6 +447,8 @@ namespace Bat
 	{
 		switch( type )
 		{
+			case TYPE_UNDEFINED:
+				return "undefined";
 			case TYPE_NULL:
 				return "null";
 			case TYPE_BOOL:
@@ -396,14 +471,15 @@ namespace Bat
 				}
 				s += "]";
 			}
-			default:
-				return "<error>";
 		}
+
+		return "error";
 	}
 	void BatObject::Copy( const BatObject& other )
 	{
 		switch( type )
 		{
+			case TYPE_UNDEFINED:
 			case TYPE_NULL:
 			{
 				break;
@@ -452,6 +528,7 @@ namespace Bat
 	{
 		switch( type )
 		{
+			case TYPE_UNDEFINED:
 			case TYPE_NULL:
 			{
 				break;
@@ -487,6 +564,7 @@ namespace Bat
 	{
 		switch( type )
 		{
+			case TYPE_UNDEFINED:
 			case TYPE_NULL:
 				return false;
 			case TYPE_BOOL:

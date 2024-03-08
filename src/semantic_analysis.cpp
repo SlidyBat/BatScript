@@ -142,9 +142,11 @@ namespace Bat
 			case TOKEN_FALSE:
 				node->SetType( typeman.NewPrimitive( PrimitiveKind::Bool ) );
 				return;
+			
+			default:
+				assert( false );
+				node->SetType( typeman.NewPrimitive( PrimitiveKind::Int ) ); // TODO: ???
 		}
-		assert( false );
-		node->SetType( typeman.NewPrimitive( PrimitiveKind::Int ) ); // TODO: ???
 	}
 	void SemanticAnalysis::VisitArrayLiteral( ArrayLiteral* node )
 	{
@@ -276,10 +278,11 @@ namespace Bat
 			}
 
 			return nullptr;
+		
+		default:
+			assert( false );
+			return nullptr;
 		}
-
-		assert( false );
-		return nullptr;
 	}
 	Type* SemanticAnalysis::ArrayBinary( ArrayType* left, Type* right, TokenType op )
 	{
@@ -293,6 +296,9 @@ namespace Bat
 		case TOKEN_HAT_EQUAL:
 		case TOKEN_BAR_EQUAL:
 			return nullptr;
+		
+		default:
+			break;
 		}
 
 		if( ArrayType* right_arr = right->ToArray() )
@@ -369,10 +375,12 @@ namespace Bat
 		{
 		case TypeKind::Array:
 		case TypeKind::Function:
+		case TypeKind::Named:
 			return false;
 		case TypeKind::Primitive:
 			switch( type->AsPrimitive()->PrimKind() )
 			{
+			case PrimitiveKind::Void:
 			case PrimitiveKind::String:
 				return false;
 			case PrimitiveKind::Bool: // (?)
@@ -394,10 +402,12 @@ namespace Bat
 		{
 		case TypeKind::Array:
 		case TypeKind::Function:
+		case TypeKind::Named:
 			return false;
 		case TypeKind::Primitive:
 			switch( type->AsPrimitive()->PrimKind() )
 			{
+			case PrimitiveKind::Void:
 			case PrimitiveKind::Bool:
 			case PrimitiveKind::String:
 			case PrimitiveKind::Float:
@@ -419,10 +429,12 @@ namespace Bat
 		{
 		case TypeKind::Array:
 		case TypeKind::Function:
+		case TypeKind::Named:
 			return false;
 		case TypeKind::Primitive:
 			switch( type->AsPrimitive()->PrimKind() )
 			{
+			case PrimitiveKind::Void:
 			case PrimitiveKind::Bool:
 			case PrimitiveKind::String:
 			case PrimitiveKind::Int:
@@ -462,6 +474,10 @@ namespace Bat
 				Error( node->Location(), std::string( "Cannot use operator '" ) + TokenTypeToString( node->Op() ) + "' on expression of type " + right->ToString() );
 			}
 			node->SetType( right );
+			break;
+		
+		default:
+			assert( !"Unhandled unary operator" );
 			break;
 		}
 	}
