@@ -147,28 +147,50 @@ int main( int argc, char** argv )
 
 	// YUCK! Should make my own format func in the future, this is leaky and disgusting
 	AddNative( "format", []( const std::vector<BatObject>& args ) {
-		auto buffer = new char[4096];
-#define B(obj) obj.value
-		switch( args.size() )
+		std::stringstream ss;
+
+		const char* fmt = args[0].String();
+		size_t curr_arg = 1;
+		for ( const char* p = fmt; *p != '\0'; p++ )
 		{
-		case 1:  return BatObject( args[0].String() );
-		case 2:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ) ); break;
-		case 3:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ) ); break;
-		case 4:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ) ); break;
-		case 5:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ) ); break;
-		case 6:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ), B( args[5] ) ); break;
-		case 7:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ), B( args[5] ), B( args[6] ) ); break;
-		case 8:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ), B( args[5] ), B( args[6] ), B( args[7] ) ); break;
-		case 9:  sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ), B( args[5] ), B( args[6] ), B( args[7] ), B( args[8] ) ); break;
-		case 10: sprintf_s( buffer, 4096, args[0].String(), B( args[1] ), B( args[2] ), B( args[3] ), B( args[4] ), B( args[5] ), B( args[6] ), B( args[7] ), B( args[8] ), B( args[9] ) ); break;
-		default:
-			ErrorSys::Report( 0, 0, "Too many arguments to format (max 10 + format string)" ); // TODO: Get lines/stack trace here
-			return BatObject( "ERROR" );
+			if ( *p == '%' )
+			{
+				char type = p[1];
+				if ( type == '\0' )
+				{
+					ss << *p;
+					continue;
+				}
+
+				if ( curr_arg >= args.size() )
+					return BatObject( "ERROR" );
+				const BatObject& arg = args[curr_arg++];
+
+				// TODO: Type checking
+				switch ( type )
+				{
+					case 's':
+						ss << arg.ToString();
+						break;
+					case 'c':
+						ss << arg.ToString();
+						break;
+					case 'i':
+					case 'd':
+						ss << arg.Int();
+						break;
+					case 'f':
+						ss << arg.Float();
+						break;
+				}
+			}
+			else
+			{
+				ss << *p;
+			}
 		}
 
-		
-		return BatObject( buffer );
-#undef B
+		return BatObject( ss.str().c_str() );
 	} );
 
 	if( argc >= 2 )
@@ -214,7 +236,7 @@ int main( int argc, char** argv )
 	}
 	else
 	{
-		//RunFromPrompt();
+		RunFromPrompt();
 		disassemble = true;
 		RunFromFile( "tests/exec/ok-global-exec-order.bat" );
 	}

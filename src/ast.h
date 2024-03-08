@@ -66,6 +66,7 @@ namespace Bat
 			:
 			m_Loc( loc )
 		{}
+		virtual ~AstNode() = default;
 
 		virtual AstType Kind() const = 0;
 		virtual void Accept( AstVisitor* visitor ) = 0;
@@ -87,7 +88,7 @@ namespace Bat
 	};
 
 #define DECLARE_AST_NODE(asttype) \
-	virtual AstType Kind() const override { return AstType::##asttype; } \
+	virtual AstType Kind() const override { return AstType::asttype; } \
 	virtual void Accept( AstVisitor* visitor ) override { visitor->Visit##asttype( this ); } \
 	virtual const char* Name() const override { return #asttype; }
 

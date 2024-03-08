@@ -41,7 +41,7 @@ namespace Bat
 		virtual int64_t Address() const { assert( false ); return 0; }
 
 #define _(symtype) \
-		virtual bool Is##symtype() const { return Kind() == SymbolKind::##symtype; } \
+		virtual bool Is##symtype() const { return Kind() == SymbolKind::symtype; } \
 		virtual symtype##Symbol* As##symtype() { if( !Is##symtype() ) return nullptr; return (symtype##Symbol*)this; } \
 		virtual const symtype##Symbol* As##symtype() const { if( !Is##symtype() ) return nullptr; return (const symtype##Symbol*)this; } \
 		virtual symtype##Symbol* To##symtype() { assert( Is##symtype() ); return (symtype##Symbol*)this; } \

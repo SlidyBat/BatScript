@@ -1,0 +1,21 @@
+add_executable(BatScript
+    ast_printer.cpp
+    bat_callable.cpp
+    bat_object.cpp
+    compiler.cpp
+    disassembler.cpp
+    environment.cpp
+    errorsys.cpp
+    interpreter.cpp
+    lexer.cpp
+    main.cpp
+    memory_stream.cpp
+    parser.cpp
+    semantic_analysis.cpp
+    stringlib.cpp
+    stringpool.cpp
+    symbol_table.cpp
+    token.cpp
+    type_manager.cpp
+    vm.cpp
+)

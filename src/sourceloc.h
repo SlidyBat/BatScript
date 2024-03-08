@@ -5,8 +5,8 @@ namespace Bat
 	class SourceLoc
 	{
 	public:
-		SourceLoc( int line, int column )
-			:
+		SourceLoc() = default;
+		SourceLoc( int line, int column ) :
 			m_iLine( line ),
 			m_iColumn( column )
 		{}

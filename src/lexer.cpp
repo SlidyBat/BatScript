@@ -4,6 +4,8 @@
 #include "stringpool.h"
 #include "errorsys.h"
 
+#include <charconv>
+
 namespace Bat
 {
 	Lexer::Lexer( const std::string& text )
@@ -356,7 +358,8 @@ namespace Bat
 		}
 		else
 		{
-			int64_t i = _atoi64( l.c_str() );
+			int64_t i;
+			auto res = std::from_chars( l.data(), l.data() + l.size(), i );
 			m_Tokens.emplace_back( i, l, m_iLine, GetCurrColumn() );
 		}
 	}

@@ -21,7 +21,7 @@ namespace Bat
 			message( message )
 		{}
 
-		virtual char const* what() const override
+		virtual char const* what() const noexcept override
 		{
 			return message.c_str();
 		}
@@ -83,7 +83,7 @@ namespace Bat
 
 		bool IsTruthy() const;
 
-		std::string ToString();
+		std::string ToString() const;
 
 		bool Bool() const { assert( type == TYPE_BOOL ); return value.i64; }
 		int64_t Int() const { assert( type == TYPE_INT ); return value.i64; }

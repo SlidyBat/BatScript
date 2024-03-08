@@ -17,7 +17,7 @@ namespace Bat
 			ErrorSys::Report( loc.Line(), loc.Column(), msg );
 		}
 
-		virtual const char* what() const override { return msg.c_str(); }
+		virtual const char* what() const noexcept override { return msg.c_str(); }
 	private:
 		std::string msg;
 	};

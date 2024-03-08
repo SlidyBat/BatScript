@@ -45,7 +45,7 @@ namespace Bat
 		virtual std::string ToString() const = 0;
 
 #define _(type) \
-		bool Is##type() const { return Kind() == TypeKind::##type; } \
+		bool Is##type() const { return Kind() == TypeKind::type; } \
 		type##Type* As##type() { assert( Is##type() ); return (type##Type*)this; } \
 		const type##Type* As##type() const { assert( Is##type() ); return (const type##Type*)this; } \
 		type##Type* To##type() { if( !Is##type() ) return nullptr; return (type##Type*)this; } \

@@ -370,7 +370,7 @@ namespace Bat
 
 		Copy( other );
 	}
-	std::string BatObject::ToString()
+	std::string BatObject::ToString() const
 	{
 		switch( type )
 		{

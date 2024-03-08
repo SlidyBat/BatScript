@@ -49,9 +49,9 @@ namespace Bat
 		static constexpr int MAX_PAREN_LEVEL = 256;
 		static constexpr int TAB_SIZE = 8;
 		bool m_bBeginningOfLine = true;
-		int m_iIndentStack[MAX_INDENT_LEVEL];
+		int m_iIndentStack[MAX_INDENT_LEVEL] = {};
 		int m_iCurrentIndent = 0;
-		char m_iParenStack[MAX_PAREN_LEVEL];
+		char m_iParenStack[MAX_PAREN_LEVEL] = {};
 		int m_iParenLevel = 0;
 	};
 }
