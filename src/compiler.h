@@ -111,6 +111,7 @@ namespace Bat
 		virtual void VisitUnaryExpr( UnaryExpr* node ) override;
 		virtual void VisitCallExpr( CallExpr* node ) override;
 		virtual void VisitIndexExpr( IndexExpr* node ) override;
+		virtual void VisitAttrExpr( AttrExpr* node ) override;
 		virtual void VisitCastExpr( CastExpr* node ) override;
 		virtual void VisitGroupExpr( GroupExpr* node ) override;
 		virtual void VisitVarExpr( VarExpr* node ) override;

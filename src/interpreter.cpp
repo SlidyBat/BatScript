@@ -241,6 +241,20 @@ namespace Bat
 			throw RuntimeError( node->Location(), e.what() );
 		}
 	}
+	void Interpreter::VisitAttrExpr( AttrExpr* node )
+	{
+		try
+		{
+			BatObject base = Evaluate( node->Base() );
+			// TODO: Get attr of object
+
+			BAT_RETURN( base );
+		}
+		catch( const BatObjectError& e )
+		{
+			throw RuntimeError( node->Location(), e.what() );
+		}
+	}
 	void Interpreter::VisitCastExpr( CastExpr* node )
 	{
 		if( !node->Expr()->Type()->IsPrimitive() || !node->TargetType()->IsPrimitive() )

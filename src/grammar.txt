@@ -54,10 +54,14 @@ shift         -> add ( ( "<<" | ">>" ) add )*
 add           -> mult ( ( "+" | "-" ) mult )*
 mult          -> unary ( ( "*" | "/" | "%" ) unary )*
 unary         -> ( "+" | "-" | "!" | "~" | "*" | "&" | "print" ) unary
-               | call
-call          -> primary ( ( "(" arguments? ")" ) | ( "[" expression "]" ) )*
+               | call_index_attr
+call_index_attr -> primary ( call | index | attr )*
+call          -> "(" arguments? ")"
+index         -> "[" expression "]"
+attr          -> "." IDENTIFIER
 arguments     -> expression ( "," expression )*
 primary       -> NUMBER | STRING | "false" | "true" | "null" // Literals
+               | IDENTIFIER
                | "(" expression ")" // Grouping
                | "[" array_values? "]" // Array literal
 array_values  -> expression ( "," expression )* ","? // Optional trailing comma

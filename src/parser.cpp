@@ -673,10 +673,10 @@ namespace Bat
 			return std::make_unique<UnaryExpr>( loc, op.type, std::move( right ) );
 		}
 
-		return ParseCallOrIndex();
+		return ParseCallOrIndexOrAttr();
 	}
 
-	std::unique_ptr<Expression> Parser::ParseCallOrIndex()
+	std::unique_ptr<Expression> Parser::ParseCallOrIndexOrAttr()
 	{
 		SourceLoc loc = Peek().loc;
 
@@ -688,6 +688,7 @@ namespace Bat
 			{
 			case TOKEN_LPAREN:   left = ParseCall( std::move( left ) ); break;
 			case TOKEN_LBRACKET: left = ParseIndex( std::move( left ) ); break;
+			case TOKEN_DOT:      left = ParseAttr( std::move( left ) ); break;
 			default:             return std::move( left );
 			}
 		}
@@ -724,6 +725,17 @@ namespace Bat
 		Expect( TOKEN_RBRACKET, "Expected ']'" );
 
 		return std::make_unique<IndexExpr>( loc, std::move( left ), std::move( index ) );
+	}
+
+	std::unique_ptr<Expression> Parser::ParseAttr( std::unique_ptr<Expression> left )
+	{
+		SourceLoc loc = Previous().loc;
+
+		Expect( TOKEN_DOT, "Expected '.'" );
+
+		Token attr = Expect( TOKEN_IDENT, "Expected identifier" );
+
+		return std::make_unique<AttrExpr>( loc, std::move( left ), std::move( attr ) );
 	}
 
 	std::unique_ptr<Expression> Parser::ParsePrimary()

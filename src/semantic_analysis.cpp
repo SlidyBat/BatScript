@@ -564,6 +564,11 @@ namespace Bat
 
 		node->SetType( inner );
 	}
+	void SemanticAnalysis::VisitAttrExpr( AttrExpr* node )
+	{
+		// Nothing can use attr currently
+		Error( node->Attr().loc, "No such attribute" );
+	}
 	void SemanticAnalysis::VisitCastExpr( CastExpr* node )
 	{
 		// Not yet implemented

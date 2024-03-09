@@ -69,9 +69,10 @@ namespace Bat
 		std::unique_ptr<Expression> ParseAddition();
 		std::unique_ptr<Expression> ParseMultiplication();
 		std::unique_ptr<Expression> ParseUnary();
-		std::unique_ptr<Expression> ParseCallOrIndex();
+		std::unique_ptr<Expression> ParseCallOrIndexOrAttr();
 		std::unique_ptr<Expression> ParseCall( std::unique_ptr<Expression> left );
 		std::unique_ptr<Expression> ParseIndex( std::unique_ptr<Expression> left );
+		std::unique_ptr<Expression> ParseAttr( std::unique_ptr<Expression> left );
 		std::unique_ptr<Expression> ParsePrimary();
 	private:
 		int m_iCurrent = 0;

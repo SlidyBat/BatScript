@@ -20,6 +20,7 @@
 	_( VarExpr ) \
 	_( CallExpr ) \
 	_( IndexExpr ) \
+	_( AttrExpr ) \
 	_( CastExpr ) \
 	/* Statements */ \
 	_( ExpressionStmt ) \
@@ -249,7 +250,10 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( VarExpr );
 
-		VarExpr( const SourceLoc& loc, Token name ) : LValueExpr( loc ), m_tokName( name ) {}
+		VarExpr( const SourceLoc& loc, Token name ) :
+			LValueExpr( loc ),
+			m_tokName( std::move( name ) )
+		{}
 
 		const Token& Identifier() const { return m_tokName; }
 	private:
@@ -297,6 +301,24 @@ namespace Bat
 	private:
 		std::unique_ptr<Expression> m_pArray;
 		std::unique_ptr<Expression> m_pIndex;
+	};
+
+	class AttrExpr : public LValueExpr
+	{
+	public:
+		DECLARE_AST_NODE( AttrExpr );
+
+		AttrExpr( const SourceLoc& loc, std::unique_ptr<Expression> base, Token attr ) :
+			LValueExpr( loc ),
+			m_pBase( std::move( base ) ),
+			m_tokAttr( std::move( attr ) )
+		{}
+
+		Expression* Base() { return m_pBase.get(); }
+		const Token& Attr() { return m_tokAttr; }
+	private:
+		std::unique_ptr<Expression> m_pBase;
+		Token m_tokAttr;
 	};
 
 	class CastExpr : public Expression

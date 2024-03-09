@@ -615,6 +615,16 @@ namespace Bat
 
 		assert( false );
 	}
+	void Compiler::VisitAttrExpr( AttrExpr* node )
+	{
+		UpdateCurrLine( node );
+
+		CompileLValue( node->Base() );
+		Emit( OpCode::PUSH, 0 ); // Will have to get offset of field and add it
+		Emit( OpCode::ADD );
+
+		assert( false );
+	}
 	void Compiler::VisitCastExpr( CastExpr* node )
 	{
 		UpdateCurrLine( node );
