@@ -173,6 +173,16 @@ namespace Bat
 		PrintNode( node->RetExpr() );
 	}
 
+	void AstPrinter::VisitBreakStmt( BreakStmt* node )
+	{
+		std::cout << "break";
+	}
+
+	void AstPrinter::VisitContinueStmt( ContinueStmt* node )
+	{
+		std::cout << "continue";
+	}
+
 	void AstPrinter::VisitImportStmt( ImportStmt* node )
 	{
 		std::cout << "import " << node->ModuleName();

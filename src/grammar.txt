@@ -11,6 +11,8 @@ simple_stmt   -> expr_stmt
                | import_stmt
                | native_stmt
                | var_decl
+               | "break"
+               | "continue"
 compound_stmt -> if_stmt
                | while_stmt
                | for_stmt

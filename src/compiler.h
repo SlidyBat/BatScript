@@ -10,6 +10,14 @@ namespace Bat
 {
 	using CodeLoc_t = int64_t;
 
+	constexpr CodeLoc_t CODE_LOC_INVALID = -1;
+
+	struct Label
+	{
+		CodeLoc_t addr = CODE_LOC_INVALID;
+		std::vector<CodeLoc_t> patch_locs;
+	};
+
 	struct BatDebugInfo
 	{
 		// Maps from instruction to corresponding line
@@ -61,6 +69,9 @@ namespace Bat
 		// Patches the jump target of a jump opcode at a given address to point to current instruction pointer
 		void PatchJump( CodeLoc_t addr );
 
+		void JmpToLabel( OpCode op, Label& label );
+		void InsertLabel( Label& label );
+
 		void EmitReturn();
 
 		void EmitLoad( Symbol* sym );
@@ -111,6 +122,8 @@ namespace Bat
 		virtual void VisitWhileStmt( WhileStmt* node ) override;
 		virtual void VisitForStmt( ForStmt* node ) override;
 		virtual void VisitReturnStmt( ReturnStmt* node ) override;
+		virtual void VisitBreakStmt( BreakStmt* node ) override;
+		virtual void VisitContinueStmt( ContinueStmt* node ) override;
 		virtual void VisitImportStmt( ImportStmt* node ) override;
 		virtual void VisitNativeStmt( NativeStmt* node ) override;
 		virtual void VisitVarDecl( VarDecl* node ) override;
@@ -134,5 +147,7 @@ namespace Bat
 		ExprType m_CompileType = ExprType::UNKNOWN;
 		CodeLoc_t m_iEntryPoint = 0;
 		int m_iArgsSize;
+		Label* m_pBreakTarget = nullptr;
+		Label* m_pContinueTarget = nullptr;
 	};
 }

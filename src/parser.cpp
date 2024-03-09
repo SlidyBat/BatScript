@@ -196,10 +196,12 @@ namespace Bat
 
 	std::unique_ptr<Statement> Parser::ParseSimpleStatement()
 	{
-		if( Match( TOKEN_PRINT ) )  return ParsePrint();
-		if( Match( TOKEN_RETURN ) ) return ParseReturn();
-		if( Match( TOKEN_IMPORT ) ) return ParseImport();
-		if( Match( TOKEN_NATIVE ) ) return ParseNative();
+		if( Match( TOKEN_PRINT ) )    return ParsePrint();
+		if( Match( TOKEN_RETURN ) )   return ParseReturn();
+		if( Match( TOKEN_BREAK ) )    return ParseBreak();
+		if( Match( TOKEN_CONTINUE ) ) return ParseContinue();
+		if( Match( TOKEN_IMPORT ) )   return ParseImport();
+		if( Match( TOKEN_NATIVE ) )   return ParseNative();
 
 		return ParseAssign();
 	}
@@ -364,6 +366,22 @@ namespace Bat
 		}
 		ExpectTerminator();
 		return std::make_unique<ReturnStmt>( loc, std::move( ret_value ) );
+	}
+
+	std::unique_ptr<Statement> Parser::ParseBreak()
+	{
+		SourceLoc loc = Previous().loc;
+
+		ExpectTerminator();
+		return std::make_unique<BreakStmt>( loc );
+	}
+
+	std::unique_ptr<Statement> Parser::ParseContinue()
+	{
+		SourceLoc loc = Previous().loc;
+
+		ExpectTerminator();
+		return std::make_unique<ContinueStmt>( loc );
 	}
 
 	std::unique_ptr<Statement> Parser::ParseImport()

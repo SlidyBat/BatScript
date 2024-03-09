@@ -225,6 +225,29 @@ namespace Bat
 	{
 		Patch( addr, IP() );
 	}
+	void Compiler::JmpToLabel( OpCode op, Label& label )
+	{
+		if( label.addr != CODE_LOC_INVALID )
+		{
+			Emit( op, label.addr );
+		}
+		else
+		{
+			label.patch_locs.push_back( EmitToPatch( op ) );
+		}
+	}
+	void Compiler::InsertLabel( Label& label )
+	{
+		assert( label.addr == CODE_LOC_INVALID ); // Can't have same label in multiple locations
+		
+		label.addr = IP();
+		
+		for( CodeLoc_t patch : label.patch_locs )
+		{
+			PatchJump( patch );
+		}
+		label.patch_locs = {};
+	}
 	void Compiler::EmitReturn()
 	{
 		Emit( OpCode::RET, m_iArgsSize );
@@ -758,13 +781,22 @@ namespace Bat
 		// out:
 		//  ; ...
 
-		CodeLoc_t check_addr = IP();
-		CompileRValue( node->Condition() );
-		CodeLoc_t out_patch = EmitToPatch( OpCode::JZ );
-		Compile( node->Body() );
-		Emit( OpCode::JMP, check_addr );
+		Label check, out;
+		
+		Label* old_break_target = m_pBreakTarget;
+		m_pBreakTarget = &out;
+		Label* old_continue_target = m_pContinueTarget;
+		m_pContinueTarget = &check;
 
-		PatchJump( out_patch );
+		InsertLabel( check );
+		CompileRValue( node->Condition() );
+		JmpToLabel( OpCode::JZ, out );
+		Compile( node->Body() );
+		JmpToLabel( OpCode::JMP, check );
+		InsertLabel( out );
+
+		m_pBreakTarget = old_break_target;
+		m_pContinueTarget = old_continue_target;
 	}
 	void Compiler::VisitForStmt( ForStmt* node )
 	{
@@ -786,6 +818,20 @@ namespace Bat
 			Emit( OpCode::PUSH, 0 );
 		}
 		EmitReturn();
+	}
+	void Compiler::VisitBreakStmt( BreakStmt* node )
+	{
+		UpdateCurrLine( node );
+
+		assert( m_pBreakTarget );
+		JmpToLabel( OpCode::JMP, *m_pBreakTarget );
+	}
+	void Compiler::VisitContinueStmt( ContinueStmt* node )
+	{
+		UpdateCurrLine( node );
+
+		assert( m_pContinueTarget );
+		JmpToLabel( OpCode::JMP, *m_pContinueTarget );
 	}
 	void Compiler::VisitImportStmt( ImportStmt* node )
 	{

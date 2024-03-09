@@ -412,7 +412,18 @@ namespace Bat
 	{
 		while( IsTruthy( Evaluate( node->Condition() ), node->Condition()->Location() ) )
 		{
-			Execute( node->Body() );
+			try
+			{
+				Execute( node->Body() );
+			}
+			catch ( const BreakLoop& )
+			{
+				break;
+			}
+			catch ( const ContinueLoop& )
+			{
+				continue;
+			}
 		}
 	}
 	void Interpreter::VisitForStmt( ForStmt* node )
@@ -421,7 +432,18 @@ namespace Bat
 			IsTruthy( Evaluate( node->Condition() ), node->Condition()->Location() );
 			Evaluate( node->Increment() ) )
 		{
-			Execute( node->Body() );
+			try
+			{
+				Execute( node->Body() );
+			}
+			catch ( const BreakLoop& )
+			{
+				break;
+			}
+			catch ( const ContinueLoop& )
+			{
+				continue;
+			}
 		}
 	}
 	void Interpreter::VisitReturnStmt( ReturnStmt* node )
@@ -433,6 +455,14 @@ namespace Bat
 		}
 
 		throw ret;
+	}
+	void Interpreter::VisitBreakStmt( BreakStmt* node )
+	{
+		throw BreakLoop();
+	}
+	void Interpreter::VisitContinueStmt( ContinueStmt* node )
+	{
+		throw ContinueLoop();
 	}
 	void Interpreter::VisitImportStmt( ImportStmt* node )
 	{

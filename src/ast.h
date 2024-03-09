@@ -30,6 +30,8 @@
 	_( WhileStmt ) \
 	_( ForStmt ) \
 	_( ReturnStmt ) \
+	_( BreakStmt ) \
+	_( ContinueStmt ) \
 	_( ImportStmt ) \
 	_( NativeStmt ) \
 	/* Declarations */ \
@@ -473,6 +475,26 @@ namespace Bat
 		void SetRetExpr( std::unique_ptr<Expression> expr ) { m_pRetExpr = std::move( m_pRetExpr ); }
 	private:
 		std::unique_ptr<Expression> m_pRetExpr;
+	};
+
+	class BreakStmt : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( BreakStmt );
+
+		BreakStmt( const SourceLoc& loc ) :
+			Statement( loc )
+		{}
+	};
+
+	class ContinueStmt : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( ContinueStmt );
+
+		ContinueStmt( const SourceLoc& loc ) :
+			Statement( loc )
+		{}
 	};
 
 	class ImportStmt : public Statement

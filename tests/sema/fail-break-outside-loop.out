@@ -1,0 +1,1 @@
+[./src/fail-break-outside-loop.bat:2:4] Error: Break statement used outside of loop

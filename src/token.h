@@ -12,6 +12,8 @@
 	_(FOR,            "for")                                    \
 	_(DO,             "do")                                     \
 	_(RETURN,         "return")                                 \
+	_(BREAK,          "break")                                  \
+	_(CONTINUE,       "continue")                               \
 	_(ENUM,           "enum")                                   \
 	_(IMPORT,         "import")                                 \
 	_(NATIVE,         "native")                                 \

@@ -649,17 +649,27 @@ namespace Bat
 	}
 	void SemanticAnalysis::VisitWhileStmt( WhileStmt* node )
 	{
+		Statement* old_loop = m_pCurrentLoop;
+		m_pCurrentLoop = node;
+
 		Analyze( node->Condition() );
 		Analyze( node->Body() );
+
+		m_pCurrentLoop = old_loop;
 	}
 	void SemanticAnalysis::VisitForStmt( ForStmt* node )
 	{
+		Statement* old_loop = m_pCurrentLoop;
+		m_pCurrentLoop = node;
+
 		PushScope();
 		if( node->Initializer() ) Analyze( node->Initializer() );
 		if( node->Condition() )   Analyze( node->Condition() );
 		if( node->Increment() )   Analyze( node->Increment() );
 		Analyze( node->Body() );
 		PopScope();
+
+		m_pCurrentLoop = old_loop;
 	}
 	void SemanticAnalysis::VisitReturnStmt( ReturnStmt* node )
 	{
@@ -687,6 +697,20 @@ namespace Bat
 		else
 		{
 			m_pCurrentFunc->Signature().SetReturnType( rettype );
+		}
+	}
+	void SemanticAnalysis::VisitBreakStmt( BreakStmt* node )
+	{
+		if( !m_pCurrentLoop )
+		{
+			Error( node->Location(), "Break statement used outside of loop" );
+		}
+	}
+	void SemanticAnalysis::VisitContinueStmt( ContinueStmt* node )
+	{
+		if( !m_pCurrentLoop )
+		{
+			Error( node->Location(), "Continue statement used outside of loop" );
 		}
 	}
 	void SemanticAnalysis::VisitImportStmt( ImportStmt* node )

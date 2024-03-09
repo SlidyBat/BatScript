@@ -20,6 +20,9 @@ namespace Bat
 		BatObject value;
 	};
 
+	struct BreakLoop {};
+	struct ContinueLoop {};
+
 	class BatCallable
 	{
 	public:

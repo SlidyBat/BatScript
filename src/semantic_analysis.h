@@ -51,6 +51,8 @@ namespace Bat
 		virtual void VisitWhileStmt( WhileStmt* node ) override;
 		virtual void VisitForStmt( ForStmt* node ) override;
 		virtual void VisitReturnStmt( ReturnStmt* node ) override;
+		virtual void VisitBreakStmt( BreakStmt* node ) override;
+		virtual void VisitContinueStmt( ContinueStmt* node ) override;
 		virtual void VisitImportStmt( ImportStmt* node ) override;
 		virtual void VisitNativeStmt( NativeStmt* node ) override;
 		virtual void VisitVarDecl( VarDecl* node ) override;
@@ -61,6 +63,7 @@ namespace Bat
 	private:
 		Type* m_pResult = nullptr;
 		FuncDecl* m_pCurrentFunc = nullptr;
+		Statement* m_pCurrentLoop = nullptr;
 		SymbolTable* m_pSymTab = nullptr;
 		std::vector<std::unique_ptr<Statement>> m_pStatements;
 	};

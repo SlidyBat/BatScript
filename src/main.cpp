@@ -238,7 +238,6 @@ int main( int argc, char** argv )
 	{
 		RunFromPrompt();
 		disassemble = true;
-		RunFromFile( "tests/exec/ok-global-exec-order.bat" );
 	}
 
 	if( argc < 2 )
