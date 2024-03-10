@@ -1,6 +1,7 @@
 #include <iostream>
 #include <limits>
 #include <chrono>
+#include <filesystem>
 
 #include "stringlib.h"
 #include "memory_stream.h"
@@ -105,8 +106,18 @@ void Run( const std::string& src, bool print_expression_results = false )
 
 void RunFromFile( const std::string& filename )
 {
+	if( !std::filesystem::exists( filename ) )
+	{
+		std::cerr << "File '" << filename << "' does not exist" << std::endl;
+		return;
+	}
+
 	ErrorSys::SetSource( filename );
 	auto source = MemoryStream::FromFile( filename, FileMode::TEXT );
+
+	std::filesystem::path path( filename );
+	std::filesystem::current_path( path.parent_path() );
+
 	Run( source.Base() );
 }
 

@@ -246,9 +246,17 @@ namespace Bat
 		try
 		{
 			BatObject base = Evaluate( node->Base() );
-			// TODO: Get attr of object
+			if( base.type == TYPE_MODULE )
+			{
+				Environment* env = base.Module();
 
-			BAT_RETURN( base );
+				const BatObject* var = env->GetVar( node->Attr().lexeme );
+				assert( var );
+				
+				BAT_RETURN( *var );
+			}
+
+			BAT_RETURN( BatObject() );
 		}
 		catch( const BatObjectError& e )
 		{
@@ -487,6 +495,7 @@ namespace Bat
 			if( !std::ifstream( filename ) )
 			{
 				ErrorSys::Report( node->Location().Line(), node->Location().Column(), "Module '" + node->ModuleName() + "' not found" );
+				return;
 			}
 		}
 
@@ -502,9 +511,41 @@ namespace Bat
 
 		if( ErrorSys::HadError() ) return;
 
+		Environment* old_env = m_pEnvironment;
+		m_pEnvironment = new Environment();
+
 		for( size_t i = 0; i < res.size(); i++ )
 		{
 			Execute( std::move( res[i] ) );
+		}
+
+		Environment* module_env = m_pEnvironment;
+		m_pEnvironment = old_env;
+
+		if( node->HasImports() )
+		{
+			const auto& imports = node->Imports();
+			if( imports[0].type == TOKEN_ASTERISK )
+			{
+				m_pEnvironment->StealVarsFrom( *module_env );
+			}
+			else
+			{
+				for( const Token& import_name : imports )
+				{
+					const BatObject* var = module_env->GetVar( import_name.lexeme );
+					assert( var );
+
+					m_pEnvironment->AddVar( import_name.lexeme, *var );
+				}
+			}
+
+			delete module_env;
+		}
+		else
+		{
+			BatObject module( module_env );
+			m_pEnvironment->AddVar( node->AsName(), module );
 		}
 	}
 	void Interpreter::VisitNativeStmt( NativeStmt* node )

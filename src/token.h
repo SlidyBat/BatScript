@@ -16,6 +16,8 @@
 	_(CONTINUE,       "continue")                               \
 	_(ENUM,           "enum")                                   \
 	_(IMPORT,         "import")                                 \
+	_(AS,             "as")                                     \
+	_(FROM,           "from")                                   \
 	_(NATIVE,         "native")                                 \
 	_(CONST,          "const")                                  \
 	_(TYPEDEF,        "typedef")                                \

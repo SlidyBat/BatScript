@@ -1,0 +1,1 @@
+[tests/sema/fail-nonexistent-import.bat:1:1] Error: Module 'nonexsistent' not found

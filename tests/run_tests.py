@@ -34,7 +34,6 @@ def run_tests(tests, test_paths, method=None, compiler_path=None):
         elif 'fail-' in test_name:
             kind = 'fail'
         else:
-            print("Invalid test %s. Test name must begin with 'ok-' or 'fail-'" % test)
             continue
         
         try:

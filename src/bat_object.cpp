@@ -19,6 +19,7 @@ namespace Bat
 			case TYPE_STR:       return "string";
 			case TYPE_CALLABLE:  return "function";
 			case TYPE_ARRAY:     return "array";
+			case TYPE_MODULE:     return "module";
 		}
 		
 		return "<error-type>";
@@ -35,7 +36,11 @@ namespace Bat
 		{
 			delete[] value.str;
 		}
-		// TODO: make arrays not so leaky
+		else if( type == TYPE_MODULE )
+		{
+			//delete value.mod;
+		}
+		// TODO: make arrays/modules not so leaky
 	}
 	BatObject::BatObject( const BatObject& other )
 	{
@@ -116,6 +121,12 @@ namespace Bat
 		{
 			value.arr[i].Assign( arr[i] );
 		}
+	}
+	BatObject::BatObject( Environment* module )
+		:
+		type( TYPE_MODULE )
+	{
+		value.mod = module;
 	}
 	BatObject BatObject::Add( const BatObject& rhs )
 	{
@@ -232,6 +243,8 @@ namespace Bat
 					return true;
 				case TYPE_CALLABLE:
 					return value.func == rhs.value.func;
+				case TYPE_MODULE:
+					return value.mod == rhs.value.mod;
 			}
 		}
 
@@ -259,6 +272,7 @@ namespace Bat
 				case TYPE_BOOL:
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
+				case TYPE_MODULE:
 					break;
 			}
 		}
@@ -283,6 +297,7 @@ namespace Bat
 				case TYPE_BOOL:
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
+				case TYPE_MODULE:
 					break;
 			}
 		}
@@ -307,6 +322,7 @@ namespace Bat
 				case TYPE_BOOL:
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
+				case TYPE_MODULE:
 					break;
 			}
 		}
@@ -331,6 +347,7 @@ namespace Bat
 				case TYPE_BOOL:
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
+				case TYPE_MODULE:
 					break;
 			}
 		}
@@ -351,6 +368,7 @@ namespace Bat
 			case TYPE_STR:
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
+			case TYPE_MODULE:
 				break;
 		}
 
@@ -371,6 +389,7 @@ namespace Bat
 			case TYPE_STR:
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
+			case TYPE_MODULE:
 				break;
 		}
 
@@ -390,6 +409,7 @@ namespace Bat
 			case TYPE_STR:
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
+			case TYPE_MODULE:
 				break;
 		}
 
@@ -471,6 +491,8 @@ namespace Bat
 				}
 				s += "]";
 			}
+			case TYPE_MODULE:
+				return "module";
 		}
 
 		return "error";
@@ -522,6 +544,10 @@ namespace Bat
 					throw BatObjectError( "Cannot assign a dynamic array to a fixed-length array" );
 				}
 			}
+			case TYPE_MODULE:
+			{
+				value.mod = other.value.mod; // BAD
+			}
 		}
 	}
 	void BatObject::Move( const BatObject& other )
@@ -558,6 +584,10 @@ namespace Bat
 			{
 				value.arr = other.value.arr;
 			}
+			case TYPE_MODULE:
+			{
+				value.mod = other.value.mod;
+			}
 		}
 	}
 	bool BatObject::IsTruthy() const
@@ -575,6 +605,7 @@ namespace Bat
 			case TYPE_STR:
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
+			case TYPE_MODULE:
 				return true;
 		}
 

@@ -200,7 +200,8 @@ namespace Bat
 		if( Match( TOKEN_RETURN ) )   return ParseReturn();
 		if( Match( TOKEN_BREAK ) )    return ParseBreak();
 		if( Match( TOKEN_CONTINUE ) ) return ParseContinue();
-		if( Match( TOKEN_IMPORT ) )   return ParseImport();
+		if( Match( TOKEN_IMPORT ) )   return ParseImportAs();
+		if( Match( TOKEN_FROM ) )     return ParseFromImport();
 		if( Match( TOKEN_NATIVE ) )   return ParseNative();
 
 		return ParseAssign();
@@ -384,13 +385,47 @@ namespace Bat
 		return std::make_unique<ContinueStmt>( loc );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseImport()
+	std::unique_ptr<Statement> Parser::ParseImportAs()
 	{
 		SourceLoc loc = Previous().loc;
 
-		auto module_name = Expect( TOKEN_IDENT, "Expected module name to import" );
+		Token module_name = Expect( TOKEN_IDENT, "Expected module name to import" );
+
+		Token as = module_name;
+		if( Match( TOKEN_AS ) )
+		{
+			as = Expect( TOKEN_IDENT, "Expected identifier" );
+		}
+
 		ExpectTerminator();
-		return std::make_unique<ImportStmt>( loc, module_name );
+		return std::make_unique<ImportStmt>( loc, std::move( module_name ), std::move( as ) );
+	}
+
+	std::unique_ptr<Statement> Parser::ParseFromImport()
+	{
+		SourceLoc loc = Previous().loc;
+
+		Token module_name = Expect( TOKEN_IDENT, "Expected module name to import from" );
+		Token as = module_name;
+
+		Expect( TOKEN_IMPORT, "Expected 'import' keyword" );
+
+		std::vector<Token> import_list;
+		if( Match( TOKEN_ASTERISK ) )
+		{
+			import_list.emplace_back( Previous() );
+		}
+		else
+		{
+			do
+			{
+				import_list.emplace_back( Expect( TOKEN_IDENT, "Expected identifier" ) );
+			}
+			while( Match( TOKEN_COMMA ) );
+		}
+
+		ExpectTerminator();
+		return std::make_unique<ImportStmt>( loc, std::move( module_name ), std::move( as ), std::move( import_list ) );
 	}
 
 	std::unique_ptr<Statement> Parser::ParseNative()

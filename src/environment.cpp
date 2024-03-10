@@ -74,4 +74,21 @@ namespace Bat
 		m_mapVariables[name] = value;
 		return true;
 	}
+
+	bool Environment::StealVarsFrom( Environment& from )
+	{
+		for( auto& it : from.m_mapVariables )
+		{
+			if( it.second.type != TYPE_MODULE )
+			{
+				if( !AddVar( it.first, std::move( it.second ) ) )
+					return false;
+			}
+		}
+
+		if( from.m_pEnclosing )
+			return StealVarsFrom( *from.m_pEnclosing );
+
+		return true;
+	}
 }

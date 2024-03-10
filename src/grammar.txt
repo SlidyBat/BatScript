@@ -8,7 +8,8 @@ simple_stmt   -> expr_stmt
                | assign_stmt
                | print_stmt
                | return_stmt
-               | import_stmt
+               | import_as_stmt
+               | from_import_stmt
                | native_stmt
                | var_decl
                | "break"
@@ -36,7 +37,9 @@ for_stmt      -> "for" "(" expression? ";" expression? ";" expression? ")" ":" s
 
 return_stmt   -> "return" expression? eol
 
-import_stmt   -> "import" IDENTIFIER eol
+import_as_stmt   -> "import" IDENTIFIER ( "as" IDENTIFIER )? eol
+from_import_stmt -> "from" IDENTIFIER "import" ( "*" | ( IDENTIFIER ( "," IDENTIFIER )* ) ) eol
+
 native_stmt   -> "native" IDENTIFIER "(" parameters? ")" "->" type eol
 
 parameter     -> IDENTIFIER ":" type ( "=" expression )?

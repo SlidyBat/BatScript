@@ -15,6 +15,8 @@ namespace Bat
 		bool ExistsLocally( const std::string& name ) const;
 		bool AddSymbol( const std::string& name, std::unique_ptr<Symbol> sym );
 		Symbol* GetSymbol( const std::string& name ) const;
+		std::unique_ptr<Symbol> TakeSymbol( const std::string& name );
+		bool StealSymbolsFrom( SymbolTable& from );
 		SymbolTable* Enclosing() { return m_pEnclosing; }
 		const SymbolTable* Enclosing() const { return m_pEnclosing; }
 	private:

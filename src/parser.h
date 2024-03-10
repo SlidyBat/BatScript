@@ -49,7 +49,8 @@ namespace Bat
 		std::unique_ptr<Statement> ParseReturn();
 		std::unique_ptr<Statement> ParseBreak();
 		std::unique_ptr<Statement> ParseContinue();
-		std::unique_ptr<Statement> ParseImport();
+		std::unique_ptr<Statement> ParseImportAs();
+		std::unique_ptr<Statement> ParseFromImport();
 		std::unique_ptr<Statement> ParseNative();
 		std::unique_ptr<Statement> ParseVarDeclaration();
 		std::unique_ptr<Statement> ParseFuncDeclaration();

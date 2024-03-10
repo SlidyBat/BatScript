@@ -191,7 +191,7 @@ namespace Bat
 
 	void AstPrinter::VisitImportStmt( ImportStmt* node )
 	{
-		std::cout << "import " << node->ModuleName();
+		std::cout << "import " << node->ModuleName() << " as " << node->AsName();
 	}
 
 	void AstPrinter::VisitNativeStmt( NativeStmt* node )

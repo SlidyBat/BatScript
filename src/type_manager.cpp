@@ -82,6 +82,11 @@ namespace Bat
 		return res;
 	}
 
+	FunctionType* TypeManager::NewFunction( FunctionSignature* sig )
+	{
+		return new FunctionType( sig );
+	}
+
 	NamedType* TypeManager::NewNamed( const std::string& name )
 	{
 		if( Type* existing = GetType( name ) )

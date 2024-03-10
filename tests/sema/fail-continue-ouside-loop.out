@@ -1,0 +1,1 @@
+[sema/fail-continue-ouside-loop.bat:2:4] Error: Continue statement used outside of loop

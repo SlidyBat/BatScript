@@ -15,6 +15,7 @@ namespace Bat
 		TypeManager();
 		PrimitiveType* NewPrimitive( PrimitiveKind primkind );
 		ArrayType* NewArray( Type* inner, size_t size );
+		FunctionType* NewFunction( FunctionSignature* sig );
 		NamedType* NewNamed( const std::string& name );
 	private:
 		Type* GetType( const std::string& name ) const;

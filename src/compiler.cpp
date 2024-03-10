@@ -254,7 +254,7 @@ namespace Bat
 	}
 	void Compiler::EmitLoad( Symbol* sym )
 	{
-		if( VariableSymbol* var = sym->AsVariable() )
+		if( VariableSymbol* var = sym->ToVariable() )
 		{
 			bool global = (var->Storage() == StorageClass::GLOBAL);
 			if( global )
@@ -273,7 +273,7 @@ namespace Bat
 	}
 	void Compiler::EmitStore( Symbol* sym )
 	{
-		if( VariableSymbol * var = sym->AsVariable() )
+		if( VariableSymbol* var = sym->ToVariable() )
 		{
 			bool global = (var->Storage() == StorageClass::GLOBAL);
 			if( global )
@@ -304,7 +304,7 @@ namespace Bat
 			BatNativeInfo info;
 			info.name = m_Natives[i];
 
-			FunctionSymbol* ntv = GetSymbol( info.name )->AsFunction();
+			FunctionSymbol* ntv = GetSymbol( info.name )->ToFunction();
 			FunctionSignature& sig = ntv->Signature();
 			for( size_t param_idx = 0; param_idx < sig.NumParams(); i++ )
 			{
@@ -405,7 +405,7 @@ namespace Bat
 	Symbol* Compiler::GetSymbol( Expression* node ) const
 	{
 		assert( node->IsLValue() );
-		if( VarExpr* var = node->AsVarExpr() )
+		if( VarExpr* var = node->ToVarExpr() )
 		{
 			return GetSymbol( var->Identifier().lexeme );
 		}
@@ -894,7 +894,7 @@ namespace Bat
 			m_iStackSize += (int)node->Type()->Size();
 		}
 
-		VariableSymbol* var = GetSymbol( node->Identifier().lexeme )->AsVariable();
+		VariableSymbol* var = GetSymbol( node->Identifier().lexeme )->ToVariable();
 
 		if( node->Initializer() )
 		{

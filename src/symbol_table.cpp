@@ -44,4 +44,35 @@ namespace Bat
 
 		return nullptr;
 	}
+	std::unique_ptr<Symbol> SymbolTable::TakeSymbol( const std::string& name )
+	{
+		auto it = m_mapSymbols.find( name );
+		if( it != m_mapSymbols.end() )
+		{
+			return std::move( it->second );
+		}
+
+		if( m_pEnclosing )
+		{
+			return m_pEnclosing->TakeSymbol( name );
+		}
+
+		return nullptr;
+	}
+	bool SymbolTable::StealSymbolsFrom( SymbolTable& from )
+	{
+		for( auto& it : from.m_mapSymbols )
+		{
+			if( !it.second->IsModule() )
+			{
+				if( !AddSymbol( it.first, std::move( it.second ) ) )
+					return false;
+			}
+		}
+
+		if( from.m_pEnclosing )
+			return StealSymbolsFrom( *from.m_pEnclosing );
+
+		return true;
+	}
 }

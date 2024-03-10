@@ -524,15 +524,22 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( ImportStmt );
 
-		ImportStmt( const SourceLoc& loc, Token module_name )
+		ImportStmt( const SourceLoc& loc, Token module_name, Token as, std::vector<Token> import_list = {} )
 			:
 			Statement( loc ),
-			m_Module( module_name )
+			m_tokModule( std::move( module_name ) ),
+			m_tokAs( std::move( as ) ),
+			m_tokImportList( std::move( import_list ) )
 		{}
 
-		const std::string& ModuleName() const { return m_Module.lexeme; }
+		const std::string& ModuleName() const { return m_tokModule.lexeme; }
+		const std::string& AsName() const { return m_tokAs.lexeme; }
+		bool HasImports() const { return !m_tokImportList.empty(); }
+		const std::vector<Token>& Imports() const { return m_tokImportList; }
 	private:
-		Token m_Module;
+		Token m_tokModule;
+		Token m_tokAs;
+		std::vector<Token> m_tokImportList;
 	};
 
 	class TypeSpecifier

@@ -68,12 +68,12 @@ namespace Bat
 			if( FunctionSymbol* native = s->ToFunction() )
 			{
 				// Function with this name already exists // TODO: Consider allowing overloading by comparing signature parameters too
-				ErrorSys::Report( node->Location().Line(), node->Location().Column(), "'" + node->Signature().Identifier().lexeme + "' already defined" );
+				Error( node->Location(), "'" + node->Signature().Identifier().lexeme + "' already defined" );
 			}
 			else
 			{
 				// Symbol already exists, but not as a function. Report that.
-				ErrorSys::Report( node->Location().Line(), node->Location().Column(), "'" + node->Signature().Identifier().lexeme + "' already defined as a variable" );
+				Error( node->Location(), "'" + node->Signature().Identifier().lexeme + "' already defined as a variable" );
 			}
 		}
 		else
@@ -484,40 +484,30 @@ namespace Bat
 	void SemanticAnalysis::VisitCallExpr( CallExpr* node )
 	{
 		Type* t = GetExprType( node->Function() );
-		// TODO: Find better way to check if expression is callable, not all will be variable expressions
-		VarExpr* callee = node->Function()->ToVarExpr();
-		if( !callee )
+
+		FunctionType* func_type = t->ToFunction();
+		if( !func_type )
 		{
-			Error( node->Location(),  "Expression is not callable" );
-			node->SetType( t );
-			return;
-		}
-		Symbol* symbol = m_pSymTab->GetSymbol( callee->Identifier().lexeme );
-		if( !symbol || !symbol->IsFunction() )
-		{
-			Error( node->Location(), callee->Identifier().lexeme + " is not a function" );
+			Error( node->Location(), "Expression is not callable" );
 			node->SetType( t );
 			return;
 		}
 
-		FunctionSymbol* func_symbol = symbol->ToFunction();
+		FunctionSignature* sig = func_type->Signature();
 
-		auto& sig = func_symbol->Signature();
-		Type* ret_type = sig.ReturnType();
-
-		if( !sig.VarArgs() && (node->NumArgs() != sig.NumParams()) ) // TODO: handle defaults
+		if( !sig->VarArgs() && (node->NumArgs() != sig->NumParams()) ) // TODO: handle defaults
 		{
-			Error( node->Location(), "Expected " + std::to_string( sig.NumParams() ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
+			Error( node->Location(), "Expected " + std::to_string( sig->NumParams() ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
 		}
-		else if( sig.VarArgs() && (node->NumArgs() < sig.NumParams()) ) // It's fine to have more params if its a varargs func
+		else if( sig->VarArgs() && (node->NumArgs() < sig->NumParams()) ) // It's fine to have more params if its a varargs func
 		{
-			Error( node->Location(), "Expected at least " + std::to_string( sig.NumParams() ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
+			Error( node->Location(), "Expected at least " + std::to_string( sig->NumParams() ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
 		}
 		else
 		{
-			for( size_t i = 0; i < sig.NumParams(); i++ )
+			for( size_t i = 0; i < sig->NumParams(); i++ )
 			{
-				Type* expected_type = TypeSpecifierToType( sig.ParamType( i ) );
+				Type* expected_type = TypeSpecifierToType( sig->ParamType( i ) );
 				Type* arg_type = GetExprType( node->Arg( i ) );
 
 				Type* coerced = Coerce( arg_type, expected_type );
@@ -535,7 +525,7 @@ namespace Bat
 			}
 		}
 
-		node->SetType( ret_type );
+		node->SetType( sig->ReturnType() );
 	}
 	void SemanticAnalysis::VisitIndexExpr( IndexExpr* node )
 	{
@@ -566,8 +556,58 @@ namespace Bat
 	}
 	void SemanticAnalysis::VisitAttrExpr( AttrExpr* node )
 	{
-		// Nothing can use attr currently
-		Error( node->Attr().loc, "No such attribute" );
+		if( VarExpr* var = node->Base()->ToVarExpr() )
+		{
+			Symbol* var_sym = m_pSymTab->GetSymbol( var->Identifier().lexeme );
+			if( !var_sym )
+			{
+				Error( node->Attr().loc, "Undefined variable '"+var->Identifier().lexeme+"'" );
+				return;
+			}
+
+			ModuleSymbol* module = var_sym->ToModule();
+			if( !module )
+			{
+				Error( node->Attr().loc, "No such attribute" );
+				return;
+			}
+
+			const SymbolTable* symtab = module->SymTab();
+			
+			Symbol* symbol = symtab->GetSymbol( node->Attr().lexeme );
+			if( !symbol )
+			{
+				Error( node->Attr().loc, "Undefined variable '" + node->Attr().lexeme + "'" );
+				node->SetType( typeman.NewPrimitive( PrimitiveKind::Int ) );
+				return;
+			}
+
+			if( VariableSymbol* var_symbol = symbol->ToVariable() )
+			{
+				node->SetType( var_symbol->VarType() );
+				return;
+			}
+
+			if( FunctionSymbol* func_symbol = symbol->ToFunction() )
+			{
+				node->SetType( typeman.NewFunction( &func_symbol->Signature() ) );
+				return;
+			}
+
+			if( ModuleSymbol* mod_symbol = symbol->ToModule() )
+			{
+				Error( node->Attr().loc, "Cannot use module as variable" );
+				node->SetType( typeman.NewPrimitive( PrimitiveKind::Int ) );
+				return;
+			}
+
+			Error( node->Attr().loc, "Unhandled symbol type" );
+			node->SetType( typeman.NewPrimitive( PrimitiveKind::Int ) );
+		}
+		else
+		{
+			Error( node->Attr().loc, "No such attribute" );
+		}
 	}
 	void SemanticAnalysis::VisitCastExpr( CastExpr* node )
 	{
@@ -588,17 +628,22 @@ namespace Bat
 			return;
 		}
 
-		VariableSymbol* var_symbol = symbol->AsVariable();
-		if( var_symbol )
+		if( VariableSymbol* var_symbol = symbol->ToVariable() )
 		{
 			node->SetType( var_symbol->VarType() );
 			return;
 		}
 
-		FunctionSymbol* func_symbol = symbol->AsFunction();
-		if( func_symbol )
+		if( FunctionSymbol* func_symbol = symbol->ToFunction() )
 		{
-			node->SetType( func_symbol->Signature().ReturnType() );
+			node->SetType( typeman.NewFunction( &func_symbol->Signature() ) );
+			return;
+		}
+
+		if( ModuleSymbol* mod_symbol = symbol->ToModule() )
+		{
+			Error( node->Identifier().loc, "Cannot use module as variable" );
+			node->SetType( typeman.NewPrimitive( PrimitiveKind::Int ) );
 			return;
 		}
 
@@ -726,7 +771,8 @@ namespace Bat
 			filename = node->ModuleName() + ".bs";
 			if( !std::ifstream( filename ) )
 			{
-				ErrorSys::Report( node->Location().Line(), node->Location().Column(), "Module '" + node->ModuleName() + "' not found" );
+				Error( node->Location(), "Module '" + node->ModuleName() + "' not found" );
+				return;
 			}
 		}
 
@@ -742,10 +788,55 @@ namespace Bat
 
 		if( ErrorSys::HadError() ) return;
 
+		SymbolTable* old_symtab = m_pSymTab;
+		m_pSymTab = new SymbolTable();
+
 		for( size_t i = 0; i < res.size(); i++ )
 		{
 			Analyze( res[i].get() );
 			m_pStatements.push_back( std::move( res[i] ) );
+		}
+
+		SymbolTable* module_symtab = m_pSymTab;
+		m_pSymTab = old_symtab;
+
+		if( node->HasImports() )
+		{
+			const auto& imports = node->Imports();
+			if( imports[0].type == TOKEN_ASTERISK )
+			{
+				if( !m_pSymTab->StealSymbolsFrom( *module_symtab ) )
+				{
+					Error( imports[0].loc, "Conflicting symbols" );
+				}
+			}
+			else
+			{
+				for( const Token& import_name : imports )
+				{
+					std::unique_ptr<Symbol> sym = module_symtab->TakeSymbol( import_name.lexeme );
+					if( !sym || sym->IsModule() )
+					{
+						Error( import_name.loc, "Symbol '" + import_name.lexeme + "' not found" );
+						continue;
+					}
+
+					if( !m_pSymTab->AddSymbol( import_name.lexeme, std::move( sym ) ) )
+					{
+						Error( import_name.loc, "Symbol '" + import_name.lexeme + "' already defined" );
+						continue;
+					}
+				}
+			}
+
+			delete module_symtab;
+		}
+		else
+		{
+			if( !m_pSymTab->AddSymbol( node->AsName(), std::make_unique<ModuleSymbol>( node, module_symtab ) ) )
+			{
+				Error( node->Location(), "Symbol '" + node->AsName() + "' already defined" );
+			}
 		}
 	}
 	void SemanticAnalysis::VisitNativeStmt( NativeStmt* node )

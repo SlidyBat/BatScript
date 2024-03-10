@@ -1,0 +1,1 @@
+[tests/sema/fail-conflicting-import.bat:3:5] Error: f is already defined in this scope

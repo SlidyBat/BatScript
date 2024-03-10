@@ -12,6 +12,7 @@ namespace Bat
 	class BatCallable;
 	class BatObject;
 	class Interpreter;
+	class Environment;
 
 	class BatObjectError : public std::exception
 	{
@@ -39,6 +40,7 @@ namespace Bat
 		TYPE_STR,
 		TYPE_CALLABLE,
 		TYPE_ARRAY,
+		TYPE_MODULE
 	};
 
 	class BatObject
@@ -56,6 +58,7 @@ namespace Bat
 		BatObject( bool s );
 		BatObject( BatCallable* func );
 		BatObject( const BatObject* arr, size_t arr_size, bool fixed_size );
+		BatObject( Environment* module );
 
 		BatObject Add( const BatObject& rhs );
 		BatObject Sub( const BatObject& rhs );
@@ -91,6 +94,7 @@ namespace Bat
 		const char* String() const { assert( type == TYPE_STR ); return value.str; }
 		BatCallable* Function() const { assert( type == TYPE_CALLABLE ); return value.func; }
 		BatObject* Array() const { assert( type == TYPE_ARRAY ); return value.arr; }
+		Environment* Module() const { assert( type == TYPE_MODULE ); return value.mod; }
 	private:
 		void Copy( const BatObject& other );
 		void Move( const BatObject& other );
@@ -106,6 +110,7 @@ namespace Bat
 			char* str;
 			BatCallable* func;
 			BatObject* arr;
+			Environment* mod;
 		} value;
 		size_t arr_size = 0;
 		bool fixed_arr = false;

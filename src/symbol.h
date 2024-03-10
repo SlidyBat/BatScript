@@ -10,7 +10,8 @@
 #define SYMBOL_TYPES(_) \
 	_(Variable) \
 	_(Function) \
-	_(Type)
+	_(Type) \
+	_(Module)
 
 namespace Bat
 {
@@ -33,6 +34,7 @@ namespace Bat
 			m_pNode( node ),
 			m_Kind( kind )
 		{}
+		virtual ~Symbol() = default;
 		
 		AstNode* Node() { return m_pNode; }
 		const AstNode* Node() const { return m_pNode; }
@@ -42,10 +44,10 @@ namespace Bat
 
 #define _(symtype) \
 		virtual bool Is##symtype() const { return Kind() == SymbolKind::symtype; } \
-		virtual symtype##Symbol* As##symtype() { if( !Is##symtype() ) return nullptr; return (symtype##Symbol*)this; } \
-		virtual const symtype##Symbol* As##symtype() const { if( !Is##symtype() ) return nullptr; return (const symtype##Symbol*)this; } \
-		virtual symtype##Symbol* To##symtype() { assert( Is##symtype() ); return (symtype##Symbol*)this; } \
-		virtual const symtype##Symbol* To##symtype() const { assert( Is##symtype() ); return (const symtype##Symbol*)this; }
+		virtual symtype##Symbol* As##symtype() { assert( Is##symtype() ); return (symtype##Symbol*)this; } \
+		virtual const symtype##Symbol* As##symtype() const { assert( Is##symtype() ); return (const symtype##Symbol*)this; } \
+		virtual symtype##Symbol* To##symtype() { if( !Is##symtype() ) return nullptr; return (symtype##Symbol*)this; } \
+		virtual const symtype##Symbol* To##symtype() const { if( !Is##symtype() ) return nullptr; return (const symtype##Symbol*)this; }
 		SYMBOL_TYPES(_)
 #undef _
 	private:
@@ -64,8 +66,7 @@ namespace Bat
 	class VariableSymbol : public Symbol
 	{
 	public:
-		VariableSymbol( AstNode* node, Type* type = nullptr )
-			:
+		VariableSymbol( AstNode* node, Type* type = nullptr ) :
 			Symbol( node, SymbolKind::Variable ),
 			m_pType( type )
 		{}
@@ -95,8 +96,7 @@ namespace Bat
 	class FunctionSymbol : public Symbol
 	{
 	public:
-		FunctionSymbol( AstNode* node, FunctionKind kind )
-			:
+		FunctionSymbol( AstNode* node, FunctionKind kind ) :
 			Symbol( node, SymbolKind::Function ),
 			m_FuncKind( kind )
 		{}
@@ -128,8 +128,7 @@ namespace Bat
 	class TypeSymbol : public Symbol
 	{
 	public:
-		TypeSymbol( AstNode* node, Type* type )
-			:
+		TypeSymbol( AstNode* node, Type* type ) :
 			Symbol( node, SymbolKind::Type ),
 			m_pType( type )
 		{}
@@ -139,5 +138,19 @@ namespace Bat
 		const Type* InnerType() const { return m_pType; }
 	private:
 		Type* m_pType = nullptr;
+	};
+
+	class SymbolTable;
+	class ModuleSymbol : public Symbol
+	{
+	public:
+		ModuleSymbol( AstNode* node, SymbolTable* symtab ) :
+			Symbol( node, SymbolKind::Module ),
+			m_pSymTab( symtab )
+		{}
+
+		const SymbolTable* SymTab() { return m_pSymTab; }
+	private:
+		SymbolTable* m_pSymTab;
 	};
 }
