@@ -154,17 +154,15 @@ int fib( int n )
 int main( int argc, char** argv )
 {
 	BatModule time;
-	time.AddNative( "now", []( const std::vector<BatObject>& args ) {
-		return BatObject( duration_cast<milliseconds>( system_clock::now().time_since_epoch() ).count() );
+	time.AddNative( "now", []() {
+		return duration_cast<milliseconds>( system_clock::now().time_since_epoch() ).count();
 	} );
-	time.AddNative( "sleep", []( const std::vector<BatObject>& args ) {
-		int duration = args[0].Int();
+	time.AddNative( "sleep", []( int duration ) {
 		std::this_thread::sleep_for( milliseconds( duration ) );
-		return BatObject();
 	} );
 
 	BatModule core;
-	core.AddNative( "format", []( const std::vector<BatObject>& args ) {
+	core.AddNativeRaw( "format", []( const std::vector<BatObject>& args ) {
 		std::stringstream ss;
 
 		const char* fmt = args[0].String();

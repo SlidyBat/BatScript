@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bat_callable.h"
+#include "native_wrapper.h"
 
 namespace Bat
 {
@@ -8,7 +9,7 @@ namespace Bat
 class BatModule
 {
 public:
-	void AddNative( std::string name, BatNativeCallback callback )
+	void AddNativeRaw( std::string name, BatNativeCallback callback )
     {
         Native native;
         native.name = std::move( name );
@@ -16,6 +17,15 @@ public:
 
         m_Natives.push_back( std::move( native ) );
     }
+
+    template <typename T>
+    void AddNative( std::string name, T callback )
+    {
+        auto x = std::function( callback );
+        auto wrapper = MakeNativeWrapper( std::move( x ) );
+        AddNativeRaw( std::move( name ), wrapper );
+    }
+
     const BatNativeCallback* FindNative( const std::string& name ) const
     {
         for( const Native& native : m_Natives )

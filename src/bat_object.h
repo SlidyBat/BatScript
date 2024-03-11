@@ -116,4 +116,40 @@ namespace Bat
 		bool fixed_arr = false;
 		int ref_count = 0;
 	};
+
+	template <typename T>
+	struct AlwaysFalse
+	{
+		static constexpr bool value = false;
+	};
+
+	template <typename T>
+	T FromBatObject( const BatObject& obj )
+	{
+		static_assert( AlwaysFalse<T>::value, "FromBatObject unimplemented!" );
+	}
+
+	template <typename T>
+	BatObject ToBatObject( const T& val )
+	{
+		static_assert( AlwaysFalse<T>::value, "ToBatObject unimplemented!" );
+	}
+
+	template <> inline int FromBatObject( const BatObject& obj ) { return obj.Int(); }
+	template <> inline int64_t FromBatObject( const BatObject& obj ) { return obj.Int(); }
+	template <> inline uint64_t FromBatObject( const BatObject& obj ) { return obj.Int(); }
+	template <> inline bool FromBatObject( const BatObject& obj ) { return obj.Bool(); }
+	template <> inline float FromBatObject( const BatObject& obj ) { return obj.Float(); }
+	template <> inline double FromBatObject( const BatObject& obj ) { return obj.Float(); }
+	template <> inline std::string FromBatObject( const BatObject& obj ) { return obj.String(); }
+	template <> inline const char* FromBatObject( const BatObject& obj ) { return obj.String(); }
+
+	template <> inline BatObject ToBatObject( const int& val ) { return BatObject( (int64_t)val ); }
+	template <> inline BatObject ToBatObject( const int64_t& val ) { return BatObject( val ); }
+	template <> inline BatObject ToBatObject( const uint64_t& val ) { return BatObject( (int64_t)val ); }
+	template <> inline BatObject ToBatObject( const bool& val ) { return BatObject( val ); }
+	template <> inline BatObject ToBatObject( const float& val ) { return BatObject( (double)val ); }
+	template <> inline BatObject ToBatObject( const double& val ) { return BatObject( val ); }
+	template <> inline BatObject ToBatObject( const std::string& val ) { return BatObject( val.c_str() ); }
+	template <> inline BatObject ToBatObject( const char* const& val ) { return BatObject( val ); }
 }
