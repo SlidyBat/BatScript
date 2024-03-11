@@ -16,6 +16,12 @@ namespace Bat
 		{
 			ErrorSys::Report( loc.Line(), loc.Column(), msg );
 		}
+		RuntimeError( const std::string& msg )
+			:
+			msg( msg )
+		{
+			ErrorSys::Report( 0, 0, msg );
+		}
 
 		virtual const char* what() const noexcept override { return msg.c_str(); }
 	private:

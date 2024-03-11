@@ -830,7 +830,15 @@ namespace Bat
 
 		auto& sig = node->Signature();
 		AddNative( node, sig.Identifier().lexeme );
-		sig.SetReturnType( TypeSpecifierToType( sig.ReturnTypeSpec() ) );
+
+		if( sig.ReturnTypeSpec().HasTypeName() )
+		{
+			sig.SetReturnType( TypeSpecifierToType( sig.ReturnTypeSpec() ) );
+		}
+		else
+		{
+			sig.SetReturnType( typeman.NewPrimitive( PrimitiveKind::Void ) );
+		}
 	}
 	void SemanticAnalysis::VisitVarDecl( VarDecl* node )
 	{

@@ -19,6 +19,8 @@ namespace Bat
 		BatObject Evaluate( Expression* e );
 		void ExecuteBlock( Statement* s, Environment& environment );
 
+		void Call( const std::string& func_name, const std::vector<BatObject>& args );
+
 		void AddModule( const std::string& name, BatModule module );
 		Environment* GetEnvironment() { return m_pEnvironment; }
 		const Environment* GetEnvironment() const { return m_pEnvironment; }

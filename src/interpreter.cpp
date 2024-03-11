@@ -66,6 +66,28 @@ namespace Bat
 		Execute( s );
 	}
 
+	void Interpreter::Call( const std::string& func_name, const std::vector<BatObject>& args )
+	{
+		try
+		{
+			const BatObject* obj = m_pEnvironment->GetVar( func_name );
+			if( !obj )
+				throw RuntimeError( "Function '" + func_name + "' not found" );
+			
+			if( obj->type != TYPE_CALLABLE )
+			{
+				throw RuntimeError( "Object '" + func_name + "' is not callable" );
+			}
+
+			BatObject func = *obj;
+			func.Call( *this, args );
+		}
+		catch( const BatObjectError& e )
+		{
+			throw RuntimeError( e.what() );
+		}
+	}
+
 	void Interpreter::AddModule( const std::string& name, BatModule module )
 	{
 		assert( FindModule( name ) == nullptr );
