@@ -14,7 +14,7 @@ namespace Bat
 	public:
 		TypeManager();
 		PrimitiveType* NewPrimitive( PrimitiveKind primkind );
-		ArrayType* NewArray( Type* inner, size_t size );
+		ArrayType* NewArray( Type* inner );
 		FunctionType* NewFunction( FunctionSignature* sig );
 		NamedType* NewNamed( const std::string& name );
 	private:
@@ -43,27 +43,7 @@ namespace Bat
 		}
 
 		for( size_t i = 0; i < type.Rank(); i++ )
-		{
-			Expression* rank_size = type.Dimensions( i );
-			if( !rank_size )
-			{
-				t = typeman.NewArray( t, ArrayType::UNSIZED );
-			}
-			else
-			{
-				// TODO: Support constant expressions that evaluate to int for array size
-				if( !rank_size->IsIntLiteral() )
-				{
-					auto loc = type.TypeName().loc;
-					ErrorSys::Report( loc.Line(), loc.Column(), "Array size must be integer literal" );
-					t = typeman.NewArray( t, ArrayType::UNSIZED ); // Mark as indeterminate length so we can keep going
-				}
-				else
-				{
-					t = typeman.NewArray( t, rank_size->ToIntLiteral()->value );
-				}
-			}
-		}
+			t = typeman.NewArray( t );
 
 		return t;
 	}

@@ -57,7 +57,7 @@ namespace Bat
 		BatObject( const char* s );
 		BatObject( bool s );
 		BatObject( BatCallable* func );
-		BatObject( const BatObject* arr, size_t arr_size, bool fixed_size );
+		BatObject( const BatObject* arr, size_t arr_size );
 		BatObject( Environment* module );
 
 		BatObject Add( const BatObject& rhs );
@@ -113,8 +113,6 @@ namespace Bat
 			Environment* mod;
 		} value;
 		size_t arr_size = 0;
-		bool fixed_arr = false;
-		int ref_count = 0;
 	};
 
 	template <typename T>

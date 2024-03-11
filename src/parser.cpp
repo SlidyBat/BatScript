@@ -90,22 +90,14 @@ namespace Bat
 			Token type_name = Advance();
 			TypeSpecifier t( type_name );
 
-			std::vector<std::unique_ptr<Expression>> dimensions;
+			size_t rank = 0;
 			while( Match( TOKEN_LBRACKET ) )
 			{
-				if( !Check( TOKEN_RBRACKET ) )
-				{
-					dimensions.push_back( ParseExpression() );
-				}
-				else
-				{
-					dimensions.push_back( nullptr );
-				}
-
+				rank++;
 				Expect( TOKEN_RBRACKET, "Expected closing bracket in array declaration" );
 			}
 
-			t.SetDimensions( std::move( dimensions ) );
+			t.SetRank( rank );
 
 			return t;
 		}

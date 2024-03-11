@@ -56,24 +56,16 @@ namespace Bat
 		return nullptr;
 	}
 
-	ArrayType* TypeManager::NewArray( Type* inner, size_t size )
+	ArrayType* TypeManager::NewArray( Type* inner )
 	{
-		std::string type_name = inner->ToString();
-		if( size != ArrayType::UNSIZED )
-		{
-			type_name += "[" + std::to_string( size ) + "]";
-		}
-		else
-		{
-			type_name += "[]";
-		}
+		std::string type_name = inner->ToString() + "[]";
 
 		if( Type* existing = GetType( type_name ) )
 		{
 			return existing->AsArray();
 		}
 
-		auto new_array = std::make_unique<ArrayType>( inner, size );
+		auto new_array = std::make_unique<ArrayType>( inner );
 		auto res = new_array.get();
 		if( !AddType( type_name, std::move( new_array ) ) )
 		{

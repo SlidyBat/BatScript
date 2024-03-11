@@ -108,39 +108,26 @@ namespace Bat
 	class ArrayType : public Type
 	{
 	public:
-		static constexpr size_t UNSIZED = 0;
-	public:
-		ArrayType( Type* inner, size_t size = UNSIZED )
+		ArrayType( Type* inner )
 			:
 			m_pInner( inner ),
-			m_iFixedSize( size ),
 			Type( TypeKind::Array )
 		{}
 
 		virtual std::string ToString() const override
 		{
-			return Inner()->ToString() + "[" +
-				(HasFixedSize() ? std::to_string(FixedSize()) : std::string())
-				+ "]";
+			return Inner()->ToString() + "[]";
 		}
 
 		virtual size_t Size() const override
 		{
-			if( HasFixedSize() )
-			{
-				return FixedSize() * Inner()->Size();
-			}
-			
 			return sizeof( int64_t );
 		}
 
 		Type* Inner() { return m_pInner; }
 		const Type* Inner() const { return m_pInner; }
-		bool HasFixedSize() const { return m_iFixedSize > 0; }
-		size_t FixedSize() const { return m_iFixedSize; }
 	private:
 		Type* m_pInner;
-		size_t m_iFixedSize;
 	};
 
 	class FunctionType : public Type
@@ -214,8 +201,7 @@ namespace Bat
 
 		if( a->IsArray() && b->IsArray() )
 		{
-			return IsSameType( a->ToArray()->Inner(), b->ToArray()->Inner() ) &&
-				a->ToArray()->FixedSize() == b->ToArray()->FixedSize();
+			return IsSameType( a->ToArray()->Inner(), b->ToArray()->Inner() );
 		}
 
 		if( a->IsNamed() && b->IsNamed() )

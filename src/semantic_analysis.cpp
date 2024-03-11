@@ -98,13 +98,8 @@ namespace Bat
 
 		if( from->IsArray() && to->IsArray() )
 		{
-			ArrayType* from_arr = from->AsArray();
-			ArrayType* to_arr = to->AsArray();
-
-			if( to_arr->HasFixedSize() && to_arr->FixedSize() != from_arr->FixedSize() )
-			{
-				return nullptr;
-			}
+			//ArrayType* from_arr = from->AsArray();
+			//ArrayType* to_arr = to->AsArray();
 
 			return from;
 		}
@@ -171,10 +166,7 @@ namespace Bat
 			}
 		}
 
-		// They evaluate to an array that is unsized so statements like:
-		//   var x = [5, 2, 1]
-		// Will infer to x being a dynamic length array
-		node->SetType( typeman.NewArray( inner, ArrayType::UNSIZED ) );
+		node->SetType( typeman.NewArray( inner ) );
 	}
 	Type* SemanticAnalysis::PrimitiveBinary( PrimitiveType* left, PrimitiveType* right, TokenType op, Type** coerce_to )
 	{
@@ -309,18 +301,7 @@ namespace Bat
 				return nullptr;
 			}
 
-			// Can't assign array to a fixed size array, unless its also a fixed array with the same size
-			if( left->HasFixedSize() && left->FixedSize() != right_arr->FixedSize() )
-			{
-				return nullptr;
-			}
-
 			return left;
-		}
-		else if( left->HasFixedSize() )
-		{
-			// No assignment operations allowed on fixed size arrays (unless right hand side is also array with same size)
-			return nullptr;
 		}
 
 		return nullptr;

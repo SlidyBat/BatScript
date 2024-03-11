@@ -1,6 +1,6 @@
 program       -> statement* EOF
 
-type          -> ( "int" | "float" | "bool" | "string" | IDENTIFIER ) ( "[" ( expression )? "]" )*
+type          -> ( "int" | "float" | "bool" | "string" | IDENTIFIER ) ( "[" "]" )*
 
 // Simple statements can be used in single line compound statements
 statement     -> simple_stmt | compound_stmt

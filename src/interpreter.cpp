@@ -150,7 +150,7 @@ namespace Bat
 			arr[i] = Evaluate( node->ValueAt( i ) );
 		}
 
-		BatObject obj = BatObject( arr.get(), node->NumValues(), ArrayType::UNSIZED );
+		BatObject obj = BatObject( arr.get(), node->NumValues() );
 
 		BAT_RETURN( obj );
 	}

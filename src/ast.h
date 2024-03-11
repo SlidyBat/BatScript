@@ -557,15 +557,13 @@ namespace Bat
 
 		bool HasTypeName() const { return m_bHasTypeName; }
 		const Token& TypeName() const { return m_tokTypeName; }
-		void SetDimensions( std::vector<std::unique_ptr<Expression>> dims ) { m_Dimensions = std::move( dims ); }
-		size_t Rank() const { return m_Dimensions.size(); }
+		void SetRank( size_t rank ) { m_nRank = rank; }
+		size_t Rank() const { return m_nRank; }
 		bool IsArray() const { return Rank() > 0; }
-		// Gets expression that evaluates to dimensions of specified rank, or nullptr if dimensions were not specified
-		Expression* Dimensions( size_t rank ) const { assert( rank < Rank() ); return m_Dimensions[rank].get(); }
 	private:
 		bool m_bHasTypeName = false;
 		Token m_tokTypeName;
-		std::vector<std::unique_ptr<Expression>> m_Dimensions;
+		size_t m_nRank = 0;
 	};
 
 	class FunctionSignature

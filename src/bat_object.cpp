@@ -46,7 +46,6 @@ namespace Bat
 	{
 		type = other.type;
 		arr_size = other.arr_size;
-		fixed_arr = other.fixed_arr;
 		memset( &value, 0, sizeof( value ) );
 		Copy( other );
 	}
@@ -54,7 +53,6 @@ namespace Bat
 	{
 		type = rhs.type;
 		arr_size = rhs.arr_size;
-		fixed_arr = rhs.fixed_arr;
 		memset( &value, 0, sizeof( value ) );
 		Copy( rhs );
 
@@ -64,7 +62,6 @@ namespace Bat
 	{
 		type = donor.type;
 		arr_size = donor.arr_size;
-		fixed_arr = donor.fixed_arr;
 		Move( donor );
 		memset( &donor.value, 0, sizeof( donor.value ) );
 	}
@@ -72,7 +69,6 @@ namespace Bat
 	{
 		type = rhs.type;
 		arr_size = rhs.arr_size;
-		fixed_arr = rhs.fixed_arr;
 		Move( rhs );
 		memset( &rhs.value, 0, sizeof( rhs.value ) );
 
@@ -110,11 +106,10 @@ namespace Bat
 	{
 		value.func = func;
 	}
-	BatObject::BatObject( const BatObject* arr, size_t size, bool fixed_size )
+	BatObject::BatObject( const BatObject* arr, size_t size )
 		:
 		type( TYPE_ARRAY ),
-		arr_size( size ),
-		fixed_arr( fixed_size )
+		arr_size( size )
 	{
 		value.arr = new BatObject[size];
 		for( size_t i = 0; i < size; i++ )
@@ -138,7 +133,6 @@ namespace Bat
 		// Adding a list and another object will 
 		if( type == TYPE_ARRAY )
 		{
-			assert( !fixed_arr );
 			// TODO: What about appending array to end of another array?
 			BatObject res;
 			res.type = TYPE_ARRAY;
@@ -533,16 +527,8 @@ namespace Bat
 			}
 			case TYPE_ARRAY:
 			{
-				// Can only assign array if it's a dynamic array (in which case it can be resized) or the sizes of the arrays match
-				if( fixed_arr == false || other.arr_size == arr_size )
-				{
-					value.arr = other.value.arr;
-					ref_count = other.ref_count + 1;
-				}
-				else
-				{
-					throw BatObjectError( "Cannot assign a dynamic array to a fixed-length array" );
-				}
+				// delete[] value.arr;
+				assert( false );
 			}
 			case TYPE_MODULE:
 			{
