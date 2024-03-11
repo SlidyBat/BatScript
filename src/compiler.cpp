@@ -302,7 +302,8 @@ namespace Bat
 		for( size_t i = 0; i < m_Natives.size(); i++ )
 		{
 			BatNativeInfo info;
-			info.name = m_Natives[i];
+			info.module = m_Natives[i].first;
+			info.name = m_Natives[i].second;
 
 			FunctionSymbol* ntv = GetSymbol( info.name )->ToFunction();
 			FunctionSignature& sig = ntv->Signature();
@@ -427,7 +428,7 @@ namespace Bat
 		auto& sig = ntv->Signature();
 		sig.SetReturnType( TypeSpecifierToType( sig.ReturnTypeSpec() ) ); // HACK: imported natives dont get passed to us from sema pass, so they don't have their return type filled in.
 		ntv->SetAddress( m_Natives.size() );
-		m_Natives.push_back( name );
+		m_Natives.push_back( { m_CurrentModule, name } );
 		return ntv;
 	}
 	void Compiler::AllocateGlobalVariable( VarDecl* node )
@@ -619,6 +620,27 @@ namespace Bat
 	{
 		UpdateCurrLine( node );
 
+		// Module/namespace case
+		if( Symbol* sym = GetSymbol( node->Base() ) )
+		{
+			if( ModuleSymbol* module = sym->ToModule() )
+			{
+				const SymbolTable* symtab = module->SymTab();
+
+				assert( m_CompileType != ExprType::UNKNOWN );
+
+				Symbol* sym = symtab->GetSymbol( node->Attr().lexeme );
+				Emit( OpCode::PUSH, sym->Address() );
+				if( m_CompileType == ExprType::RVALUE )
+				{
+					EmitLoad( sym );
+				}
+
+				return;
+			}
+		}
+
+		// Object case
 		CompileLValue( node->Base() );
 		Emit( OpCode::PUSH, 0 ); // Will have to get offset of field and add it
 		Emit( OpCode::ADD );
@@ -869,9 +891,51 @@ namespace Bat
 
 		if( ErrorSys::HadError() ) return;
 
+		std::string old_module = m_CurrentModule;
+		m_CurrentModule = node->ModuleName();
+
+		SymbolTable* old_symtab = m_pSymTab;
+		m_pSymTab = new SymbolTable();
+
 		for( size_t i = 0; i < res.size(); i++ )
 		{
 			Compile( std::move( res[i] ) );
+		}
+
+		SymbolTable* module_symtab = m_pSymTab;
+		m_pSymTab = old_symtab;
+
+		m_CurrentModule = old_module;
+
+		if( node->HasImports() )
+		{
+			const auto& imports = node->Imports();
+			if( imports[0].type == TOKEN_ASTERISK )
+			{
+				m_pSymTab->StealSymbolsFrom( *module_symtab );
+			}
+			else
+			{
+				for( const Token& import_name : imports )
+				{
+					std::unique_ptr<Symbol> sym = module_symtab->TakeSymbol( import_name.lexeme );
+					if( !sym || sym->IsModule() )
+					{
+						continue;
+					}
+
+					if( !m_pSymTab->AddSymbol( import_name.lexeme, std::move( sym ) ) )
+					{
+						continue;
+					}
+				}
+			}
+
+			delete module_symtab;
+		}
+		else
+		{
+			m_pSymTab->AddSymbol( node->AsName(), std::make_unique<ModuleSymbol>( node, module_symtab ) );
 		}
 	}
 	void Compiler::VisitNativeStmt( NativeStmt* node )

@@ -33,7 +33,7 @@ namespace Bat
 
 	Interpreter::Interpreter()
 	{
-		m_pEnvironment = new Environment;
+		m_pEnvironment = new Environment( "__global__" );
 	}
 	Interpreter::~Interpreter()
 	{
@@ -66,11 +66,10 @@ namespace Bat
 		Execute( s );
 	}
 
-	void Interpreter::AddNative( const std::string& name, BatNativeCallback callback )
+	void Interpreter::AddModule( const std::string& name, BatModule module )
 	{
-		auto native = BatObject( new BatNative( std::move( callback ) ) );
-		auto loc = SourceLoc( 0, 0 );
-		AddVar( name, native, loc );
+		assert( FindModule( name ) == nullptr );
+		m_Modules[name] = std::move( module );
 	}
 
 	void Interpreter::AddVar( const std::string& name, const BatObject& value, const SourceLoc& loc )
@@ -110,6 +109,14 @@ namespace Bat
 		{
 			throw RuntimeError( loc, e.what() );
 		}
+	}
+
+	const BatModule* Interpreter::FindModule( const std::string& name ) const
+	{
+		auto it = m_Modules.find( name );
+		if( it == m_Modules.end() )
+			return nullptr;
+		return &it->second;
 	}
 
 	void Interpreter::VisitIntLiteral( IntLiteral* node )
@@ -243,25 +250,18 @@ namespace Bat
 	}
 	void Interpreter::VisitAttrExpr( AttrExpr* node )
 	{
-		try
+		BatObject base = Evaluate( node->Base() );
+		if( base.type == TYPE_MODULE )
 		{
-			BatObject base = Evaluate( node->Base() );
-			if( base.type == TYPE_MODULE )
-			{
-				Environment* env = base.Module();
+			Environment* env = base.Module();
 
-				const BatObject* var = env->GetVar( node->Attr().lexeme );
-				assert( var );
-				
-				BAT_RETURN( *var );
-			}
+			const BatObject* var = env->GetVar( node->Attr().lexeme );
+			assert( var );
+			
+			BAT_RETURN( *var );
+		}
 
-			BAT_RETURN( BatObject() );
-		}
-		catch( const BatObjectError& e )
-		{
-			throw RuntimeError( node->Location(), e.what() );
-		}
+		BAT_RETURN( BatObject() );
 	}
 	void Interpreter::VisitCastExpr( CastExpr* node )
 	{
@@ -512,7 +512,7 @@ namespace Bat
 		if( ErrorSys::HadError() ) return;
 
 		Environment* old_env = m_pEnvironment;
-		m_pEnvironment = new Environment();
+		m_pEnvironment = new Environment( node->ModuleName() );
 
 		for( size_t i = 0; i < res.size(); i++ )
 		{
@@ -550,8 +550,21 @@ namespace Bat
 	}
 	void Interpreter::VisitNativeStmt( NativeStmt* node )
 	{
-		// Natives are more like forward declarations as a hint to the compiler for static checks
-		// When executing they aren't needed
+		const BatModule* module = FindModule( m_pEnvironment->Module() );
+		if( !module )
+		{
+			throw RuntimeError( node->Location(), "Unresolved native (no registered module)" );
+		}
+		
+		const std::string& name = node->Signature().Identifier().lexeme;
+		const BatNativeCallback* callback = module->FindNative( name );
+		if( !callback )
+		{
+			throw RuntimeError( node->Location(), "Unresolved native" );
+		}
+
+		BatObject native( new BatNative( *callback ) );
+		AddVar( name, native, node->Location() );
 	}
 	void Interpreter::VisitVarDecl( VarDecl* node )
 	{

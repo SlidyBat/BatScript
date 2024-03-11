@@ -2,6 +2,7 @@
 #include <limits>
 #include <chrono>
 #include <filesystem>
+#include <thread>
 
 #include "stringlib.h"
 #include "memory_stream.h"
@@ -115,7 +116,7 @@ void RunFromFile( const std::string& filename )
 	ErrorSys::SetSource( filename );
 	auto source = MemoryStream::FromFile( filename, FileMode::TEXT );
 
-	std::filesystem::path path( filename );
+	std::filesystem::path path = std::filesystem::absolute( filename );
 	std::filesystem::current_path( path.parent_path() );
 
 	Run( source.Base() );
@@ -136,10 +137,10 @@ void RunFromPrompt()
 	}
 }
 
-void AddNative( const std::string& name, BatNativeCallback callback )
+void AddModule( const std::string& name, BatModule module )
 {
-	interpreter.AddNative( name, callback );
-	vm.AddNative( name, callback );
+	interpreter.AddModule( name, module );
+	vm.AddModule( name, std::move( module ) );
 }
 
 using namespace std::chrono;
@@ -152,12 +153,18 @@ int fib( int n )
 
 int main( int argc, char** argv )
 {
-	AddNative( "time", []( const std::vector<BatObject>& args ) {
+	BatModule time;
+	time.AddNative( "now", []( const std::vector<BatObject>& args ) {
 		return BatObject( duration_cast<milliseconds>( system_clock::now().time_since_epoch() ).count() );
 	} );
+	time.AddNative( "sleep", []( const std::vector<BatObject>& args ) {
+		int duration = args[0].Int();
+		std::this_thread::sleep_for( milliseconds( duration ) );
+		return BatObject();
+	} );
 
-	// YUCK! Should make my own format func in the future, this is leaky and disgusting
-	AddNative( "format", []( const std::vector<BatObject>& args ) {
+	BatModule core;
+	core.AddNative( "format", []( const std::vector<BatObject>& args ) {
 		std::stringstream ss;
 
 		const char* fmt = args[0].String();
@@ -203,6 +210,9 @@ int main( int argc, char** argv )
 
 		return BatObject( ss.str().c_str() );
 	} );
+	
+	AddModule( "time", std::move( time ) );
+	AddModule( "core", std::move( core ) );
 
 	if( argc >= 2 )
 	{

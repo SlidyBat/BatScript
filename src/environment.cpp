@@ -2,10 +2,19 @@
 
 namespace Bat
 {
-	Environment::Environment( Environment* enclosing )
-		:
-		m_pEnclosing( enclosing )
+	Environment::Environment( const std::string& module ) :
+		m_Module( module )
 	{}
+	Environment::Environment( Environment* enclosing ) :
+		m_pEnclosing( enclosing )
+	{
+		m_Module = m_pEnclosing->Module();
+	}
+
+	const std::string& Environment::Module() const
+	{
+		return m_Module;
+	}
 
 	bool Environment::Exists( const std::string& name ) const
 	{

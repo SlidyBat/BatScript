@@ -3,6 +3,7 @@
 #include "ast.h"
 #include "bat_object.h"
 #include "bat_callable.h"
+#include "bat_module.h"
 #include "environment.h"
 
 namespace Bat
@@ -18,7 +19,7 @@ namespace Bat
 		BatObject Evaluate( Expression* e );
 		void ExecuteBlock( Statement* s, Environment& environment );
 
-		void AddNative( const std::string& name, BatNativeCallback callback );
+		void AddModule( const std::string& name, BatModule module );
 		Environment* GetEnvironment() { return m_pEnvironment; }
 		const Environment* GetEnvironment() const { return m_pEnvironment; }
 	private:
@@ -27,6 +28,8 @@ namespace Bat
 		void SetVar( const std::string& name, const BatObject& value, const SourceLoc& loc );
 		const BatObject& GetVar( const std::string& name, const SourceLoc& loc );
 		bool IsTruthy( const BatObject& obj, const SourceLoc& loc );
+
+		const BatModule* FindModule( const std::string& name ) const;
 
 		virtual void VisitIntLiteral( IntLiteral* node ) override;
 		virtual void VisitFloatLiteral( FloatLiteral* node ) override;
@@ -59,5 +62,7 @@ namespace Bat
 		BatObject m_Result;
 		Environment* m_pEnvironment;
 		std::vector<std::unique_ptr<Statement>> m_pStatements; // Not actually used, but interpreter relies on having AST references always alive, so it manages the lifetime
+		std::string m_CurrentModule;
+		std::unordered_map<std::string, BatModule> m_Modules;
 	};
 }

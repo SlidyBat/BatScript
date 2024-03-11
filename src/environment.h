@@ -10,8 +10,10 @@ namespace Bat
 	class Environment
 	{
 	public:
-		Environment() = default;
+		Environment( const std::string& module );
 		Environment( Environment* enclosing );
+
+		const std::string& Module() const;
 
 		bool Exists( const std::string& name ) const;
 		bool ExistsLocally( const std::string& name ) const;
@@ -21,6 +23,7 @@ namespace Bat
 		bool StealVarsFrom( Environment& from );
 		Environment* Enclosing() { return m_pEnclosing; }
 	private:
+		std::string m_Module;
 		Environment* m_pEnclosing = nullptr;
 		std::unordered_map<std::string, BatObject> m_mapVariables;
 	};

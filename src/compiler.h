@@ -27,6 +27,7 @@ namespace Bat
 
 	struct BatNativeInfo
 	{
+		std::string module;
 		std::string name;
 		BatNativeDesc desc;
 	};
@@ -139,10 +140,11 @@ namespace Bat
 
 		MemoryStream code;
 		std::vector<std::string> m_StringLiterals;
-		std::vector<std::string> m_Natives;
+		std::vector<std::pair<std::string, std::string>> m_Natives;
 		int m_iCurrentLine = 1;
 		std::vector<int> m_LineMapping;
 		std::vector<std::unique_ptr<Statement>> m_pStatements;
+		std::string m_CurrentModule;
 		SymbolTable* m_pSymTab;
 		int m_iStackSize = 0;
 		ExprType m_CompileType = ExprType::UNKNOWN;

@@ -47,10 +47,10 @@
 
 namespace Bat
 {
-	void VirtualMachine::AddNative( const std::string& name, BatNativeCallback callback )
+	void VirtualMachine::AddModule( const std::string& name, BatModule module )
 	{
-		assert( m_Natives.count( name ) == 0 );
-		m_Natives[name] = std::move( callback );
+		assert( FindModule( name ) == nullptr );
+		m_Modules[name] = std::move( module );
 	}
 	void VirtualMachine::Run( BatCode& bc )
 	{
@@ -301,18 +301,28 @@ namespace Bat
 	{
 		m_iIP = (int)addr;
 	}
-	void VirtualMachine::HandleNative( const BatCode& bc, const BatNativeInfo& native )
-	{
-		auto it = m_Natives.find( native.name );
-		if( it == m_Natives.end() )
+    const BatModule *VirtualMachine::FindModule(const std::string &name) const
+    {
+		auto it = m_Modules.find( name );
+		if( it == m_Modules.end() )
+			return nullptr;
+		return &it->second;
+    }
+    void VirtualMachine::HandleNative(const BatCode &bc, const BatNativeInfo &native)
+    {
+		const BatModule* module = FindModule( native.module );
+		if( !module )
 		{
-			// TODO: proper line/column report
-			ErrorSys::Report( 0, 0, std::string( "Native '" ) + native.name + "' not bound" );
-			return;
+			ErrorSys::Report( 0, 0, "Module '" + native.module + "' not bound" );
+		}
+
+		const BatNativeCallback* callback = module->FindNative( native.name );
+		if( !callback )
+		{
+			ErrorSys::Report( 0, 0, "Native '" + native.name + "' not bound" );
 		}
 
 		std::vector<BatObject> params;
-		auto& callback = it->second;
 
 		const auto& param_types = native.desc.param_types;
 		for( size_t param_idx = 0; param_idx < param_types.size(); param_idx++ )
@@ -336,7 +346,7 @@ namespace Bat
 			}
 		}
 
-		BatObject result = callback( params );
+		BatObject result = (*callback)( params );
 
 		switch( result.type )
 		{

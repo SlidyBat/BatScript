@@ -19,7 +19,7 @@ if (MSVC)
 else()
     set(CMAKE_COLOR_DIAGNOSTICS ON)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -mcpu=apple-m1 -Wno-deprecated-declarations")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -D_DEBUG")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -D_DEBUG -g")
 endif()
 
 include_directories(inc)

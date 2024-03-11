@@ -2,6 +2,7 @@
 
 #include "memory_stream.h"
 #include "bat_callable.h"
+#include "bat_module.h"
 #include "compiler.h"
 
 namespace Bat
@@ -9,7 +10,7 @@ namespace Bat
 	class VirtualMachine
 	{
 	public:
-		void AddNative( const std::string& name, BatNativeCallback callback );
+		void AddModule( const std::string& name, BatModule module );
 
 		void Run( BatCode& bc );
 	private:
@@ -60,6 +61,7 @@ namespace Bat
 
 		void GoTo( int64_t addr );
 
+		const BatModule* FindModule( const std::string& name ) const;
 		void HandleNative( const BatCode& bc, const BatNativeInfo& native );
 	private:
 		char m_Stack[4096];
@@ -69,6 +71,6 @@ namespace Bat
 		int64_t m_iStackPointer = 0;
 		int64_t m_iCallStackPointer = 0;
 		int64_t m_iBasePointer = 0;
-		std::unordered_map<std::string, BatNativeCallback> m_Natives;
+		std::unordered_map<std::string, BatModule> m_Modules;
 	};
 }
