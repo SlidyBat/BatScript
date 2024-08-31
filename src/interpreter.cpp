@@ -306,6 +306,13 @@ namespace Bat
 
 			BAT_RETURN( var->GetField( node->Attr().lexeme ) );
 		}
+		else if( base.type == TYPE_CLASS )
+		{
+			const BatObject* var = base.GetClass()->GetVar( node->Attr().lexeme );
+			assert( var );
+
+			BAT_RETURN( *var );
+		}
 
 		BAT_RETURN( BatObject() );
 	}

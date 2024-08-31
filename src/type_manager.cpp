@@ -79,7 +79,7 @@ namespace Bat
 		return new FunctionType( sig );
 	}
 
-	ClassType* TypeManager::NewClass( ClassDecl* decl, SymbolTable* symtab )
+	ClassType* TypeManager::NewClass( ClassDecl* decl, const SymbolTable* symtab )
 	{
 		const std::string& name = decl->Name().lexeme;
 		if( Type* existing = GetType( name ) )

@@ -129,7 +129,7 @@ namespace Bat
 	{
 	public:
 		ClassSymbol( AstNode* node, SymbolTable* symtab ) :
-			Symbol( node, SymbolKind::Module ),
+			Symbol( node, SymbolKind::Class ),
 			m_pSymTab( symtab )
 		{}
 

@@ -597,6 +597,17 @@ namespace Bat
 
 				symtab = class_type->SymTab();
 			}
+			else if( ClassSymbol* class_sym = sym->ToClass() )
+			{
+				symtab = class_sym->SymTab();
+			}
+
+			if( !symtab )
+			{
+				Error( node->Attr().loc, "No such attribute" );
+				node->SetType( typeman.NewPrimitive( PrimitiveKind::Int ) );
+				return;
+			}
 
 			Symbol* symbol = symtab->GetSymbol( node->Attr().lexeme );
 			if( !symbol )
@@ -608,6 +619,13 @@ namespace Bat
 
 			if( VariableSymbol* var_symbol = symbol->ToVariable() )
 			{
+				if( sym->IsClass() )
+				{
+					Error( node->Attr().loc, "Non-static field is inaccessible" );
+					node->SetType( typeman.NewPrimitive( PrimitiveKind::Int ) );
+					return;
+				}
+				
 				node->SetType( var_symbol->VarType() );
 				return;
 			}
@@ -615,6 +633,12 @@ namespace Bat
 			if( FunctionSymbol* func_symbol = symbol->ToFunction() )
 			{
 				node->SetType( typeman.NewFunction( &func_symbol->Signature() ) );
+				return;
+			}
+
+			if( ClassSymbol* class_symbol = symbol->ToClass() )
+			{
+				node->SetType( typeman.GetType( class_symbol->Node()->AsClassDecl()->Name().lexeme ) );
 				return;
 			}
 
@@ -661,6 +685,12 @@ namespace Bat
 		if( FunctionSymbol* func_symbol = symbol->ToFunction() )
 		{
 			node->SetType( typeman.NewFunction( &func_symbol->Signature() ) );
+			return;
+		}
+
+		if( ClassSymbol* class_symbol = symbol->ToClass() )
+		{
+			node->SetType( typeman.GetType( class_symbol->Node()->AsClassDecl()->Name().lexeme ) );
 			return;
 		}
 

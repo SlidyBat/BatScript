@@ -16,7 +16,7 @@ namespace Bat
 		PrimitiveType* NewPrimitive( PrimitiveKind primkind );
 		ArrayType* NewArray( Type* inner );
 		FunctionType* NewFunction( FunctionSignature* sig );
-		ClassType* NewClass( ClassDecl* decl, class SymbolTable* symtab );
+		ClassType* NewClass( ClassDecl* decl, const class SymbolTable* symtab );
 
 		Type* GetType( const std::string& name ) const;
 	private:
