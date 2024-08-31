@@ -79,16 +79,17 @@ namespace Bat
 		return new FunctionType( sig );
 	}
 
-	NamedType* TypeManager::NewNamed( const std::string& name )
+	ClassType* TypeManager::NewClass( ClassDecl* decl, SymbolTable* symtab )
 	{
+		const std::string& name = decl->Name().lexeme;
 		if( Type* existing = GetType( name ) )
 		{
-			return existing->AsNamed();
+			return nullptr;
 		}
 
-		auto new_named = std::make_unique<NamedType>( name );
-		auto res = new_named.get();
-		if( !AddType( name, std::move( new_named ) ) )
+		auto new_class = std::make_unique<ClassType>( name, symtab );
+		auto res = new_class.get();
+		if( !AddType( name, std::move( new_class ) ) )
 		{
 			return nullptr;
 		}

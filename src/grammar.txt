@@ -18,12 +18,15 @@ compound_stmt -> if_stmt
                | while_stmt
                | for_stmt
                | function_decl
+               | class_decl
 
 block         -> indent statement+ dedent
 suite         -> (eol block | simple_stmt)
 
 var_decl      -> IDENTIFIER ( ":=" expression | ":" type ("=" expression)? ) eol
 function_decl -> "def" IDENTIFIER "(" parameters? ")" ( "->" type )? ":" suite
+class_decl    -> "class" IDENTIFIER ":" eol indent class_stmt+ dedent
+class_stmt    -> var_decl | function_decl | native_stmt
 
 expr_stmt     -> expression eol
 assign_stmt   -> expression ( assign ) expression ) eol

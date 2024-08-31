@@ -19,7 +19,9 @@ namespace Bat
 			case TYPE_STR:       return "string";
 			case TYPE_CALLABLE:  return "function";
 			case TYPE_ARRAY:     return "array";
-			case TYPE_MODULE:     return "module";
+			case TYPE_MODULE:    return "module";
+			case TYPE_CLASS:     return "class";
+			case TYPE_OBJECT:    return "object";
 		}
 		
 		return "<error-type>";
@@ -74,61 +76,83 @@ namespace Bat
 
 		return *this;
 	}
-	BatObject::BatObject( int64_t i )
-		:
-		type( TYPE_INT )
+	BatObject BatObject::Int( int64_t i )
 	{
-		value.i64 = i;
+		BatObject object;
+		object.type = TYPE_INT;
+		object.value.i64 = i;
+		return object;
 	}
-	BatObject::BatObject( double f )
-		:
-		type( TYPE_FLOAT )
+	BatObject BatObject::Float( double f )
 	{
-		value.f64 = f;
+		BatObject object;
+		object.type = TYPE_FLOAT;
+		object.value.f64 = f;
+		return object;
 	}
-	BatObject::BatObject( const char* s )
-		:
-		type( TYPE_STR )
+	BatObject BatObject::String( const char* s )
 	{
+		BatObject object;
+		object.type = TYPE_STR;
 		size_t len = strlen( s );
-		value.str = new char[len + 1];
-		memcpy( value.str, s, len + 1 );
+		object.value.str = new char[len + 1];
+		memcpy( object.value.str, s, len + 1 );
+		return object;
 	}
-	BatObject::BatObject( bool s )
-		:
-		type( TYPE_BOOL )
+	BatObject BatObject::Bool( bool s )
 	{
-		value.i64 = s;
+		BatObject object;
+		object.type = TYPE_BOOL;
+		object.value.i64 = s;
+		return object;
 	}
-	BatObject::BatObject( BatCallable* func )
-		:
-		type( TYPE_CALLABLE )
+	BatObject BatObject::Function( BatCallable* func )
 	{
-		value.func = func;
+		BatObject object;
+		object.type = TYPE_CALLABLE;
+		object.value.func = func;
+		return object;
 	}
-	BatObject::BatObject( const BatObject* arr, size_t size )
-		:
-		type( TYPE_ARRAY ),
-		arr_size( size )
+	BatObject BatObject::Array( const BatObject* arr, size_t size )
 	{
-		value.arr = new BatObject[size];
+		BatObject object;
+		object.type = TYPE_ARRAY;
+		object.arr_size = size;
+		object.value.arr = new BatObject[size];
 		for( size_t i = 0; i < size; i++ )
 		{
-			value.arr[i].Assign( arr[i] );
+			object.value.arr[i].Assign( arr[i] );
 		}
+		return object;
 	}
-	BatObject::BatObject( Environment* module )
-		:
-		type( TYPE_MODULE )
+	BatObject BatObject::Module( Environment* module )
 	{
-		value.mod = module;
+		BatObject object;
+		object.type = TYPE_MODULE;
+		object.value.env = module;
+		return object;
 	}
-	BatObject BatObject::Add( const BatObject& rhs )
-	{
-		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 + rhs.value.i64 );
-		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject( value.f64 + rhs.value.f64 );
-		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject( (double)value.i64 + rhs.value.f64 );
-		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject( value.f64 + (double)rhs.value.i64 );
+    BatObject BatObject::Class( Environment *env )
+    {
+		BatObject object;
+		object.type = TYPE_CLASS;
+		object.value.env = env;
+		return object;
+    }
+    BatObject BatObject::Object(const char *classname, void *opaque)
+    {
+		BatObject object;
+		object.type = TYPE_OBJECT;
+		object.classname = classname;
+		object.value.opaque = opaque;
+		return object;
+    }
+    BatObject BatObject::Add(const BatObject &rhs)
+    {
+		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject::Int( value.i64 + rhs.value.i64 );
+		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject::Float( value.f64 + rhs.value.f64 );
+		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject::Float( (double)value.i64 + rhs.value.f64 );
+		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject::Float( value.f64 + (double)rhs.value.i64 );
 
 		// Adding a list and another object will 
 		if( type == TYPE_ARRAY )
@@ -150,64 +174,64 @@ namespace Bat
 	}
 	BatObject BatObject::Sub( const BatObject& rhs )
 	{
-		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 - rhs.value.i64 );
-		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject( value.f64 - rhs.value.f64 );
-		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject( (double)value.i64 - rhs.value.f64 );
-		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject( value.f64 - (double)rhs.value.i64 );
+		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject::Int( value.i64 - rhs.value.i64 );
+		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject::Float( value.f64 - rhs.value.f64 );
+		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject::Float( (double)value.i64 - rhs.value.f64 );
+		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject::Float( value.f64 - (double)rhs.value.i64 );
 
 		throw BatObjectError( std::string( "Cannot subtract " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
 	BatObject BatObject::Div( const BatObject& rhs )
 	{
-		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 / rhs.value.i64 );
-		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject( value.f64 / rhs.value.f64 );
-		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject( (double)value.i64 / rhs.value.f64 );
-		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject( value.f64 / (double)rhs.value.i64 );
+		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject::Int( value.i64 / rhs.value.i64 );
+		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject::Float( value.f64 / rhs.value.f64 );
+		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject::Float( (double)value.i64 / rhs.value.f64 );
+		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject::Float( value.f64 / (double)rhs.value.i64 );
 
 		throw BatObjectError( std::string( "Cannot divide " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
 	BatObject BatObject::Mul( const BatObject& rhs )
 	{
-		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 * rhs.value.i64 );
-		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject( value.f64 * rhs.value.f64 );
-		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject( (double)value.i64 * rhs.value.f64 );
-		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject( value.f64 * (double)rhs.value.i64 );
+		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject::Int( value.i64 * rhs.value.i64 );
+		if( type == TYPE_FLOAT && rhs.type == TYPE_FLOAT ) return BatObject::Float( value.f64 * rhs.value.f64 );
+		if( type == TYPE_INT && rhs.type == TYPE_FLOAT ) return BatObject::Float( (double)value.i64 * rhs.value.f64 );
+		if( type == TYPE_FLOAT && rhs.type == TYPE_INT ) return BatObject::Float( value.f64 * (double)rhs.value.i64 );
 
 		throw BatObjectError( std::string( "Cannot multiply " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
 	BatObject BatObject::Mod( const BatObject& rhs )
 	{
-		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 % rhs.value.i64 );
+		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject::Int( value.i64 % rhs.value.i64 );
 
 		throw BatObjectError( std::string( "Cannot mod " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
 	BatObject BatObject::LShift( const BatObject& rhs )
 	{
-		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 << rhs.value.i64 );
+		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject::Int( value.i64 << rhs.value.i64 );
 
 		throw BatObjectError( std::string( "Cannot left-shift " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
 	BatObject BatObject::RShift( const BatObject& rhs )
 	{
-		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 >> rhs.value.i64 );
+		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject::Int( value.i64 >> rhs.value.i64 );
 
 		throw BatObjectError( std::string( "Cannot right-shift " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
 	BatObject BatObject::BitXor( const BatObject& rhs )
 	{
-		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 ^ rhs.value.i64 );
+		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject::Int( value.i64 ^ rhs.value.i64 );
 
 		throw BatObjectError( std::string( "Cannot bitwise-xor " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
 	BatObject BatObject::BitOr( const BatObject& rhs )
 	{
-		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 | rhs.value.i64 );
+		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject::Int( value.i64 | rhs.value.i64 );
 
 		throw BatObjectError( std::string( "Cannot bitwise-or " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
 	BatObject BatObject::BitAnd( const BatObject& rhs )
 	{
-		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject( value.i64 & rhs.value.i64 );
+		if( type == TYPE_INT && rhs.type == TYPE_INT ) return BatObject::Int( value.i64 & rhs.value.i64 );
 
 		throw BatObjectError( std::string( "Cannot bitwise-and " ) + TypeToStr( type ) + " and " + TypeToStr( rhs.type ) );
 	}
@@ -219,26 +243,29 @@ namespace Bat
 			{
 				case TYPE_UNDEFINED:
 				case TYPE_NULL:
-					return true;
+					return BatObject::True();
 				case TYPE_INT:
-					return value.i64 == rhs.value.i64;
+					return BatObject::Bool( value.i64 == rhs.value.i64 );
 				case TYPE_BOOL:
-					return (value.i64 != 0) == (rhs.value.i64 != 0);
+					return BatObject::Bool( (value.i64 != 0) == (rhs.value.i64 != 0) );
 				case TYPE_FLOAT:
-					return value.f64 == rhs.value.f64;
+					return BatObject::Bool( value.f64 == rhs.value.f64 );
 				case TYPE_STR:
-					return std::string( value.str ) == rhs.value.str;
+					return BatObject::Bool( std::string( value.str ) == rhs.value.str );
 				case TYPE_ARRAY:
 					if ( arr_size != rhs.arr_size )
-						return false;
+						return BatObject::False();
 					for ( size_t i = 0; i < arr_size; i++ )
 						if ( !value.arr[i].CmpEq( rhs.value.arr[i] ).IsTruthy() )
-							return false;
-					return true;
+							return BatObject::False();
+					return BatObject::True();
 				case TYPE_CALLABLE:
-					return value.func == rhs.value.func;
+					return BatObject::Bool( value.func == rhs.value.func );
+				case TYPE_OBJECT:
+					return BatObject::False(); // TODO
 				case TYPE_MODULE:
-					return value.mod == rhs.value.mod;
+				case TYPE_CLASS:
+					return BatObject::Bool( value.env == rhs.value.env );
 			}
 		}
 
@@ -255,11 +282,11 @@ namespace Bat
 			switch( type )
 			{
 				case TYPE_INT:
-					return value.i64 < rhs.value.i64;
+					return BatObject::Bool( value.i64 < rhs.value.i64 );
 				case TYPE_FLOAT:
-					return value.f64 < rhs.value.f64;
+					return BatObject::Bool( value.f64 < rhs.value.f64 );
 				case TYPE_STR:
-					return std::string( value.str ) < std::string( rhs.value.str );
+					return BatObject::Bool( std::string( value.str ) < std::string( rhs.value.str ) );
 				
 				case TYPE_UNDEFINED:
 				case TYPE_NULL:
@@ -267,6 +294,8 @@ namespace Bat
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
 				case TYPE_MODULE:
+				case TYPE_OBJECT:
+				case TYPE_CLASS:
 					break;
 			}
 		}
@@ -280,11 +309,11 @@ namespace Bat
 			switch( type )
 			{
 				case TYPE_INT:
-					return value.i64 <= rhs.value.i64;
+					return BatObject::Bool( value.i64 <= rhs.value.i64 );
 				case TYPE_FLOAT:
-					return value.f64 <= rhs.value.f64;
+					return BatObject::Bool( value.f64 <= rhs.value.f64 );
 				case TYPE_STR:
-					return std::string( value.str ) <= std::string( rhs.value.str );
+					return BatObject::Bool( std::string( value.str ) <= std::string( rhs.value.str ) );
 				
 				case TYPE_UNDEFINED:
 				case TYPE_NULL:
@@ -292,6 +321,8 @@ namespace Bat
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
 				case TYPE_MODULE:
+				case TYPE_OBJECT:
+				case TYPE_CLASS:
 					break;
 			}
 		}
@@ -305,11 +336,11 @@ namespace Bat
 			switch( type )
 			{
 				case TYPE_INT:
-					return value.i64 > rhs.value.i64;
+					return BatObject::Bool( value.i64 > rhs.value.i64 );
 				case TYPE_FLOAT:
-					return value.f64 > rhs.value.f64;
+					return BatObject::Bool( value.f64 > rhs.value.f64 );
 				case TYPE_STR:
-					return std::string( value.str ) > std::string( rhs.value.str );
+					return BatObject::Bool( std::string( value.str ) > std::string( rhs.value.str ) );
 				
 				case TYPE_UNDEFINED:
 				case TYPE_NULL:
@@ -317,6 +348,8 @@ namespace Bat
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
 				case TYPE_MODULE:
+				case TYPE_OBJECT:
+				case TYPE_CLASS:
 					break;
 			}
 		}
@@ -330,11 +363,11 @@ namespace Bat
 			switch( type )
 			{
 				case TYPE_INT:
-					return value.i64 >= rhs.value.i64;
+					return BatObject::Bool( value.i64 >= rhs.value.i64 );
 				case TYPE_FLOAT:
-					return value.f64 >= rhs.value.f64;
+					return BatObject::Bool( value.f64 >= rhs.value.f64 );
 				case TYPE_STR:
-					return std::string( value.str ) >= std::string( rhs.value.str );
+					return BatObject::Bool( std::string( value.str ) >= std::string( rhs.value.str ) );
 				
 				case TYPE_UNDEFINED:
 				case TYPE_NULL:
@@ -342,6 +375,8 @@ namespace Bat
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
 				case TYPE_MODULE:
+				case TYPE_OBJECT:
+				case TYPE_CLASS:
 					break;
 			}
 		}
@@ -354,7 +389,7 @@ namespace Bat
 		{
 			case TYPE_BOOL:
 			case TYPE_INT:
-				return !value.i64;
+				return BatObject::Bool( !value.i64 );
 			
 			case TYPE_UNDEFINED:
 			case TYPE_NULL:
@@ -363,6 +398,8 @@ namespace Bat
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
 			case TYPE_MODULE:
+			case TYPE_OBJECT:
+			case TYPE_CLASS:
 				break;
 		}
 
@@ -373,9 +410,9 @@ namespace Bat
 		switch( type )
 		{
 			case TYPE_FLOAT:
-				return -value.f64;
+				return BatObject::Float( -value.f64 );
 			case TYPE_INT:
-				return -value.i64;
+				return BatObject::Int( -value.i64 );
 			
 			case TYPE_UNDEFINED:
 			case TYPE_NULL:
@@ -384,6 +421,8 @@ namespace Bat
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
 			case TYPE_MODULE:
+			case TYPE_OBJECT:
+			case TYPE_CLASS:
 				break;
 		}
 
@@ -394,7 +433,7 @@ namespace Bat
 		switch( type )
 		{
 			case TYPE_INT:
-				return ~value.i64;
+				return BatObject::Int( ~value.i64 );
 			
 			case TYPE_UNDEFINED:
 			case TYPE_NULL:
@@ -404,6 +443,8 @@ namespace Bat
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
 			case TYPE_MODULE:
+			case TYPE_OBJECT:
+			case TYPE_CLASS:
 				break;
 		}
 
@@ -430,7 +471,7 @@ namespace Bat
 			throw BatObjectError( std::string( "Array index must be an integer" ) );
 		}
 
-		auto i = index.Int();
+		auto i = index.GetInt();
 		if( i < 0 )
 		{
 			i += arr_size;
@@ -487,12 +528,26 @@ namespace Bat
 			}
 			case TYPE_MODULE:
 				return "module";
+			case TYPE_CLASS:
+				return classname;
+			case TYPE_OBJECT:
+				return "object";
 		}
 
 		return "error";
 	}
-	void BatObject::Copy( const BatObject& other )
-	{
+    const BatObject &BatObject::GetField( const std::string &name ) const
+    {
+		assert( type == TYPE_OBJECT );
+		return fields.at( name );
+    }
+    void BatObject::SetField(const std::string &name, BatObject value)
+    {
+		assert( type == TYPE_OBJECT );
+		fields[name] = std::move( value );
+    }
+    void BatObject::Copy(const BatObject &other)
+    {
 		switch( type )
 		{
 			case TYPE_UNDEFINED:
@@ -530,9 +585,22 @@ namespace Bat
 				// delete[] value.arr;
 				assert( false );
 			}
+			case TYPE_CLASS:
+			{
+				value.env = other.value.env; // BAD
+				break;
+			}
 			case TYPE_MODULE:
 			{
-				value.mod = other.value.mod; // BAD
+				value.env = other.value.env; // BAD
+				break;
+			}
+			case TYPE_OBJECT:
+			{
+				classname = other.classname;
+				fields = other.fields;
+				value.opaque = other.value.opaque;
+				break;
 			}
 		}
 	}
@@ -569,10 +637,24 @@ namespace Bat
 			case TYPE_ARRAY:
 			{
 				value.arr = other.value.arr;
+				break;
+			}
+			case TYPE_CLASS:
+			{
+				value.env = other.value.env;
+				break;
 			}
 			case TYPE_MODULE:
 			{
-				value.mod = other.value.mod;
+				value.env = other.value.env;
+				break;
+			}
+			case TYPE_OBJECT:
+			{
+				classname = other.classname;
+				fields = std::move( other.fields );
+				value.opaque = other.value.opaque;
+				break;
 			}
 		}
 	}
@@ -592,6 +674,8 @@ namespace Bat
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
 			case TYPE_MODULE:
+			case TYPE_CLASS:
+			case TYPE_OBJECT:
 				return true;
 		}
 

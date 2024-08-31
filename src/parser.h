@@ -41,19 +41,20 @@ namespace Bat
 		std::unique_ptr<Statement> ParseSimpleStatement();
 		std::unique_ptr<Statement> ParseCompoundStatement();
 		std::unique_ptr<Statement> ParseAssign();
-		std::unique_ptr<Statement> ParsePrint();
-		std::unique_ptr<Statement> ParseBlock();
-		std::unique_ptr<Statement> ParseIf();
-		std::unique_ptr<Statement> ParseWhile();
-		std::unique_ptr<Statement> ParseFor();
-		std::unique_ptr<Statement> ParseReturn();
-		std::unique_ptr<Statement> ParseBreak();
-		std::unique_ptr<Statement> ParseContinue();
-		std::unique_ptr<Statement> ParseImportAs();
-		std::unique_ptr<Statement> ParseFromImport();
-		std::unique_ptr<Statement> ParseNative();
-		std::unique_ptr<Statement> ParseVarDeclaration();
-		std::unique_ptr<Statement> ParseFuncDeclaration();
+		std::unique_ptr<PrintStmt> ParsePrint();
+		std::unique_ptr<BlockStmt> ParseBlock();
+		std::unique_ptr<IfStmt> ParseIf();
+		std::unique_ptr<WhileStmt> ParseWhile();
+		std::unique_ptr<ForStmt> ParseFor();
+		std::unique_ptr<ReturnStmt> ParseReturn();
+		std::unique_ptr<BreakStmt> ParseBreak();
+		std::unique_ptr<ContinueStmt> ParseContinue();
+		std::unique_ptr<ImportStmt> ParseImportAs();
+		std::unique_ptr<ImportStmt> ParseFromImport();
+		std::unique_ptr<NativeStmt> ParseNative();
+		std::unique_ptr<VarDecl> ParseVarDeclaration();
+		std::unique_ptr<FuncDecl> ParseFuncDeclaration();
+		std::unique_ptr<ClassDecl> ParseClassDeclaration();
 
 		FunctionSignature ParseFuncSignature();
 

@@ -143,22 +143,22 @@ namespace Bat
 
 	void Interpreter::VisitIntLiteral( IntLiteral* node )
 	{
-		BAT_RETURN( node->value );
+		BAT_RETURN( BatObject::Int( node->value ) );
 	}
 	void Interpreter::VisitFloatLiteral( FloatLiteral* node )
 	{
-		BAT_RETURN( node->value );
+		BAT_RETURN( BatObject::Float( node->value ) );
 	}
 	void Interpreter::VisitStringLiteral( StringLiteral* node )
 	{
-		BAT_RETURN( node->value );
+		BAT_RETURN( BatObject::String( node->value ) );
 	}
 	void Interpreter::VisitTokenLiteral( TokenLiteral* node )
 	{
 		switch( node->value )
 		{
-			case TOKEN_TRUE:  BAT_RETURN( true );
-			case TOKEN_FALSE: BAT_RETURN( false );
+			case TOKEN_TRUE:  BAT_RETURN( BatObject::True() );
+			case TOKEN_FALSE: BAT_RETURN( BatObject::False() );
 			case TOKEN_NIL:   BAT_RETURN( BatObject() );
 			default:
 				throw RuntimeError( node->Location(), std::string( "Unexpected token '" ) + TokenTypeToString( node->value ) + "'" );
@@ -172,7 +172,7 @@ namespace Bat
 			arr[i] = Evaluate( node->ValueAt( i ) );
 		}
 
-		BatObject obj = BatObject( arr.get(), node->NumValues() );
+		BatObject obj = BatObject::Array( arr.get(), node->NumValues() );
 
 		BAT_RETURN( obj );
 	}
@@ -202,13 +202,13 @@ namespace Bat
 			case TOKEN_PERCENT:          BAT_RETURN( Evaluate( l ).Mod( Evaluate( r ) ) );
 
 			case TOKEN_OR:
-				if( Evaluate( l ).IsTruthy() ) BAT_RETURN( true );
-				if( Evaluate( r ).IsTruthy() ) BAT_RETURN( true );
-				BAT_RETURN( false );
+				if( Evaluate( l ).IsTruthy() ) BAT_RETURN( BatObject::True() );
+				if( Evaluate( r ).IsTruthy() ) BAT_RETURN( BatObject::True() );
+				BAT_RETURN( BatObject::False() );
 			case TOKEN_AND:
-				if( !Evaluate( l ).IsTruthy() ) BAT_RETURN( false );
-				if( !Evaluate( r ).IsTruthy() ) BAT_RETURN( false );
-				BAT_RETURN( true );
+				if( !Evaluate( l ).IsTruthy() ) BAT_RETURN( BatObject::False() );
+				if( !Evaluate( r ).IsTruthy() ) BAT_RETURN( BatObject::False() );
+				BAT_RETURN( BatObject::True() );
 			default:
 				throw RuntimeError( node->Location(), "Unexpected binary expression" );
 			}
@@ -244,6 +244,16 @@ namespace Bat
 			BatObject func = Evaluate( node->Function() );
 			size_t num_args = node->NumArgs();
 			std::vector<BatObject> arguments;
+
+			if( AttrExpr* attr = node->Function()->ToAttrExpr() )
+			{
+				BatObject base = Evaluate( attr->Base() );
+				if( base.type == TYPE_OBJECT )
+				{
+					arguments.push_back( std::move( base ) );
+				}
+			}
+
 			for( size_t i = 0; i < num_args; i++ )
 			{
 				arguments.push_back( Evaluate( node->Arg( i ) ) );
@@ -275,12 +285,26 @@ namespace Bat
 		BatObject base = Evaluate( node->Base() );
 		if( base.type == TYPE_MODULE )
 		{
-			Environment* env = base.Module();
+			Environment* env = base.GetModule();
 
 			const BatObject* var = env->GetVar( node->Attr().lexeme );
 			assert( var );
 			
 			BAT_RETURN( *var );
+		}
+		else if( base.type == TYPE_OBJECT )
+		{
+			const BatObject& base_class = GetVar( base.classname, node->Location() );
+
+			const BatObject* var = base_class.GetClass()->GetVar( node->Attr().lexeme );
+			assert( var );
+
+			if( var->type == TYPE_CALLABLE )
+			{
+				BAT_RETURN( *var );
+			}
+
+			BAT_RETURN( var->GetField( node->Attr().lexeme ) );
 		}
 
 		BAT_RETURN( BatObject() );
@@ -306,7 +330,7 @@ namespace Bat
 			switch( to_type->PrimKind() )
 			{
 			case PrimitiveKind::Int:
-				BAT_RETURN( BatObject( (int64_t)base.Bool() ) );
+				BAT_RETURN( BatObject::Int( (int64_t)base.GetBool() ) );
 			case PrimitiveKind::Bool:
 			case PrimitiveKind::Float:
 			case PrimitiveKind::String:
@@ -319,11 +343,11 @@ namespace Bat
 			switch( to_type->PrimKind() )
 			{
 			case PrimitiveKind::Bool:
-				BAT_RETURN( BatObject( (bool)base.Int() ) );
+				BAT_RETURN( BatObject::Bool( (bool)base.GetInt() ) );
 			case PrimitiveKind::Float:
-				BAT_RETURN( BatObject( (float)base.Int() ) );
+				BAT_RETURN( BatObject::Float( (float)base.GetInt() ) );
 			case PrimitiveKind::String:
-				BAT_RETURN( BatObject( std::to_string( base.Int() ).c_str() ) );
+				BAT_RETURN( BatObject::String( std::to_string( base.GetInt() ).c_str() ) );
 			default:
 				assert( false );
 			}
@@ -333,11 +357,11 @@ namespace Bat
 			switch( to_type->PrimKind() )
 			{
 			case PrimitiveKind::Bool:
-				BAT_RETURN( BatObject( (bool)base.Float() ) );
+				BAT_RETURN( BatObject::Bool( (bool)base.GetFloat() ) );
 			case PrimitiveKind::Int:
-				BAT_RETURN( BatObject( (int64_t)base.Float() ) );
+				BAT_RETURN( BatObject::Int( (int64_t)base.GetFloat() ) );
 			case PrimitiveKind::String:
-				BAT_RETURN( BatObject( std::to_string( base.Float() ).c_str() ) );
+				BAT_RETURN( BatObject::String( std::to_string( base.GetFloat() ).c_str() ) );
 			default:
 				assert( false );
 			}
@@ -347,11 +371,11 @@ namespace Bat
 			switch( to_type->PrimKind() )
 			{
 			case PrimitiveKind::Bool:
-				BAT_RETURN( BatObject( true ) );
+				BAT_RETURN( BatObject::True() );
 			case PrimitiveKind::Int:
-				BAT_RETURN( BatObject( std::stoll( base.String() ) ) );
+				BAT_RETURN( BatObject::Int( std::stoll( base.GetString() ) ) );
 			case PrimitiveKind::Float:
-				BAT_RETURN( BatObject( std::stod( base.String() ) ) );
+				BAT_RETURN( BatObject::Float( std::stod( base.GetString() ) ) );
 			default:
 				assert( false );
 			}
@@ -521,17 +545,20 @@ namespace Bat
 			}
 		}
 
+		ErrorSysSource err_source( filename );
 		auto source = MemoryStream::FromFile( filename, FileMode::TEXT );
 
 		Lexer l( source.Base() );
 		auto tokens = l.Scan();
 
-		if( ErrorSys::HadError() ) return;
+		if( ErrorSys::HadError() )
+			return;
 
 		Parser p( std::move( tokens ) );
 		std::vector<std::unique_ptr<Statement>> res = p.Parse();
 
-		if( ErrorSys::HadError() ) return;
+		if( ErrorSys::HadError() )
+			return;
 
 		Environment* old_env = m_pEnvironment;
 		m_pEnvironment = new Environment( node->ModuleName() );
@@ -566,7 +593,7 @@ namespace Bat
 		}
 		else
 		{
-			BatObject module( module_env );
+			auto module = BatObject::Module( module_env );
 			m_pEnvironment->AddVar( node->AsName(), module );
 		}
 	}
@@ -579,13 +606,15 @@ namespace Bat
 		}
 		
 		const std::string& name = node->Signature().Identifier().lexeme;
-		const BatNativeCallback* callback = module->FindNative( name );
+		std::string native_resolve_name = (!m_pEnvironment->Class().empty()) ? (m_pEnvironment->Class() + "." + name) : name;
+
+		const BatNativeCallback* callback = module->FindNative( native_resolve_name );
 		if( !callback )
 		{
 			throw RuntimeError( node->Location(), "Unresolved native" );
 		}
 
-		BatObject native( new BatNative( *callback ) );
+		auto native = BatObject::Function( new BatNative( *callback ) );
 		AddVar( name, native, node->Location() );
 	}
 	void Interpreter::VisitVarDecl( VarDecl* node )
@@ -599,6 +628,26 @@ namespace Bat
 	}
 	void Interpreter::VisitFuncDecl( FuncDecl* node )
 	{
-		AddVar( node->Signature().Identifier().lexeme, new BatFunction( node ), node->Signature().Identifier().loc );
+		AddVar( node->Signature().Identifier().lexeme,
+			BatObject::Function( new BatFunction( node ) ),
+			node->Signature().Identifier().loc );
+	}
+	void Interpreter::VisitClassDecl( ClassDecl* node )
+	{
+		Environment* old_env = m_pEnvironment;
+		Environment* class_env = new Environment( node->Name().lexeme, old_env );
+
+		AddVar( node->Name().lexeme, BatObject::Class( class_env ), node->Name().loc );
+
+		m_pEnvironment = class_env;
+
+		for( auto& native : node->Natives() )
+			Execute( native.get() );
+		for( auto& method : node->Methods() )
+			Execute( method.get() );
+		for( auto& field : node->Fields() )
+			Execute( field.get() );
+
+		m_pEnvironment = old_env;
 	}
 }

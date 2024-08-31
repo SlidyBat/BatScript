@@ -5,15 +5,27 @@ namespace Bat
 	Environment::Environment( const std::string& module ) :
 		m_Module( module )
 	{}
-	Environment::Environment( Environment* enclosing ) :
-		m_pEnclosing( enclosing )
-	{
+    Environment::Environment(const std::string &classname, Environment *enclosing) :
+		m_pEnclosing(enclosing)
+    {
 		m_Module = m_pEnclosing->Module();
+		m_Class = classname;
+    }
+    Environment::Environment(Environment *enclosing) :
+		m_pEnclosing(enclosing)
+    {
+		m_Module = m_pEnclosing->Module();
+		m_Class = m_pEnclosing->Class();
 	}
 
 	const std::string& Environment::Module() const
 	{
 		return m_Module;
+	}
+
+	const std::string& Environment::Class() const
+	{
+		return m_Class;
 	}
 
 	bool Environment::Exists( const std::string& name ) const
@@ -41,14 +53,19 @@ namespace Bat
 		return false;
 	}
 
-	bool Environment::AddVar( const std::string& name, const BatObject& value )
+	bool Environment::AddVar( const std::string& name, BatObject value )
 	{
 		if( ExistsLocally( name ) )
 		{
 			return false;
 		}
 
-		m_mapVariables[name] = value;
+		if( value.type == TYPE_CLASS )
+		{
+			value.value.env->m_pEnclosing = this;
+		}
+
+		m_mapVariables[name] = std::move( value );
 		return true;
 	}
 
@@ -88,11 +105,11 @@ namespace Bat
 	{
 		for( auto& it : from.m_mapVariables )
 		{
-			if( it.second.type != TYPE_MODULE )
-			{
-				if( !AddVar( it.first, std::move( it.second ) ) )
-					return false;
-			}
+			if( it.second.type == TYPE_MODULE )
+				continue;
+			
+			if( !AddVar( it.first, std::move( it.second ) ) )
+				return false;
 		}
 
 		if( from.m_pEnclosing )

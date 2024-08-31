@@ -113,7 +113,7 @@ void RunFromFile( const std::string& filename )
 		return;
 	}
 
-	ErrorSys::SetSource( filename );
+	ErrorSysSource err_source( filename );
 	auto source = MemoryStream::FromFile( filename, FileMode::TEXT );
 
 	std::filesystem::path path = std::filesystem::absolute( filename );
@@ -153,6 +153,37 @@ int fib( int n )
 
 int main( int argc, char** argv )
 {
+	BatModule file;
+	file.AddNative( "open", []( std::string filename, std::string mode ) {
+		FILE* f = fopen( filename.c_str(), mode.c_str() );
+		return BatObject::Object( "File", f );
+	} );
+	file.AddNative( "close", []( void* file ) {
+		fclose( (FILE*)file );
+	} );
+	file.AddNative( "File.read", []( void* file, int size ) {
+		auto* f = (FILE*)file;
+		if ( size < 0 )
+		{
+			long pos = ftell( f );
+			fseek( f, 0, SEEK_END );
+			long end = ftell( f );
+			fseek( f, pos, SEEK_SET );
+			size = (end - pos);
+		}
+
+		auto data = std::make_unique<char[]>( size + 1 );
+		fread( data.get(), size, 1, f );
+		return BatObject::String( data.get() );
+	} );
+	file.AddNative( "File.write", []( void* file, std::string data ) {
+		auto* f = (FILE*)file;
+		fwrite( data.data(), data.size(), 1, f );
+	} );
+	file.AddNative( "File.test", []( void* file ) {
+		printf("ASADSDASDAD\n");
+	} );
+
 	BatModule time;
 	time.AddNative( "now", []() {
 		return duration_cast<milliseconds>( system_clock::now().time_since_epoch() ).count();
@@ -165,7 +196,7 @@ int main( int argc, char** argv )
 	core.AddNativeRaw( "format", []( const std::vector<BatObject>& args ) {
 		std::stringstream ss;
 
-		const char* fmt = args[0].String();
+		const char* fmt = args[0].GetString();
 		size_t curr_arg = 1;
 		for ( const char* p = fmt; *p != '\0'; p++ )
 		{
@@ -179,7 +210,7 @@ int main( int argc, char** argv )
 				}
 
 				if ( curr_arg >= args.size() )
-					return BatObject( "ERROR" );
+					return BatObject::String( "ERROR" );
 				const BatObject& arg = args[curr_arg++];
 
 				// TODO: Type checking
@@ -193,10 +224,10 @@ int main( int argc, char** argv )
 						break;
 					case 'i':
 					case 'd':
-						ss << arg.Int();
+						ss << arg.GetInt();
 						break;
 					case 'f':
-						ss << arg.Float();
+						ss << arg.GetFloat();
 						break;
 				}
 			}
@@ -206,9 +237,10 @@ int main( int argc, char** argv )
 			}
 		}
 
-		return BatObject( ss.str().c_str() );
+		return BatObject::String( ss.str().c_str() );
 	} );
 	
+	AddModule( "file", std::move( file ) );
 	AddModule( "time", std::move( time ) );
 	AddModule( "core", std::move( core ) );
 

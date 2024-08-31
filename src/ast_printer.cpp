@@ -224,11 +224,10 @@ namespace Bat
 		if( node->Initializer() ) PrintNode( node->Initializer() );
 	}
 
-	void  AstPrinter::VisitFuncDecl( FuncDecl* node )
+	void AstPrinter::VisitFuncDecl( FuncDecl* node )
 	{
 		const auto& sig = node->Signature();
-		std::cout << (node->Signature().ReturnType() ? node->Signature().ReturnType()->ToString() : "def"s) << ' ';
-		std::cout << node->Signature().Identifier().lexeme << '(';
+		std::cout << "def " << node->Signature().Identifier().lexeme << '(';
 
 		std::vector<std::string> params;
 		for( size_t i = 0; i < sig.NumParams(); i++ )
@@ -243,6 +242,22 @@ namespace Bat
 		std::cout << JoinStrings( params, ", " );
 		std::cout << ")";
 
+		if( Type* ret = node->Signature().ReturnType() )
+		{
+			std::cout << " -> " << ret->ToString();
+		}
+
 		PrintNode( node->Body() );
+	}
+
+	void AstPrinter::VisitClassDecl( ClassDecl* node )
+	{
+		std::cout << "class " << node->Name().lexeme << ":";
+		for( const auto& field : node->Fields() )
+			PrintNode( field.get() );
+		for( const auto& method : node->Methods() )
+			PrintNode( method.get() );
+		for( const auto& native : node->Natives() )
+			PrintNode( native.get() );
 	}
 }

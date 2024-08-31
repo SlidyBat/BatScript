@@ -10,7 +10,7 @@
 #define SYMBOL_TYPES(_) \
 	_(Variable) \
 	_(Function) \
-	_(Type) \
+	_(Class) \
 	_(Module)
 
 namespace Bat
@@ -125,19 +125,17 @@ namespace Bat
 		int64_t m_iAddress = 0;
 	};
 
-	class TypeSymbol : public Symbol
+	class ClassSymbol : public Symbol
 	{
 	public:
-		TypeSymbol( AstNode* node, Type* type ) :
-			Symbol( node, SymbolKind::Type ),
-			m_pType( type )
+		ClassSymbol( AstNode* node, SymbolTable* symtab ) :
+			Symbol( node, SymbolKind::Module ),
+			m_pSymTab( symtab )
 		{}
 
-		void SetType( Type * type ) { m_pType = type; }
-		Type* InnerType() { return m_pType; }
-		const Type* InnerType() const { return m_pType; }
+		const SymbolTable* SymTab() { return m_pSymTab; }
 	private:
-		Type* m_pType = nullptr;
+		SymbolTable* m_pSymTab;
 	};
 
 	class SymbolTable;

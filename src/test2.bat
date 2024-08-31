@@ -1,8 +1,6 @@
 import time
+from file import *
 
-def call_me(x : string):
-    print x
-
-print time.now()
-time.sleep(1000)
-print time.now()
+f := open("test2.bat", "r")
+f.test()
+close(f)

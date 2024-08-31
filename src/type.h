@@ -8,11 +8,12 @@
 	_(Primitive) \
 	_(Array) \
 	_(Function) \
-	_(Named) \
+	_(Class) \
 
 namespace Bat
 {
 	class FunctionSignature;
+	class SymbolTable;
 
 #define _(type) class type##Type;
 	TYPE_KINDS(_)
@@ -156,18 +157,19 @@ namespace Bat
 		FunctionSignature* m_pSignature;
 	};
 
-	class NamedType : public Type
+	class ClassType : public Type
 	{
 	public:
-		NamedType( const std::string& name )
+		ClassType( const std::string& name, const SymbolTable* symtab )
 			:
-			m_szName( name ),
-			Type( TypeKind::Named )
+			m_Name( name ),
+			m_pSymTab( symtab ),
+			Type( TypeKind::Class )
 		{}
 
 		virtual std::string ToString() const override
 		{
-			return m_szName;
+			return m_Name;
 		}
 
 		virtual size_t Size() const override
@@ -176,9 +178,11 @@ namespace Bat
 			return 0;
 		}
 
-		const std::string& Name() const { return m_szName; }
+		const std::string& Name() const { return m_Name; }
+		const SymbolTable* SymTab() const { return m_pSymTab; }
 	private:
-		std::string m_szName;
+		std::string m_Name;
+		const SymbolTable* m_pSymTab;
 	};
 
 	inline bool IsSameType( Type* a, Type* b )
@@ -204,9 +208,9 @@ namespace Bat
 			return IsSameType( a->ToArray()->Inner(), b->ToArray()->Inner() );
 		}
 
-		if( a->IsNamed() && b->IsNamed() )
+		if( a->IsClass() && b->IsClass() )
 		{
-			return a->ToNamed()->Name() == b->ToNamed()->Name();
+			return a->ToClass()->Name() == b->ToClass()->Name();
 		}
 
 		return false;

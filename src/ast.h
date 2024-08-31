@@ -37,7 +37,8 @@
 	_( NativeStmt ) \
 	/* Declarations */ \
 	_( VarDecl ) \
-	_( FuncDecl )
+	_( FuncDecl ) \
+	_( ClassDecl )
 
 namespace Bat
 {
@@ -672,5 +673,34 @@ namespace Bat
 	private:
 		FunctionSignature m_Signature;
 		std::unique_ptr<Statement> m_pBody;
+	};
+
+	class ClassDecl : public Statement
+	{
+	public:
+		DECLARE_AST_NODE( ClassDecl );
+
+		ClassDecl( const SourceLoc& loc,
+			Token name,
+			std::vector<std::unique_ptr<VarDecl>> fields,
+			std::vector<std::unique_ptr<FuncDecl>> methods,
+			std::vector<std::unique_ptr<NativeStmt>> natives )
+			:
+			Statement( loc ),
+			m_Name( std::move( name ) ),
+			m_Fields( std::move( fields ) ),
+			m_Methods( std::move( methods ) ),
+			m_Natives( std::move( natives ) )
+		{}
+
+		const Token& Name() { return m_Name; }
+		const std::vector<std::unique_ptr<VarDecl>>& Fields() const { return m_Fields; }
+		const std::vector<std::unique_ptr<FuncDecl>>& Methods() const { return m_Methods; }
+		const std::vector<std::unique_ptr<NativeStmt>>& Natives() const { return m_Natives; }
+	private:
+		Token m_Name;
+		std::vector<std::unique_ptr<VarDecl>> m_Fields;
+		std::vector<std::unique_ptr<FuncDecl>> m_Methods;
+		std::vector<std::unique_ptr<NativeStmt>> m_Natives;
 	};
 }

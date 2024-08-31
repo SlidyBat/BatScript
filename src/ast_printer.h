@@ -45,5 +45,6 @@ namespace Bat
 		virtual void VisitNativeStmt( NativeStmt* node ) override;
 		virtual void VisitVarDecl( VarDecl* node ) override;
 		virtual void VisitFuncDecl( FuncDecl* node ) override;
+		virtual void VisitClassDecl( ClassDecl* node ) override;
 	};
 }

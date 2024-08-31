@@ -42,6 +42,18 @@ namespace Bat
 		size_t m_nDefaults;
 	};
 
+	class BatConstructor : public BatCallable
+	{
+	public:
+		BatConstructor( FuncDecl* declaration );
+
+		virtual size_t NumDefaults() const override;
+		virtual BatObject Call( Interpreter& interpreter, const std::vector<BatObject>& args ) override;
+	private:
+		FuncDecl* m_pDeclaration;
+		size_t m_nDefaults;
+	};
+
 	class BatNative : public BatCallable
 	{
 	public:

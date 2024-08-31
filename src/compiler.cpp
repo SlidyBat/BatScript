@@ -879,17 +879,20 @@ namespace Bat
 			}
 		}
 
+		ErrorSysSource err_source( filename );
 		auto source = MemoryStream::FromFile( filename, FileMode::TEXT );
 
 		Lexer l( source.Base() );
 		auto tokens = l.Scan();
 
-		if( ErrorSys::HadError() ) return;
+		if( ErrorSys::HadError() )
+			return;
 
 		Parser p( std::move( tokens ) );
 		std::vector<std::unique_ptr<Statement>> res = p.Parse();
-
-		if( ErrorSys::HadError() ) return;
+		
+		if( ErrorSys::HadError() )
+			return;
 
 		std::string old_module = m_CurrentModule;
 		m_CurrentModule = node->ModuleName();

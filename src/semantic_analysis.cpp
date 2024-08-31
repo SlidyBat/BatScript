@@ -356,7 +356,7 @@ namespace Bat
 		{
 		case TypeKind::Array:
 		case TypeKind::Function:
-		case TypeKind::Named:
+		case TypeKind::Class:
 			return false;
 		case TypeKind::Primitive:
 			switch( type->AsPrimitive()->PrimKind() )
@@ -383,7 +383,7 @@ namespace Bat
 		{
 		case TypeKind::Array:
 		case TypeKind::Function:
-		case TypeKind::Named:
+		case TypeKind::Class:
 			return false;
 		case TypeKind::Primitive:
 			switch( type->AsPrimitive()->PrimKind() )
@@ -410,7 +410,7 @@ namespace Bat
 		{
 		case TypeKind::Array:
 		case TypeKind::Function:
-		case TypeKind::Named:
+		case TypeKind::Class:
 			return false;
 		case TypeKind::Primitive:
 			switch( type->AsPrimitive()->PrimKind() )
@@ -474,13 +474,29 @@ namespace Bat
 			return;
 		}
 
+		bool is_method_call = false;
+		Type* base_type = nullptr;
+
+		if( AttrExpr* attr = node->Function()->ToAttrExpr() )
+		{
+			if( VarExpr* var = attr->Base()->ToVarExpr() )
+			{
+				Symbol* sym = m_pSymTab->GetSymbol( var->Identifier().lexeme );
+				if( sym && sym->IsVariable() )
+				{
+					is_method_call = true;
+					base_type = GetExprType( attr->Base() );
+				}
+			}
+		}
+
 		FunctionSignature* sig = func_type->Signature();
 
-		if( !sig->VarArgs() && (node->NumArgs() != sig->NumParams()) ) // TODO: handle defaults
+		if( !sig->VarArgs() && (node->NumArgs() + is_method_call != sig->NumParams()) ) // TODO: handle defaults
 		{
 			Error( node->Location(), "Expected " + std::to_string( sig->NumParams() ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
 		}
-		else if( sig->VarArgs() && (node->NumArgs() < sig->NumParams()) ) // It's fine to have more params if its a varargs func
+		else if( sig->VarArgs() && (node->NumArgs() + is_method_call < sig->NumParams()) ) // It's fine to have more params if its a varargs func
 		{
 			Error( node->Location(), "Expected at least " + std::to_string( sig->NumParams() ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
 		}
@@ -489,8 +505,17 @@ namespace Bat
 			for( size_t i = 0; i < sig->NumParams(); i++ )
 			{
 				Type* expected_type = TypeSpecifierToType( sig->ParamType( i ) );
-				Type* arg_type = GetExprType( node->Arg( i ) );
 
+				Type* arg_type;
+				if( is_method_call )
+				{
+					arg_type = (i == 0) ? base_type : GetExprType( node->Arg( i - 1 ) );
+				}
+				else
+				{
+					arg_type = GetExprType( node->Arg( i ) );
+				}
+				
 				Type* coerced = Coerce( arg_type, expected_type );
 				if( !coerced )
 				{
@@ -539,22 +564,40 @@ namespace Bat
 	{
 		if( VarExpr* var = node->Base()->ToVarExpr() )
 		{
-			Symbol* var_sym = m_pSymTab->GetSymbol( var->Identifier().lexeme );
-			if( !var_sym )
+			Symbol* sym = m_pSymTab->GetSymbol( var->Identifier().lexeme );
+			if( !sym )
 			{
 				Error( node->Attr().loc, "Undefined variable '"+var->Identifier().lexeme+"'" );
 				return;
 			}
 
-			ModuleSymbol* module = var_sym->ToModule();
-			if( !module )
+			const SymbolTable* symtab = nullptr;
+
+			if( ModuleSymbol* module = sym->ToModule() )
 			{
-				Error( node->Attr().loc, "No such attribute" );
-				return;
+				symtab = module->SymTab();
+			}
+			else if( VariableSymbol* var_sym = sym->ToVariable() )
+			{
+				Type* var_type = var_sym->VarType();
+				if( !var_type )
+				{
+					Error( node->Attr().loc, "Unknown variable type" );
+					node->SetType( typeman.NewPrimitive( PrimitiveKind::Int ) );
+					return;
+				}
+
+				ClassType* class_type = var_type->ToClass();
+				if( !class_type )
+				{
+					Error( node->Attr().loc, "No such attribute" );
+					node->SetType( typeman.NewPrimitive( PrimitiveKind::Int ) );
+					return;
+				}
+
+				symtab = class_type->SymTab();
 			}
 
-			const SymbolTable* symtab = module->SymTab();
-			
 			Symbol* symbol = symtab->GetSymbol( node->Attr().lexeme );
 			if( !symbol )
 			{
@@ -757,17 +800,20 @@ namespace Bat
 			}
 		}
 
+		ErrorSysSource err_source( filename );
 		auto source = MemoryStream::FromFile( filename, FileMode::TEXT );
 
 		Lexer l( source.Base() );
 		auto tokens = l.Scan();
 
-		if( ErrorSys::HadError() ) return;
+		if( ErrorSys::HadError() )
+			return;
 
 		Parser p( std::move( tokens ) );
 		std::vector<std::unique_ptr<Statement>> res = p.Parse();
 
-		if( ErrorSys::HadError() ) return;
+		if( ErrorSys::HadError() )
+			return;
 
 		SymbolTable* old_symtab = m_pSymTab;
 		m_pSymTab = new SymbolTable();
@@ -886,7 +932,7 @@ namespace Bat
 	}
 	void SemanticAnalysis::VisitFuncDecl( FuncDecl* node )
 	{
-		if( !InGlobalScope() )
+		if( m_pCurrentFunc )
 		{
 			Error( node->Location(), "Nested functions are not permitted" );
 			return;
@@ -906,6 +952,12 @@ namespace Bat
 			else if( sig.ParamDefault( i ) && sig.ParamType( i ).HasTypeName() )
 			{
 				Type* param_type = TypeSpecifierToType( sig.ParamType( i ) );
+				if( !param_type )
+				{
+					Error( sig.ParamType( i ).TypeName().loc, "Unknown type '" + sig.ParamType( i ).TypeName().lexeme + "'" );
+					param_type = typeman.NewPrimitive( PrimitiveKind::Int );
+				}
+
 				Type* default_expr_type = GetExprType( sig.ParamDefault( i ) );
 				Type* coerced = Coerce( default_expr_type, param_type );
 				if( !coerced )
@@ -930,6 +982,11 @@ namespace Bat
 			else
 			{
 				Type* param_type = TypeSpecifierToType( sig.ParamType( i ) );
+				if( !param_type )
+				{
+					Error( sig.ParamType( i ).TypeName().loc, "Unknown type '" + sig.ParamType( i ).TypeName().lexeme + "'" );
+					param_type = typeman.NewPrimitive( PrimitiveKind::Int );
+				}
 				AddVariable( node, sig.ParamIdent( i ), param_type );
 			}
 		}
@@ -973,5 +1030,42 @@ namespace Bat
 
 		m_pCurrentFunc = nullptr;
 		PopScope();
+	}
+	void SemanticAnalysis::VisitClassDecl( ClassDecl* node )
+	{
+		if( !InGlobalScope() )
+		{
+			Error( node->Location(), "Class must be declared in global scope" );
+			return;
+		}
+
+		SymbolTable* old_symtab = m_pSymTab;
+		SymbolTable* class_symtab = new SymbolTable( old_symtab );
+		
+		m_pSymTab = class_symtab;
+
+		Type* type = typeman.NewClass( node, class_symtab );
+		if( !type )
+		{
+			Error( node->Name().loc, "Type name already exists" );
+			delete class_symtab;
+			m_pSymTab = old_symtab;
+			return;
+		}
+
+		for( const auto& field : node->Fields() )
+			VisitVarDecl( field.get() );
+		for( const auto& method : node->Methods() )
+			VisitFuncDecl( method.get() );
+		for( const auto& native : node->Natives() )
+			VisitNativeStmt( native.get() );
+
+		m_pSymTab = old_symtab;
+
+		if( !m_pSymTab->AddSymbol( node->Name().lexeme, std::make_unique<ClassSymbol>( node, class_symtab ) ) )
+		{
+			Error( node->Name().loc, "Type symbol already exists" );
+			return;
+		}
 	}
 }

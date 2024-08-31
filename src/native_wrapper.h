@@ -77,7 +77,7 @@ BatNativeCallback MakeNativeWrapper( std::function<void(Arg1, Arg2)> callback )
         std::decay_t<Arg1> arg1 = FromBatObject<std::decay_t<Arg1>>( args[0] );
         Arg2 arg2 = FromBatObject<Arg2>( args[1] );
         callback( arg1, arg2 );
-        BatObject();
+        return BatObject();
     };
 }
 

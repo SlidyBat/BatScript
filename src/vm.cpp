@@ -330,16 +330,16 @@ namespace Bat
 			switch( param_types[param_idx] )
 			{
 			case TYPE_BOOL:
-				params.emplace_back( (bool)Pop() );
+				params.emplace_back( BatObject::Bool( (bool)Pop() ) );
 				break;
 			case TYPE_INT:
-				params.emplace_back( (int64_t)Pop() );
+				params.emplace_back( BatObject::Int( (int64_t)Pop() ) );
 				break;
 			case TYPE_FLOAT:
-				params.emplace_back( (double)Pop() );
+				params.emplace_back( BatObject::Float( (double)Pop() ) );
 				break;
 			case TYPE_STR:
-				params.emplace_back( bc.string_literals[Pop()].c_str() );
+				params.emplace_back( BatObject::String( bc.string_literals[Pop()].c_str() ) );
 				break;
 			default:
 				assert( false );
@@ -351,13 +351,13 @@ namespace Bat
 		switch( result.type )
 		{
 		case TYPE_BOOL:
-			Push( result.Bool() );
+			Push( result.GetBool() );
 			break;
 		case TYPE_INT:
-			Push( result.Int() );
+			Push( result.GetInt() );
 			break;
 		case TYPE_FLOAT:
-			PushF( result.Float() );
+			PushF( result.GetFloat() );
 			break;
 		default:
 			assert( false );

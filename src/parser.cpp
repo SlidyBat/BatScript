@@ -85,7 +85,8 @@ namespace Bat
 		if( Check( TOKEN_BOOL ) ||
 			Check( TOKEN_INT ) ||
 			Check( TOKEN_FLOAT ) ||
-			Check( TOKEN_STRING ) )
+			Check( TOKEN_STRING ) ||
+			Check( TOKEN_IDENT ) )
 		{
 			Token type_name = Advance();
 			TypeSpecifier t( type_name );
@@ -161,7 +162,8 @@ namespace Bat
 			if( Check( TOKEN_DEF ) ||
 				Check( TOKEN_IF ) ||
 				Check( TOKEN_WHILE ) ||
-				Check( TOKEN_FOR ) )
+				Check( TOKEN_FOR ) ||
+				Check( TOKEN_CLASS ) )
 			{
 				return ParseCompoundStatement();
 			}
@@ -181,6 +183,7 @@ namespace Bat
 		if( Match( TOKEN_WHILE ) )  return ParseWhile();
 		if( Match( TOKEN_FOR ) )    return ParseFor();
 		if( Match( TOKEN_DEF ) )    return ParseFuncDeclaration();
+		if( Match( TOKEN_CLASS ) )  return ParseClassDeclaration();
 
 		assert( false && "Unexpected token" );
 		return nullptr;
@@ -234,7 +237,7 @@ namespace Bat
 		return std::make_unique<ExpressionStmt>( loc, std::move( expr ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParsePrint()
+	std::unique_ptr<PrintStmt> Parser::ParsePrint()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -243,7 +246,7 @@ namespace Bat
 		return stmt;
 	}
 
-	std::unique_ptr<Statement> Parser::ParseBlock()
+	std::unique_ptr<BlockStmt> Parser::ParseBlock()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -263,7 +266,7 @@ namespace Bat
 		return std::make_unique<BlockStmt>( loc, std::move( statements ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseIf()
+	std::unique_ptr<IfStmt> Parser::ParseIf()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -297,7 +300,7 @@ namespace Bat
 		return std::make_unique<IfStmt>( loc, std::move( condition ), std::move( then_branch ), std::move( else_branch ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseWhile()
+	std::unique_ptr<WhileStmt> Parser::ParseWhile()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -316,7 +319,7 @@ namespace Bat
 		return std::make_unique<WhileStmt>( loc, std::move( condition ), std::move( body ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseFor()
+	std::unique_ptr<ForStmt> Parser::ParseFor()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -348,7 +351,7 @@ namespace Bat
 		return std::make_unique<ForStmt>( loc, std::move( initializer ), std::move( condition ), std::move( increment ), std::move( body ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseReturn()
+	std::unique_ptr<ReturnStmt> Parser::ParseReturn()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -361,7 +364,7 @@ namespace Bat
 		return std::make_unique<ReturnStmt>( loc, std::move( ret_value ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseBreak()
+	std::unique_ptr<BreakStmt> Parser::ParseBreak()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -369,7 +372,7 @@ namespace Bat
 		return std::make_unique<BreakStmt>( loc );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseContinue()
+	std::unique_ptr<ContinueStmt> Parser::ParseContinue()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -377,7 +380,7 @@ namespace Bat
 		return std::make_unique<ContinueStmt>( loc );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseImportAs()
+	std::unique_ptr<ImportStmt> Parser::ParseImportAs()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -393,7 +396,7 @@ namespace Bat
 		return std::make_unique<ImportStmt>( loc, std::move( module_name ), std::move( as ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseFromImport()
+	std::unique_ptr<ImportStmt> Parser::ParseFromImport()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -420,7 +423,7 @@ namespace Bat
 		return std::make_unique<ImportStmt>( loc, std::move( module_name ), std::move( as ), std::move( import_list ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseNative()
+	std::unique_ptr<NativeStmt> Parser::ParseNative()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -429,7 +432,7 @@ namespace Bat
 		return std::make_unique<NativeStmt>( loc, std::move( sig ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseVarDeclaration()
+	std::unique_ptr<VarDecl> Parser::ParseVarDeclaration()
 	{
 		SourceLoc loc = Peek().loc;
 
@@ -455,7 +458,7 @@ namespace Bat
 		return std::make_unique<VarDecl>( loc, std::move( type_name ), ident, std::move( init ) );
 	}
 
-	std::unique_ptr<Statement> Parser::ParseFuncDeclaration()
+	std::unique_ptr<FuncDecl> Parser::ParseFuncDeclaration()
 	{
 		SourceLoc loc = Previous().loc;
 
@@ -473,6 +476,47 @@ namespace Bat
 		}
 
 		return std::make_unique<FuncDecl>( loc, std::move( sig ), std::move( body ) );
+	}
+
+	std::unique_ptr<ClassDecl> Parser::ParseClassDeclaration()
+	{
+		SourceLoc loc = Previous().loc;
+
+		Token name = Expect( TOKEN_IDENT, "Expected class name" );
+		Expect( TOKEN_COLON, "Expected ':' after class declaration" );
+		Expect( TOKEN_ENDOFLINE, "Expected new line after class declaration" );
+		Expect( TOKEN_INDENT, "Expected class body" );
+
+		std::vector<std::unique_ptr<VarDecl>> fields;
+		std::vector<std::unique_ptr<FuncDecl>> methods;
+		std::vector<std::unique_ptr<NativeStmt>> natives;
+
+		while( !Check( TOKEN_DEDENT ) && !AtEnd() )
+		{
+			if( Match( TOKEN_DEF ) )
+			{
+				methods.push_back( ParseFuncDeclaration() );
+			}
+			else if( Match( TOKEN_NATIVE ) )
+			{
+				natives.push_back( ParseNative() );
+			}
+			else if( Check( TOKEN_IDENT ) )
+			{
+				fields.push_back( ParseVarDeclaration() );
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		if( !AtEnd() )
+		{
+			Expect( TOKEN_DEDENT, "Expected dedent after block" );
+		}
+
+		return std::make_unique<ClassDecl>( loc, std::move( name ), std::move( fields ), std::move( methods ), std::move( natives ) );
 	}
 
 	FunctionSignature Parser::ParseFuncSignature()

@@ -16,9 +16,10 @@ namespace Bat
 		PrimitiveType* NewPrimitive( PrimitiveKind primkind );
 		ArrayType* NewArray( Type* inner );
 		FunctionType* NewFunction( FunctionSignature* sig );
-		NamedType* NewNamed( const std::string& name );
-	private:
+		ClassType* NewClass( ClassDecl* decl, class SymbolTable* symtab );
+
 		Type* GetType( const std::string& name ) const;
+	private:
 		bool AddType( const std::string& name, std::unique_ptr<Type> type );
 	private:
 		std::unordered_map<std::string, std::unique_ptr<Type>> m_mapTypes;
@@ -28,19 +29,9 @@ namespace Bat
 
 	inline Type* TypeSpecifierToType( const TypeSpecifier& type )
 	{
-		Type* t = nullptr;
-		switch( type.TypeName().type )
-		{
-		case TOKEN_INT:    t = typeman.NewPrimitive( PrimitiveKind::Int ); break;
-		case TOKEN_FLOAT:  t = typeman.NewPrimitive( PrimitiveKind::Float ); break;
-		case TOKEN_BOOL:   t = typeman.NewPrimitive( PrimitiveKind::Bool ); break;
-		case TOKEN_STRING: t = typeman.NewPrimitive( PrimitiveKind::String ); break;
-		case TOKEN_VOID:   t = typeman.NewPrimitive( PrimitiveKind::Void ); break;
-
-		default:
-			assert( !"Invalid type token" );
+		Type* t = typeman.GetType( type.TypeName().lexeme );
+		if ( !t )
 			return nullptr;
-		}
 
 		for( size_t i = 0; i < type.Rank(); i++ )
 			t = typeman.NewArray( t );
