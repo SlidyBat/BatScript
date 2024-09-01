@@ -490,8 +490,10 @@ namespace Bat
 	void SemanticAnalysis::VisitCallExpr( CallExpr* node )
 	{
 		Type* t = GetExprType( node->Function() );
-
+		bool is_method_call = false;
+		Type* base_type = nullptr;
 		FunctionSignature* sig = nullptr;
+
 		if( FunctionType* func_type = t->ToFunction() )
 		{
 			sig = func_type->Signature();
@@ -501,7 +503,15 @@ namespace Bat
 			Symbol* constructor = class_type->SymTab()->GetSymbolShallow( "constructor" );
 			if( constructor && constructor->IsFunction() )
 			{
-				sig = &constructor->Node()->AsFuncDecl()->Signature();
+				is_method_call = true;
+				base_type = class_type;
+
+				if( FuncDecl* constructor_decl = constructor->Node()->ToFuncDecl() )
+					sig = &constructor_decl->Signature();
+				else if( NativeStmt* constructor_native = constructor->Node()->ToNativeStmt() )
+					sig = &constructor_native->Signature();
+				else
+					Error( node->Location(), "Unhandled constructor type" );
 			}
 		}
 		else
@@ -511,8 +521,6 @@ namespace Bat
 			return;
 		}
 
-		bool is_method_call = false;
-		Type* base_type = nullptr;
 
 		if( AttrExpr* attr = node->Function()->ToAttrExpr() )
 		{
@@ -571,7 +579,10 @@ namespace Bat
 			}
 		}
 
-		node->SetType( sig ? sig->ReturnType() : t->AsClass() );
+		if( !t->IsClass() )
+			node->SetType( sig->ReturnType() );
+		else
+			node->SetType( t );
 	}
 	void SemanticAnalysis::VisitIndexExpr( IndexExpr* node )
 	{

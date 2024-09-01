@@ -1,6 +1,4 @@
-class Test:
-    def test(self: Test):
-        print "Test"
+from file import File
 
-t := Test()
-t.test()
+f := File("test2.bat", "r")
+print f.read(-1)

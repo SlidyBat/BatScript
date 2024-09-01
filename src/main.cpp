@@ -154,6 +154,10 @@ int fib( int n )
 int main( int argc, char** argv )
 {
 	BatModule file;
+	file.AddNative( "File.constructor", []( BatObject& file, std::string filename, std::string mode ) {
+		FILE* f = fopen( filename.c_str(), mode.c_str() );
+		file.SetOpaque( f );
+	} );
 	file.AddNative( "open", []( std::string filename, std::string mode ) {
 		FILE* f = fopen( filename.c_str(), mode.c_str() );
 		return BatObject::Object( "File", f );
