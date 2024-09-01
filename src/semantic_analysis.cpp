@@ -10,6 +10,7 @@
 namespace Bat
 {
 	static bool IsNumericType( Type* type );
+	static bool IsStringType( Type* type );
 	static bool IsIntegralType( Type* type );
 	static bool IsFloatType( Type* type );
 
@@ -332,6 +333,11 @@ namespace Bat
 				return;
 			}
 		}
+		else if( IsStringType( left ) && IsStringType( right ) )
+		{
+			node->SetType( left );
+			return;
+		}
 		else if( left->IsArray() )
 		{
 			Type* result = ArrayBinary( left->AsArray(), right, node->Op() );
@@ -373,6 +379,25 @@ namespace Bat
 
 		assert( false );
 		return false;
+	}
+
+	static bool IsStringType( Type* type )
+	{
+		if( !type ) return false;
+
+		switch( type->Kind() )
+		{
+		case TypeKind::Primitive:
+			switch( type->AsPrimitive()->PrimKind() )
+			{
+			case PrimitiveKind::String:
+				return true;
+			default:
+				return false;
+			}
+		default:
+			return false;
+		}
 	}
 
 	static bool IsIntegralType( Type* type )
