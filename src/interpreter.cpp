@@ -242,8 +242,27 @@ namespace Bat
 		try
 		{
 			BatObject func = Evaluate( node->Function() );
-			size_t num_args = node->NumArgs();
 			std::vector<BatObject> arguments;
+
+			if( func.Type() == TYPE_CLASS )
+			{
+				const Environment* env = func.GetClass();
+				BatObject result = BatObject::Object( env->Class().c_str() );
+
+				// TODO: Init fields
+
+				const BatObject* constructor = env->GetVarShallow( "constructor" );
+				if( constructor )
+				{
+					arguments.push_back( result );
+					for( size_t i = 0; i < node->NumArgs(); i++ )
+						arguments.push_back( Evaluate( node->Arg( i ) ) );
+					
+					constructor->Call( *this, arguments );
+				}
+				
+				BAT_RETURN( result );
+			}
 
 			if( AttrExpr* attr = node->Function()->ToAttrExpr() )
 			{
@@ -254,7 +273,7 @@ namespace Bat
 				}
 			}
 
-			for( size_t i = 0; i < num_args; i++ )
+			for( size_t i = 0; i < node->NumArgs(); i++ )
 			{
 				arguments.push_back( Evaluate( node->Arg( i ) ) );
 			}
@@ -308,7 +327,7 @@ namespace Bat
 		}
 		else if( base.Type() == TYPE_CLASS )
 		{
-			const BatObject* var = base.GetClass()->GetVar( node->Attr().lexeme );
+			const BatObject* var = base.GetClass()->GetVarShallow( node->Attr().lexeme );
 			assert( var );
 
 			BAT_RETURN( *var );

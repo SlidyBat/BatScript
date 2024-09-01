@@ -570,7 +570,7 @@ namespace Bat
 
 		throw BatObjectError( std::string( "Cannot bitwise-negate " ) + TypeToStr( type ) );
 	}
-	BatObject BatObject::Call( Interpreter& interpreter, const std::vector<BatObject>& args )
+	BatObject BatObject::Call( Interpreter& interpreter, const std::vector<BatObject>& args ) const
 	{
 		const ObjectType type = Type();
 

@@ -1,3 +1,6 @@
 class Test:
-    def test():
-        print "Test works"
+    def test(self: Test):
+        print "Test"
+
+t := Test()
+t.test()

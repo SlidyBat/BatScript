@@ -83,6 +83,12 @@ namespace Bat
 		return &it->second;
 	}
 
+	const BatObject* Environment::GetVarShallow( const std::string& name ) const
+	{
+		auto it = m_mapVariables.find( name );
+		return ( it == m_mapVariables.end() ) ? nullptr : &it->second;
+	}
+
 	bool Environment::SetVar( const std::string& name, const BatObject& value )
 	{
 		auto it = m_mapVariables.find( name );

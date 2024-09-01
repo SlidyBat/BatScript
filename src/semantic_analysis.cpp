@@ -491,8 +491,20 @@ namespace Bat
 	{
 		Type* t = GetExprType( node->Function() );
 
-		FunctionType* func_type = t->ToFunction();
-		if( !func_type )
+		FunctionSignature* sig = nullptr;
+		if( FunctionType* func_type = t->ToFunction() )
+		{
+			sig = func_type->Signature();
+		}
+		else if( ClassType* class_type = t->ToClass() )
+		{
+			Symbol* constructor = class_type->SymTab()->GetSymbolShallow( "constructor" );
+			if( constructor && constructor->IsFunction() )
+			{
+				sig = &constructor->Node()->AsFuncDecl()->Signature();
+			}
+		}
+		else
 		{
 			Error( node->Location(), "Expression is not callable" );
 			node->SetType( t );
@@ -515,19 +527,22 @@ namespace Bat
 			}
 		}
 
-		FunctionSignature* sig = func_type->Signature();
+		// Having nullptr sig can only mean we are calling an implicit constructor of a class
+		bool var_args = sig ? sig->VarArgs() : false;
+		size_t num_params = sig ? sig->NumParams() : 0;
 
-		if( !sig->VarArgs() && (node->NumArgs() + is_method_call != sig->NumParams()) ) // TODO: handle defaults
+
+		if( !var_args && (node->NumArgs() + is_method_call != num_params) ) // TODO: handle defaults
 		{
-			Error( node->Location(), "Expected " + std::to_string( sig->NumParams() ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
+			Error( node->Location(), "Expected " + std::to_string( num_params ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
 		}
-		else if( sig->VarArgs() && (node->NumArgs() + is_method_call < sig->NumParams()) ) // It's fine to have more params if its a varargs func
+		else if( var_args && (node->NumArgs() + is_method_call < num_params) ) // It's fine to have more params if its a varargs func
 		{
-			Error( node->Location(), "Expected at least " + std::to_string( sig->NumParams() ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
+			Error( node->Location(), "Expected at least " + std::to_string( num_params ) + " argument(s), got " + std::to_string( node->NumArgs() ) );
 		}
 		else
 		{
-			for( size_t i = 0; i < sig->NumParams(); i++ )
+			for( size_t i = 0; i < num_params; i++ )
 			{
 				Type* expected_type = TypeSpecifierToType( sig->ParamType( i ) );
 
@@ -556,7 +571,7 @@ namespace Bat
 			}
 		}
 
-		node->SetType( sig->ReturnType() );
+		node->SetType( sig ? sig->ReturnType() : t->AsClass() );
 	}
 	void SemanticAnalysis::VisitIndexExpr( IndexExpr* node )
 	{
@@ -1122,5 +1137,7 @@ namespace Bat
 			Error( node->Name().loc, "Type symbol already exists" );
 			return;
 		}
+
+		// TODO: Type check constructor method
 	}
 }

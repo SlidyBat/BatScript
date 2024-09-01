@@ -44,8 +44,13 @@ namespace Bat
 
 		return nullptr;
 	}
-	std::unique_ptr<Symbol> SymbolTable::TakeSymbol( const std::string& name )
-	{
+    Symbol *SymbolTable::GetSymbolShallow( const std::string &name ) const
+    {
+		auto it = m_mapSymbols.find( name );
+		return ( it != m_mapSymbols.end() ) ? it->second.get() : nullptr;
+    }
+    std::unique_ptr<Symbol> SymbolTable::TakeSymbol(const std::string &name)
+    {
 		auto it = m_mapSymbols.find( name );
 		if( it != m_mapSymbols.end() )
 		{

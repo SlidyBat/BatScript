@@ -21,6 +21,7 @@ namespace Bat
 		bool ExistsLocally( const std::string& name ) const;
 		bool AddVar( const std::string& name, BatObject value );
 		const BatObject* GetVar( const std::string& name ) const;
+		const BatObject* GetVarShallow( const std::string& name ) const;
 		bool SetVar( const std::string& name, const BatObject& value );
 		bool StealVarsFrom( Environment& from );
 		Environment* Enclosing() { return m_pEnclosing; }

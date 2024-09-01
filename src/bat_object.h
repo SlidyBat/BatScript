@@ -89,7 +89,7 @@ namespace Bat
 		BatObject Not();
 		BatObject Neg();
 		BatObject BitNeg();
-		BatObject Call( Interpreter& interpreter, const std::vector<BatObject>& args );
+		BatObject Call( Interpreter& interpreter, const std::vector<BatObject>& args ) const;
 		BatObject& Index( const BatObject& index );
 
 		bool IsTruthy() const;
