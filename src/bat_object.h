@@ -59,6 +59,7 @@ namespace Bat
 		static BatObject Int( int64_t i );
 		static BatObject Float( double f );
 		static BatObject String( const char* s );
+		static BatObject Bytes( const char* s, size_t len );
 		static BatObject Bool( bool s );
 		static BatObject Function( BatCallable* func );
 		static BatObject Array( const BatObject* arr, size_t arr_size );
@@ -91,31 +92,29 @@ namespace Bat
 		BatObject Call( Interpreter& interpreter, const std::vector<BatObject>& args );
 		BatObject& Index( const BatObject& index );
 
-		void Assign( const BatObject& other );
-
 		bool IsTruthy() const;
 
 		std::string ToString() const;
 
-		bool GetBool() const { assert( type == TYPE_BOOL ); return value.i64; }
-		int64_t GetInt() const { assert( type == TYPE_INT ); return value.i64; }
-		double GetFloat() const { assert( type == TYPE_FLOAT ); return value.f64; }
-		const char* GetString() const { assert( type == TYPE_STR ); return value.str; }
-		BatCallable* GetFunction() const { assert( type == TYPE_CALLABLE ); return value.func; }
-		BatObject* GetArray() const { assert( type == TYPE_ARRAY ); return value.arr; }
-		Environment* GetModule() const { assert( type == TYPE_MODULE ); return value.env; }
-		Environment* GetClass() const { assert( type == TYPE_CLASS ); return value.env; }
+		ObjectType Type() const { return impl ? impl->type : TYPE_NULL; }
 
-		void* GetOpaque() const { assert( type == TYPE_OBJECT ); return value.opaque; }
-		void SetOpaque( void* opaque ) { assert( type == TYPE_OBJECT ); value.opaque = opaque; }
+		bool GetBool() const { assert( Type() == TYPE_BOOL ); return Value().i64; }
+		int64_t GetInt() const { assert( Type() == TYPE_INT ); return Value().i64; }
+		double GetFloat() const { assert( Type() == TYPE_FLOAT ); return Value().f64; }
+		const char* GetString() const { assert( Type() == TYPE_STR ); return Value().str; }
+		BatCallable* GetFunction() const { assert( Type() == TYPE_CALLABLE ); return Value().func; }
+		BatObject* GetArray() const { assert( Type() == TYPE_ARRAY ); return Value().arr; }
+		Environment* GetModule() const { assert( Type() == TYPE_MODULE ); return Value().env; }
+		Environment* GetClass() const { assert( Type() == TYPE_CLASS ); return Value().env; }
 
+		void* GetOpaque() const { assert( Type() == TYPE_OBJECT ); return Value().opaque; }
+		void SetOpaque( void* opaque ) { assert( Type() == TYPE_OBJECT ); Value().opaque = opaque; }
+		const char* Classname() const { assert( Type() == TYPE_OBJECT ); return impl->classname; }
 		const BatObject& GetField( const std::string& name ) const;
 		void SetField( const std::string& name, BatObject value );
 	private:
-		void Copy( const BatObject& other );
-		void Move( const BatObject& other );
+		static BatObject New( ObjectType type );
 	public:
-		ObjectType type = TYPE_UNDEFINED;
 		union ObjectValues
 		{
 			ObjectValues() {}
@@ -128,10 +127,25 @@ namespace Bat
 			BatObject* arr;
 			Environment* env;
 			void* opaque;
-		} value;
-		size_t arr_size = 0;
-		const char* classname;
-		std::unordered_map<std::string, BatObject> fields;
+		};
+
+		const ObjectValues& Value() const { return impl->value; }
+		ObjectValues& Value() { return impl->value; }
+	private:
+		struct BatObjectImpl
+		{
+			BatObjectImpl();
+			~BatObjectImpl();
+
+			ObjectType type = TYPE_UNDEFINED;
+			int refcnt = 1;
+			ObjectValues value;
+			size_t arr_size = 0;
+			const char* classname = nullptr;
+			std::unordered_map<std::string, BatObject> fields;
+		};
+
+		BatObjectImpl* impl = nullptr;
 	};
 
 	template <typename T>

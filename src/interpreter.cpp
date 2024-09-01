@@ -74,7 +74,7 @@ namespace Bat
 			if( !obj )
 				throw RuntimeError( "Function '" + func_name + "' not found" );
 			
-			if( obj->type != TYPE_CALLABLE )
+			if( obj->Type() != TYPE_CALLABLE )
 			{
 				throw RuntimeError( "Object '" + func_name + "' is not callable" );
 			}
@@ -248,7 +248,7 @@ namespace Bat
 			if( AttrExpr* attr = node->Function()->ToAttrExpr() )
 			{
 				BatObject base = Evaluate( attr->Base() );
-				if( base.type == TYPE_OBJECT )
+				if( base.Type() == TYPE_OBJECT )
 				{
 					arguments.push_back( std::move( base ) );
 				}
@@ -283,7 +283,7 @@ namespace Bat
 	void Interpreter::VisitAttrExpr( AttrExpr* node )
 	{
 		BatObject base = Evaluate( node->Base() );
-		if( base.type == TYPE_MODULE )
+		if( base.Type() == TYPE_MODULE )
 		{
 			Environment* env = base.GetModule();
 
@@ -292,21 +292,21 @@ namespace Bat
 			
 			BAT_RETURN( *var );
 		}
-		else if( base.type == TYPE_OBJECT )
+		else if( base.Type() == TYPE_OBJECT )
 		{
-			const BatObject& base_class = GetVar( base.classname, node->Location() );
+			const BatObject& base_class = GetVar( base.Classname(), node->Location() );
 
 			const BatObject* var = base_class.GetClass()->GetVar( node->Attr().lexeme );
 			assert( var );
 
-			if( var->type == TYPE_CALLABLE )
+			if( var->Type() == TYPE_CALLABLE )
 			{
 				BAT_RETURN( *var );
 			}
 
 			BAT_RETURN( var->GetField( node->Attr().lexeme ) );
 		}
-		else if( base.type == TYPE_CLASS )
+		else if( base.Type() == TYPE_CLASS )
 		{
 			const BatObject* var = base.GetClass()->GetVar( node->Attr().lexeme );
 			assert( var );

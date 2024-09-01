@@ -26,6 +26,7 @@ namespace Bat
 	class BatCallable
 	{
 	public:
+		virtual ~BatCallable() = default;
 		virtual size_t NumDefaults() const = 0;
 		virtual BatObject Call( Interpreter& interpreter, const std::vector<BatObject>& args ) = 0;
 	};

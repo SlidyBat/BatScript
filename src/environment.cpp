@@ -60,9 +60,9 @@ namespace Bat
 			return false;
 		}
 
-		if( value.type == TYPE_CLASS )
+		if( value.Type() == TYPE_CLASS )
 		{
-			value.value.env->m_pEnclosing = this;
+			value.Value().env->m_pEnclosing = this;
 		}
 
 		m_mapVariables[name] = std::move( value );
@@ -105,7 +105,7 @@ namespace Bat
 	{
 		for( auto& it : from.m_mapVariables )
 		{
-			if( it.second.type == TYPE_MODULE )
+			if( it.second.Type() == TYPE_MODULE )
 				continue;
 			
 			if( !AddVar( it.first, std::move( it.second ) ) )

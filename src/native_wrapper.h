@@ -5,7 +5,6 @@
 
 namespace Bat
 {
-
 template <typename Ret>
 BatNativeCallback MakeNativeWrapper( std::function<Ret()> callback )
 {
@@ -17,14 +16,15 @@ BatNativeCallback MakeNativeWrapper( std::function<Ret()> callback )
         return ToBatObject<Ret>( result );
     };
 }
-template <typename Ret>
-BatNativeCallback MakeNativeWrapper( std::function<void()> callback )
+
+template <>
+inline BatNativeCallback MakeNativeWrapper<void>( std::function<void()> callback )
 {
     return [callback]( const std::vector<BatObject>& args ) {
         if( args.size() != 0 )
             throw BatObjectError( "Native call argument mismatch" );
 
-        Ret result = callback();
+        callback();
         return BatObject();
     };
 }

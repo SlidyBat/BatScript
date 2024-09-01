@@ -348,7 +348,7 @@ namespace Bat
 
 		BatObject result = (*callback)( params );
 
-		switch( result.type )
+		switch( result.Type() )
 		{
 		case TYPE_BOOL:
 			Push( result.GetBool() );
