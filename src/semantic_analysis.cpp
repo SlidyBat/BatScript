@@ -586,15 +586,14 @@ namespace Bat
 	}
 	void SemanticAnalysis::VisitIndexExpr( IndexExpr* node )
 	{
-		Type* arr_type = GetExprType( node->Array() );
-		if( !arr_type->IsArray() )
+		Type* node_type = GetExprType( node->Array() );
+		if( !node_type->IsArray() &&
+			!( node_type->IsPrimitive() && node_type->AsPrimitive()->PrimKind() == PrimitiveKind::String ) )
 		{
-			Error( node->Array()->Location(), "Expression does not evaluate to array" );
-			node->SetType( arr_type );
+			Error( node->Array()->Location(), "Expression does not evaluate to array or string" );
+			node->SetType( node_type );
 			return;
 		}
-
-		Type* inner = arr_type->AsArray()->Inner();
 
 		Type* int_type = typeman.NewPrimitive( PrimitiveKind::Int );
 		Type* index_type = GetExprType( node->Index() );
@@ -609,7 +608,58 @@ namespace Bat
 			node->SetIndex( std::move( cast ) );
 		}
 
-		node->SetType( inner );
+		if ( node_type->IsArray() )
+		{
+			Type* inner = node_type->AsArray()->Inner();
+			node->SetType( inner );
+		}
+		else
+		{
+			node->SetType( node_type );
+		}
+	}
+	void SemanticAnalysis::VisitSliceExpr( SliceExpr* node )
+	{
+		Type* node_type = GetExprType( node->Array() );
+		if( !node_type->IsArray() &&
+			!( node_type->IsPrimitive() && node_type->AsPrimitive()->PrimKind() == PrimitiveKind::String ) )
+		{
+			Error( node->Array()->Location(), "Expression does not evaluate to array or string" );
+			node->SetType( node_type );
+			return;
+		}
+
+		Type* int_type = typeman.NewPrimitive( PrimitiveKind::Int );
+		if ( node->BeginIndex() )
+		{
+			Type* index_type = GetExprType( node->BeginIndex() );
+			Type* coerced = Coerce( index_type, int_type );
+			if( !coerced )
+			{
+				Error( node->BeginIndex()->Location(), "Slice begin index must evaluate to integer" );
+			}
+			else if( coerced != index_type )
+			{
+				auto cast = std::make_unique<CastExpr>( node->TakeBeginIndex(), int_type );
+				node->SetBeginIndex( std::move( cast ) );
+			}
+		}
+		if ( node->EndIndex() )
+		{
+			Type* index_type = GetExprType( node->EndIndex() );
+			Type* coerced = Coerce( index_type, int_type );
+			if( !coerced )
+			{
+				Error( node->EndIndex()->Location(), "Slice end index must evaluate to integer" );
+			}
+			else if( coerced != index_type )
+			{
+				auto cast = std::make_unique<CastExpr>( node->TakeEndIndex(), int_type );
+				node->SetEndIndex( std::move( cast ) );
+			}
+		}
+
+		node->SetType( node_type );
 	}
 	void SemanticAnalysis::VisitAttrExpr( AttrExpr* node )
 	{

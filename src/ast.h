@@ -20,6 +20,7 @@
 	_( VarExpr ) \
 	_( CallExpr ) \
 	_( IndexExpr ) \
+	_( SliceExpr ) \
 	_( AttrExpr ) \
 	_( CastExpr ) \
 	/* Statements */ \
@@ -302,6 +303,32 @@ namespace Bat
 	private:
 		std::unique_ptr<Expression> m_pArray;
 		std::unique_ptr<Expression> m_pIndex;
+	};
+
+	class SliceExpr : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( SliceExpr );
+
+		SliceExpr( const SourceLoc& loc, std::unique_ptr<Expression> arr, std::unique_ptr<Expression> begin, std::unique_ptr<Expression> end )
+			:
+			Expression( loc ),
+			m_pArray( std::move( arr ) ),
+			m_pBeginIndex( std::move( begin ) ),
+			m_pEndIndex( std::move( end ) )
+		{}
+
+		Expression* Array() { return m_pArray.get(); }
+		Expression* BeginIndex() { return m_pBeginIndex.get(); }
+		Expression* EndIndex() { return m_pEndIndex.get(); }
+		std::unique_ptr<Expression> TakeBeginIndex() { return std::move( m_pBeginIndex ); }
+		void SetBeginIndex( std::unique_ptr<Expression> expr ) { m_pBeginIndex = std::move( expr ); }
+		std::unique_ptr<Expression> TakeEndIndex() { return std::move( m_pEndIndex ); }
+		void SetEndIndex( std::unique_ptr<Expression> expr ) { m_pEndIndex = std::move( expr ); }
+	private:
+		std::unique_ptr<Expression> m_pArray;
+		std::unique_ptr<Expression> m_pBeginIndex;
+		std::unique_ptr<Expression> m_pEndIndex;
 	};
 
 	class AttrExpr : public LValueExpr

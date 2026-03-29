@@ -167,18 +167,19 @@ int main( int argc, char** argv )
 	} );
 	file.AddNative( "File.read", []( void* file, int size ) {
 		auto* f = (FILE*)file;
-		if ( size < 0 )
-		{
-			long pos = ftell( f );
-			fseek( f, 0, SEEK_END );
-			long end = ftell( f );
-			fseek( f, pos, SEEK_SET );
-			size = (end - pos);
-		}
 
-		auto data = std::make_unique<char[]>( size + 1 );
+		long pos = ftell( f );
+		fseek( f, 0, SEEK_END );
+		long end = ftell( f );
+		fseek( f, pos, SEEK_SET );
+		size_t remaining = (size_t)(end - pos);
+
+		if ( (size_t)size > remaining )
+			size = remaining;
+
+		auto data = std::make_unique<char[]>( size );
 		fread( data.get(), size, 1, f );
-		return BatObject::String( data.get() );
+		return BatObject::Bytes( data.get(), size );
 	} );
 	file.AddNative( "File.write", []( void* file, std::string data ) {
 		auto* f = (FILE*)file;

@@ -11,14 +11,14 @@ namespace Bat
 	public:
 		~StringPool();
 
-		const char* AddString( const std::string& str );
+		const char* AddString( std::string str );
 	private:
 		class StringEntry
 		{
 		public:
-			StringEntry( const std::string& str )
+			StringEntry( std::string str )
 				:
-				str( str )
+				str( std::move( str ) )
 			{}
 			~StringEntry()
 			{

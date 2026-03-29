@@ -583,11 +583,11 @@ namespace Bat
 
 		return value.func->Call( interpreter, args );
 	}
-	BatObject& BatObject::Index( const BatObject& index )
+	BatObject BatObject::Index( const BatObject& index )
 	{
 		const ObjectType type = Type();
 
-		if( type != TYPE_ARRAY )
+		if( type != TYPE_ARRAY && type != TYPE_STR )
 		{
 			throw BatObjectError( std::string( "Cannot index " ) + TypeToStr( type ) );
 		}
@@ -604,14 +604,68 @@ namespace Bat
 		{
 			i += impl->arr_size;
 		}
-#ifdef _DEBUG
-		if( i >= (int64_t)impl->arr_size )
+
+		if( (uint64_t)i >= impl->arr_size )
 		{
 			throw BatObjectError( std::string( "Array index " ) + std::to_string( i ) + " out of bounds" );
 		}
-#endif
 
-		return value.arr[i];
+		if ( type == TYPE_ARRAY )
+		{
+			return value.arr[i];
+		}
+		else
+		{
+			return BatObject::Bytes( &value.str[i], 1 );
+		}
+	}
+	BatObject BatObject::Slice( const BatObject& begin, const BatObject& end )
+	{
+		const ObjectType type = Type();
+
+		if( type != TYPE_ARRAY && type != TYPE_STR )
+		{
+			throw BatObjectError( std::string( "Cannot slice " ) + TypeToStr( type ) );
+		}
+
+		if( begin.Type() != TYPE_NULL && begin.Type() != TYPE_INT )
+		{
+			throw BatObjectError( std::string( "Slice begin index must be an integer" ) );
+		}
+		if( end.Type() != TYPE_NULL && end.Type() != TYPE_INT )
+		{
+			throw BatObjectError( std::string( "Slice end index must be an integer" ) );
+		}
+
+		const ObjectValues& value = Value();
+
+		int64_t begin_i = (begin.Type() == TYPE_INT) ? begin.GetInt() : 0;
+		if( begin_i < 0 )
+		{
+			begin_i += impl->arr_size;
+			if ( begin_i < 0 )
+				begin_i = 0;
+		}
+		if( begin_i > impl->arr_size )
+			begin_i = impl->arr_size;
+
+		int64_t end_i = (end.Type() == TYPE_INT) ? end.GetInt() : impl->arr_size;
+		if( end_i < 0 )
+		{
+			end_i += impl->arr_size;
+			if ( end_i < 0 )
+				end_i = 0;
+		}
+		if( end_i > impl->arr_size )
+			end_i = impl->arr_size;
+
+		if ( end_i < begin_i )
+			end_i = begin_i;
+
+		if ( type == TYPE_ARRAY )
+			return BatObject::Array( &value.arr[begin_i], end_i - begin_i );
+		else
+			return BatObject::Bytes( &value.str[begin_i], end_i - begin_i );
 	}
 	std::string BatObject::ToString() const
 	{
@@ -642,6 +696,7 @@ namespace Bat
 					s += ",";
 				}
 				s += "]";
+				return s;
 			}
 			case TYPE_MODULE:
 				return "module";

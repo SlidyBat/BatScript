@@ -616,6 +616,10 @@ namespace Bat
 
 		assert( false );
 	}
+	void Compiler::VisitSliceExpr( SliceExpr* node )
+	{
+		assert( false );
+	}
 	void Compiler::VisitAttrExpr( AttrExpr* node )
 	{
 		UpdateCurrLine( node );

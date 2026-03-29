@@ -383,7 +383,60 @@ namespace Bat
 		}
 	}
 
-	void Lexer::String(char quote)
+	int HexDigit( char c )
+	{
+		if ( c >= 'a' )
+			return c - 'a' + 0xa;
+		if ( c >= 'A' )
+			return c - 'A' + 0xa;
+		return c - '0';
+	}
+
+	std::string EscapeString( const std::string_view& str )
+	{
+		std::string result;
+		result.reserve( str.length() );
+		for ( size_t i = 0; i < str.length(); i++ )
+		{
+			char c = str[i];
+			size_t remaining = (str.length() - i);
+			if ( c == '\\' && remaining > 1 )
+			{
+				char next = str[i+1];
+				switch ( next )
+				{
+					case 'n':
+						c = '\n';
+						i += 1;
+						break;
+					case 't':
+						c = '\t';
+						i += 1;
+						break;
+					case 'r':
+						c = '\r';
+						i += 1;
+						break;
+					case '\\':
+						c = '\\';
+						i += 1;
+						break;
+					case 'x':
+						if ( remaining >= 4 && isxdigit( str[i+2] ) && isxdigit( str[i+3] ) )
+						{
+							c = (HexDigit( str[i+2] ) << 4) | HexDigit( str[i+3] );
+							i += 3;
+						}
+						break;
+				}
+			}
+
+			result.push_back( c );
+		}
+		return result;
+	}
+
+	void Lexer::String( char quote )
 	{
 		while( !AtEnd() && Peek() != quote )
 		{
@@ -404,7 +457,8 @@ namespace Bat
 		Advance(); // Eat ending quote
 
 		std::string lexeme = GetCurrLexeme();
-		const char* str = stringpool.AddString( m_szText.substr( m_iStart + 1, m_iCurrent - m_iStart - 2 ) );
+		std::string escaped = EscapeString( m_szText.substr( m_iStart + 1, m_iCurrent - m_iStart - 2 ) );
+		const char* str = stringpool.AddString( std::move( escaped ) );
 
 		m_Tokens.emplace_back( str, lexeme, m_iLine, GetCurrColumn() );
 	}

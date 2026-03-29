@@ -301,14 +301,14 @@ namespace Bat
 	{
 		m_iIP = (int)addr;
 	}
-    const BatModule *VirtualMachine::FindModule(const std::string &name) const
+    const BatModule *VirtualMachine::FindModule( const std::string &name ) const
     {
 		auto it = m_Modules.find( name );
 		if( it == m_Modules.end() )
 			return nullptr;
 		return &it->second;
     }
-    void VirtualMachine::HandleNative(const BatCode &bc, const BatNativeInfo &native)
+    void VirtualMachine::HandleNative( const BatCode &bc, const BatNativeInfo &native )
     {
 		const BatModule* module = FindModule( native.module );
 		if( !module )

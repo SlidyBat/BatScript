@@ -299,6 +299,26 @@ namespace Bat
 			throw RuntimeError( node->Location(), e.what() );
 		}
 	}
+	void Interpreter::VisitSliceExpr( SliceExpr* node )
+	{
+		try
+		{
+			BatObject arr = Evaluate( node->Array() );
+
+			BatObject begin;
+			if ( node->BeginIndex() )
+				begin = Evaluate( node->BeginIndex() );
+			BatObject end;
+			if ( node->EndIndex() )
+				end = Evaluate( node->EndIndex() );
+
+			BAT_RETURN( arr.Slice( begin, end ) );
+		}
+		catch( const BatObjectError& e )
+		{
+			throw RuntimeError( node->Location(), e.what() );
+		}
+	}
 	void Interpreter::VisitAttrExpr( AttrExpr* node )
 	{
 		BatObject base = Evaluate( node->Base() );

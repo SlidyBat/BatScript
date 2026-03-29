@@ -95,6 +95,16 @@ namespace Bat
 		PrintNode( node->Index() );
 	}
 
+	void AstPrinter::VisitSliceExpr( SliceExpr* node )
+	{
+		std::cout << "slice";
+		PrintNode( node->Array() );
+		if ( node->BeginIndex() )
+			PrintNode( node->BeginIndex() );
+		if ( node->EndIndex() )
+			PrintNode( node->EndIndex() );
+	}
+
 	void AstPrinter::VisitAttrExpr( AttrExpr* node )
 	{
 		std::cout << "attr " << node->Attr().lexeme;

@@ -791,11 +791,28 @@ namespace Bat
 
 		Expect( TOKEN_LBRACKET, "Expected '['" );
 
-		auto index = ParseExpression();
+		std::unique_ptr<Expression> index;
 
-		Expect( TOKEN_RBRACKET, "Expected ']'" );
+		if ( !Check( TOKEN_COLON ) )
+			index = ParseExpression();
+		
+		if ( Match( TOKEN_COLON ) )
+		{
+			std::unique_ptr<Expression> end;
 
-		return std::make_unique<IndexExpr>( loc, std::move( left ), std::move( index ) );
+			if ( !Check( TOKEN_RBRACKET ) )
+				end = ParseExpression();
+
+			Expect( TOKEN_RBRACKET, "Expected ']'" );
+
+			return std::make_unique<SliceExpr>( loc, std::move( left ), std::move( index ), std::move( end ) );
+		}
+		else
+		{
+			Expect( TOKEN_RBRACKET, "Expected ']'" );
+
+			return std::make_unique<IndexExpr>( loc, std::move( left ), std::move( index ) );
+		}
 	}
 
 	std::unique_ptr<Expression> Parser::ParseAttr( std::unique_ptr<Expression> left )
