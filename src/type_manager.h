@@ -15,6 +15,7 @@ namespace Bat
 		TypeManager();
 		PrimitiveType* NewPrimitive( PrimitiveKind primkind );
 		ArrayType* NewArray( Type* inner );
+		TupleType* NewTuple( const std::vector<Type*>& elements );
 		FunctionType* NewFunction( FunctionSignature* sig );
 		ClassType* NewClass( ClassDecl* decl, const class SymbolTable* symtab );
 

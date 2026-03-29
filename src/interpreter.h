@@ -38,6 +38,7 @@ namespace Bat
 		virtual void VisitStringLiteral( StringLiteral* node ) override;
 		virtual void VisitTokenLiteral( TokenLiteral* node ) override;
 		virtual void VisitArrayLiteral( ArrayLiteral* node ) override;
+		virtual void VisitTupleLiteral( TupleLiteral* node ) override;
 		virtual void VisitBinaryExpr( BinaryExpr* node ) override;
 		virtual void VisitUnaryExpr( UnaryExpr* node ) override;
 		virtual void VisitCallExpr( CallExpr* node ) override;

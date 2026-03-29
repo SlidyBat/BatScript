@@ -13,6 +13,7 @@
 	_( StringLiteral ) \
 	_( TokenLiteral ) /* For any literals that can be represented by their token type (e.g. true, false, null) */ \
 	_( ArrayLiteral ) /* List of values that evaluate to an array. E.g. "[1, 2, 3]" */ \
+	_( TupleLiteral ) /* Tuple of values. E.g. "(1, 2, 3)" */ \
 	/* Expressions */ \
 	_( BinaryExpr ) \
 	_( UnaryExpr ) \
@@ -179,6 +180,22 @@ namespace Bat
 		DECLARE_AST_NODE( ArrayLiteral );
 
 		ArrayLiteral( const SourceLoc& loc, std::vector<std::unique_ptr<Expression>> values ) : Expression( loc ), m_pValues( std::move( values ) ) {}
+
+		size_t NumValues() const { return m_pValues.size(); }
+		Expression* ValueAt( size_t index ) const { return m_pValues[index].get(); }
+	private:
+		std::vector<std::unique_ptr<Expression>> m_pValues;
+	};
+
+	class TupleLiteral : public Expression
+	{
+	public:
+		DECLARE_AST_NODE( TupleLiteral );
+
+		TupleLiteral( const SourceLoc& loc, std::vector<std::unique_ptr<Expression>> values ) :
+			Expression( loc ),
+			m_pValues( std::move( values ) )
+		{}
 
 		size_t NumValues() const { return m_pValues.size(); }
 		Expression* ValueAt( size_t index ) const { return m_pValues[index].get(); }

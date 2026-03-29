@@ -74,6 +74,31 @@ namespace Bat
 		return res;
 	}
 
+	TupleType* TypeManager::NewTuple( const std::vector<Type*>& elements )
+	{
+		std::string type_name = "(";
+		for( size_t i = 0; i < elements.size(); i++ )
+		{
+			if( i > 0 ) type_name += ", ";
+			type_name += elements[i]->ToString();
+		}
+		if( elements.size() == 1 ) type_name += ",";
+		type_name += ")";
+
+		if( Type* existing = GetType( type_name ) )
+		{
+			return existing->AsTuple();
+		}
+
+		auto new_tuple = std::make_unique<TupleType>( elements );
+		auto res = new_tuple.get();
+		if( !AddType( type_name, std::move( new_tuple ) ) )
+		{
+			return nullptr;
+		}
+		return res;
+	}
+
 	FunctionType* TypeManager::NewFunction( FunctionSignature* sig )
 	{
 		return new FunctionType( sig );

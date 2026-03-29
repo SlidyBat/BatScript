@@ -174,6 +174,18 @@ namespace Bat
 
 		BAT_RETURN( obj );
 	}
+	void Interpreter::VisitTupleLiteral( TupleLiteral* node )
+	{
+		auto tuple = std::make_unique<BatObject[]>( node->NumValues() );
+		for( size_t i = 0; i < node->NumValues(); i++ )
+		{
+			tuple[i] = Evaluate( node->ValueAt( i ) );
+		}
+
+		BatObject obj = BatObject::Tuple( tuple.get(), node->NumValues() );
+
+		BAT_RETURN( obj );
+	}
 	void Interpreter::VisitBinaryExpr( BinaryExpr* node )
 	{
 		try

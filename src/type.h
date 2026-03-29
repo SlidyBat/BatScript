@@ -1,12 +1,14 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <cassert>
 #include "token.h"
 
 #define TYPE_KINDS(_) \
 	_(Primitive) \
 	_(Array) \
+	_(Tuple) \
 	_(Function) \
 	_(Class) \
 
@@ -131,6 +133,41 @@ namespace Bat
 		Type* m_pInner;
 	};
 
+	class TupleType : public Type
+	{
+	public:
+		TupleType( std::vector<Type*> elements )
+			:
+			m_Elements( std::move( elements ) ),
+			Type( TypeKind::Tuple )
+		{}
+
+		virtual std::string ToString() const override
+		{
+			std::string result = "(";
+			for( size_t i = 0; i < m_Elements.size(); i++ )
+			{
+				if( i > 0 ) result += ", ";
+				result += m_Elements[i]->ToString();
+			}
+			if( m_Elements.size() == 1 ) result += ",";
+			result += ")";
+			return result;
+		}
+
+		virtual size_t Size() const override
+		{
+			return sizeof( int64_t );
+		}
+
+		size_t NumElements() const { return m_Elements.size(); }
+		Type* ElementAt( size_t index ) { return m_Elements[index]; }
+		const Type* ElementAt( size_t index ) const { return m_Elements[index]; }
+		const std::vector<Type*>& Elements() const { return m_Elements; }
+	private:
+		std::vector<Type*> m_Elements;
+	};
+
 	class FunctionType : public Type
 	{
 	public:
@@ -206,6 +243,19 @@ namespace Bat
 		if( a->IsArray() && b->IsArray() )
 		{
 			return IsSameType( a->ToArray()->Inner(), b->ToArray()->Inner() );
+		}
+
+		if( a->IsTuple() && b->IsTuple() )
+		{
+			TupleType* ta = a->AsTuple();
+			TupleType* tb = b->AsTuple();
+			if( ta->NumElements() != tb->NumElements() )
+				return false;
+			for( size_t i = 0; i < ta->NumElements(); i++ )
+			{
+				if( !IsSameType( ta->ElementAt( i ), tb->ElementAt( i ) ) ) return false;
+			}
+			return true;
 		}
 
 		if( a->IsClass() && b->IsClass() )

@@ -515,6 +515,12 @@ namespace Bat
 
 		assert( false );
 	}
+	void Compiler::VisitTupleLiteral( TupleLiteral* node )
+	{
+		UpdateCurrLine( node );
+
+		assert( false );
+	}
 	void Compiler::VisitBinaryExpr( BinaryExpr* node )
 	{
 		UpdateCurrLine( node );

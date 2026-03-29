@@ -65,6 +65,15 @@ namespace Bat
 		}
 	}
 
+	void AstPrinter::VisitTupleLiteral( TupleLiteral* node )
+	{
+		std::cout << "()";
+		for( size_t i = 0; i < node->NumValues(); i++ )
+		{
+			PrintNode( node->ValueAt( i ) );
+		}
+	}
+
 	void AstPrinter::VisitBinaryExpr( BinaryExpr* node )
 	{
 		std::cout << TokenTypeToString( node->Op() );

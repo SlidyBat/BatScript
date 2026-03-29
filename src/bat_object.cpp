@@ -19,6 +19,7 @@ namespace Bat
 			case TYPE_STR:       return "string";
 			case TYPE_CALLABLE:  return "function";
 			case TYPE_ARRAY:     return "array";
+			case TYPE_TUPLE:     return "tuple";
 			case TYPE_MODULE:    return "module";
 			case TYPE_CLASS:     return "class";
 			case TYPE_OBJECT:    return "object";
@@ -120,10 +121,35 @@ namespace Bat
 	{
 		BatObject object = BatObject::New( TYPE_ARRAY );
 		object.impl->arr_size = size;
-		object.Value().arr = new BatObject[size];
-		for( size_t i = 0; i < size; i++ )
+		if( size > 0 )
 		{
-			object.Value().arr[i] = arr[i];
+			object.Value().arr = new BatObject[size];
+			for( size_t i = 0; i < size; i++ )
+			{
+				object.Value().arr[i] = arr[i];
+			}
+		}
+		else
+		{
+			object.Value().arr = nullptr;
+		}
+		return object;
+	}
+	BatObject BatObject::Tuple( const BatObject* elements, size_t size )
+	{
+		BatObject object = BatObject::New( TYPE_TUPLE );
+		object.impl->arr_size = size;
+		if( size > 0 )
+		{
+			object.Value().arr = new BatObject[size];
+			for( size_t i = 0; i < size; i++ )
+			{
+				object.Value().arr[i] = elements[i];
+			}
+		}
+		else
+		{
+			object.Value().arr = nullptr;
 		}
 		return object;
 	}
@@ -361,6 +387,13 @@ namespace Bat
 						if ( !value.arr[i].CmpEq( rhs_value.arr[i] ).IsTruthy() )
 							return BatObject::False();
 					return BatObject::True();
+				case TYPE_TUPLE:
+					if ( impl->arr_size != rhs.impl->arr_size )
+						return BatObject::False();
+					for ( size_t i = 0; i < impl->arr_size; i++ )
+						if ( !value.arr[i].CmpEq( rhs_value.arr[i] ).IsTruthy() )
+							return BatObject::False();
+					return BatObject::True();
 				case TYPE_CALLABLE:
 					return BatObject::Bool( value.func == rhs_value.func );
 				case TYPE_OBJECT:
@@ -400,6 +433,7 @@ namespace Bat
 				case TYPE_BOOL:
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
+				case TYPE_TUPLE:
 				case TYPE_MODULE:
 				case TYPE_OBJECT:
 				case TYPE_CLASS:
@@ -432,6 +466,7 @@ namespace Bat
 				case TYPE_BOOL:
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
+				case TYPE_TUPLE:
 				case TYPE_MODULE:
 				case TYPE_OBJECT:
 				case TYPE_CLASS:
@@ -464,6 +499,7 @@ namespace Bat
 				case TYPE_BOOL:
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
+				case TYPE_TUPLE:
 				case TYPE_MODULE:
 				case TYPE_OBJECT:
 				case TYPE_CLASS:
@@ -496,6 +532,7 @@ namespace Bat
 				case TYPE_BOOL:
 				case TYPE_CALLABLE:
 				case TYPE_ARRAY:
+				case TYPE_TUPLE:
 				case TYPE_MODULE:
 				case TYPE_OBJECT:
 				case TYPE_CLASS:
@@ -522,6 +559,7 @@ namespace Bat
 			case TYPE_STR:
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
+			case TYPE_TUPLE:
 			case TYPE_MODULE:
 			case TYPE_OBJECT:
 			case TYPE_CLASS:
@@ -548,6 +586,7 @@ namespace Bat
 			case TYPE_STR:
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
+			case TYPE_TUPLE:
 			case TYPE_MODULE:
 			case TYPE_OBJECT:
 			case TYPE_CLASS:
@@ -573,6 +612,7 @@ namespace Bat
 			case TYPE_STR:
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
+			case TYPE_TUPLE:
 			case TYPE_MODULE:
 			case TYPE_OBJECT:
 			case TYPE_CLASS:
@@ -598,14 +638,14 @@ namespace Bat
 	{
 		const ObjectType type = Type();
 
-		if( type != TYPE_ARRAY && type != TYPE_STR )
+		if( type != TYPE_ARRAY && type != TYPE_TUPLE && type != TYPE_STR )
 		{
 			throw BatObjectError( std::string( "Cannot index " ) + TypeToStr( type ) );
 		}
 
 		if( index.Type() != TYPE_INT )
 		{
-			throw BatObjectError( std::string( "Array index must be an integer" ) );
+			throw BatObjectError( std::string( "Index must be an integer" ) );
 		}
 
 		const ObjectValues& value = Value();
@@ -618,10 +658,10 @@ namespace Bat
 
 		if( (uint64_t)i >= impl->arr_size )
 		{
-			throw BatObjectError( std::string( "Array index " ) + std::to_string( i ) + " out of bounds" );
+			throw BatObjectError( std::string( "Index " ) + std::to_string( i ) + " out of bounds" );
 		}
 
-		if ( type == TYPE_ARRAY )
+		if ( type == TYPE_ARRAY || type == TYPE_TUPLE )
 		{
 			return value.arr[i];
 		}
@@ -634,7 +674,7 @@ namespace Bat
 	{
 		const ObjectType type = Type();
 
-		if( type != TYPE_ARRAY && type != TYPE_STR )
+		if( type != TYPE_ARRAY && type != TYPE_TUPLE && type != TYPE_STR )
 		{
 			throw BatObjectError( std::string( "Cannot slice " ) + TypeToStr( type ) );
 		}
@@ -675,6 +715,8 @@ namespace Bat
 
 		if ( type == TYPE_ARRAY )
 			return BatObject::Array( &value.arr[begin_i], end_i - begin_i );
+		else if ( type == TYPE_TUPLE )
+			return BatObject::Tuple( &value.arr[begin_i], end_i - begin_i );
 		else
 			return BatObject::Bytes( &value.str[begin_i], end_i - begin_i );
 	}
@@ -707,6 +749,18 @@ namespace Bat
 					s += ",";
 				}
 				s += "]";
+				return s;
+			}
+			case TYPE_TUPLE:
+			{
+				std::string s = "(";
+				for( size_t i = 0; i < impl->arr_size; i++ )
+				{
+					if( i > 0 ) s += ", ";
+					s += value.arr[i].ToString();
+				}
+				if( impl->arr_size == 1 ) s += ",";
+				s += ")";
 				return s;
 			}
 			case TYPE_MODULE:
@@ -753,6 +807,7 @@ namespace Bat
 			case TYPE_STR:
 			case TYPE_CALLABLE:
 			case TYPE_ARRAY:
+			case TYPE_TUPLE:
 			case TYPE_MODULE:
 			case TYPE_CLASS:
 			case TYPE_OBJECT:
@@ -776,7 +831,7 @@ namespace Bat
 		{
 			delete value.env;
 		}
-		else if( type == TYPE_ARRAY )
+		else if( type == TYPE_ARRAY || type == TYPE_TUPLE )
 		{
 			delete[] value.arr;
 		}

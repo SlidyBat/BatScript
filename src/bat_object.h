@@ -41,6 +41,7 @@ namespace Bat
 		TYPE_STR,
 		TYPE_CALLABLE,
 		TYPE_ARRAY,
+		TYPE_TUPLE,
 		TYPE_OBJECT,
 		TYPE_CLASS,
 		TYPE_MODULE
@@ -63,6 +64,7 @@ namespace Bat
 		static BatObject Bool( bool s );
 		static BatObject Function( BatCallable* func );
 		static BatObject Array( const BatObject* arr, size_t arr_size );
+		static BatObject Tuple( const BatObject* elements, size_t size );
 		static BatObject Module( Environment* module );
 		static BatObject Class( Environment* env );
 		static BatObject Object( const char* classname, void* opaque = nullptr );
@@ -105,7 +107,7 @@ namespace Bat
 		double GetFloat() const { assert( Type() == TYPE_FLOAT ); return Value().f64; }
 		const char* GetString() const { assert( Type() == TYPE_STR ); return Value().str; }
 		BatCallable* GetFunction() const { assert( Type() == TYPE_CALLABLE ); return Value().func; }
-		BatObject* GetArray() const { assert( Type() == TYPE_ARRAY ); return Value().arr; }
+		BatObject* GetElements() const { assert( Type() == TYPE_ARRAY || Type() == TYPE_TUPLE ); return Value().arr; }
 		Environment* GetModule() const { assert( Type() == TYPE_MODULE ); return Value().env; }
 		Environment* GetClass() const { assert( Type() == TYPE_CLASS ); return Value().env; }
 

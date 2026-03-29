@@ -1,6 +1,6 @@
 program       -> statement* EOF
 
-type          -> ( "int" | "float" | "bool" | "string" | IDENTIFIER ) ( "[" "]" )*
+type          -> ( "int" | "float" | "bool" | "string" | IDENTIFIER ) ( "[" "]" )* // TODO: Add tuple here
 
 // Simple statements can be used in single line compound statements
 statement     -> simple_stmt | compound_stmt
@@ -23,22 +23,22 @@ compound_stmt -> if_stmt
 block         -> indent statement+ dedent
 suite         -> (eol block | simple_stmt)
 
-var_decl      -> IDENTIFIER ( ":=" expression | ":" type ("=" expression)? ) eol
+var_decl      -> identifiers ( ":=" expressions | ":" type ("=" expressions)? ) eol
 function_decl -> "def" IDENTIFIER "(" parameters? ")" ( "->" type )? ":" suite
 class_decl    -> "class" IDENTIFIER ":" eol indent class_stmt+ dedent
 class_stmt    -> var_decl | function_decl | native_stmt
 
-expr_stmt     -> expression eol
-assign_stmt   -> expression ( assign ) expression ) eol
+expr_stmt     -> expressions eol
+assign_stmt   -> expression ( assign ) expression eol
 assign        -> ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "^=" | "|=" )
 
 print_stmt    -> "print" expression eol
 
 if_stmt       -> "if" expression ":" suite ("else" suite)?
 while_stmt    -> "while" expression ":" suite
-for_stmt      -> "for" "(" expression? ";" expression? ";" expression? ")" ":" suite // Ignore me for now :)
+for_stmt      -> "for" identifiers "in" expression ":" suite
 
-return_stmt   -> "return" expression? eol
+return_stmt   -> "return" expressions? eol
 
 import_as_stmt   -> "import" IDENTIFIER ( "as" IDENTIFIER )? eol
 from_import_stmt -> "from" IDENTIFIER "import" ( "*" | ( IDENTIFIER ( "," IDENTIFIER )* ) ) eol
@@ -48,6 +48,8 @@ native_stmt   -> "native" IDENTIFIER "(" parameters? ")" "->" type eol
 parameter     -> IDENTIFIER ":" type ( "=" expression )?
 parameters    -> parameter ( "," parameter )* ( "," "..." )?
 
+identifiers   -> IDENTIFIER ( "," IDENTIFIER )* // Unpacking of variables
+expressions   -> expression ( "," expression )* // Tuple of expressions
 expression    -> or
 or            -> and ( "or" and )*
 and           -> bitor ( "and" bitor )*
@@ -61,13 +63,16 @@ add           -> mult ( ( "+" | "-" ) mult )*
 mult          -> unary ( ( "*" | "/" | "%" ) unary )*
 unary         -> ( "+" | "-" | "!" | "~" | "*" | "&" | "print" ) unary
                | call_index_attr
-call_index_attr -> primary ( call | index | attr )*
+call_index_attr -> primary ( call | index | slice | attr )*
 call          -> "(" arguments? ")"
 index         -> "[" expression "]"
+slice         -> "[" expression? ":" expression? "]"
 attr          -> "." IDENTIFIER
 arguments     -> expression ( "," expression )*
 primary       -> NUMBER | STRING | "false" | "true" | "null" // Literals
                | IDENTIFIER
+               | "(" ")" // Empty tuple
+               | "(" expression "," array_values? ")" // Tuple literal
                | "(" expression ")" // Grouping
                | "[" array_values? "]" // Array literal
 array_values  -> expression ( "," expression )* ","? // Optional trailing comma

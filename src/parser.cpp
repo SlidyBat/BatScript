@@ -437,12 +437,12 @@ namespace Bat
 			type_name = ExpectType( "Expected variable type" );
 			if( Match( TOKEN_EQUAL ) )
 			{
-				init = ParseExpression();
+				init = ParseExpressions();
 			}
 		}
 		else if( Match( TOKEN_COLON_EQUAL ) )
 		{
-			init = ParseExpression();
+			init = ParseExpressions();
 		}
 
 		ExpectTerminator();
@@ -562,6 +562,26 @@ namespace Bat
 		}
 
 		return FunctionSignature( std::move( return_type ), name, std::move( types ), params, std::move( defaults ), varargs );
+	}
+
+	std::unique_ptr<Expression> Parser::ParseExpressions()
+	{
+		SourceLoc loc = Peek().loc;
+
+		std::unique_ptr<Expression> expr = ParseExpression();
+		if( !Match( TOKEN_COMMA ) )
+			return expr;
+		
+		std::vector<std::unique_ptr<Expression>> elements;
+		elements.push_back( std::move( expr ) );
+
+		while( !CheckTerminator() )
+		{
+			elements.push_back( ParseExpression() );
+			Match( TOKEN_COMMA );
+		}
+
+		return std::make_unique<TupleLiteral>( loc, std::move( elements ) );
 	}
 
 	std::unique_ptr<Expression> Parser::ParseExpression()
@@ -833,7 +853,30 @@ namespace Bat
 
 		if( Match( TOKEN_LPAREN ) )
 		{
+			if( Match( TOKEN_RPAREN ) )
+			{
+				// Empty tuple
+				return std::make_unique<TupleLiteral>( loc, std::vector<std::unique_ptr<Expression>>() );
+			}
+
 			auto expr = ParseExpression();
+
+			if( Match( TOKEN_COMMA ) )
+			{
+				// Tuple
+				std::vector<std::unique_ptr<Expression>> elements;
+
+				elements.push_back( std::move( expr ) );
+
+				while( !Match( TOKEN_RPAREN ) )
+				{
+					elements.push_back( ParseExpression() );
+					Match( TOKEN_COMMA );
+				}
+
+				return std::make_unique<TupleLiteral>( loc, std::move( elements ) );
+			}
+
 			Expect( TOKEN_RPAREN, "Expected ')' after expression." );
 
 			return std::make_unique<GroupExpr>( loc, std::move( expr ) );

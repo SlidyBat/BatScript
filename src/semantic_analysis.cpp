@@ -169,6 +169,15 @@ namespace Bat
 
 		node->SetType( typeman.NewArray( inner ) );
 	}
+	void SemanticAnalysis::VisitTupleLiteral( TupleLiteral* node )
+	{
+		std::vector<Type*> element_types;
+		for( size_t i = 0; i < node->NumValues(); i++ )
+		{
+			element_types.push_back( GetExprType( node->ValueAt( i ) ) );
+		}
+		node->SetType( typeman.NewTuple( element_types ) );
+	}
 	Type* SemanticAnalysis::PrimitiveBinary( PrimitiveType* left, PrimitiveType* right, TokenType op, Type** coerce_to )
 	{
 		*coerce_to = nullptr;
@@ -361,6 +370,7 @@ namespace Bat
 		switch( type->Kind() )
 		{
 		case TypeKind::Array:
+		case TypeKind::Tuple:
 		case TypeKind::Function:
 		case TypeKind::Class:
 			return false;
@@ -407,6 +417,7 @@ namespace Bat
 		switch( type->Kind() )
 		{
 		case TypeKind::Array:
+		case TypeKind::Tuple:
 		case TypeKind::Function:
 		case TypeKind::Class:
 			return false;
@@ -434,6 +445,7 @@ namespace Bat
 		switch( type->Kind() )
 		{
 		case TypeKind::Array:
+		case TypeKind::Tuple:
 		case TypeKind::Function:
 		case TypeKind::Class:
 			return false;
@@ -587,10 +599,10 @@ namespace Bat
 	void SemanticAnalysis::VisitIndexExpr( IndexExpr* node )
 	{
 		Type* node_type = GetExprType( node->Array() );
-		if( !node_type->IsArray() &&
+		if( !node_type->IsArray() && !node_type->IsTuple() &&
 			!( node_type->IsPrimitive() && node_type->AsPrimitive()->PrimKind() == PrimitiveKind::String ) )
 		{
-			Error( node->Array()->Location(), "Expression does not evaluate to array or string" );
+			Error( node->Array()->Location(), "Expression does not evaluate to array, tuple, or string" );
 			node->SetType( node_type );
 			return;
 		}
@@ -600,7 +612,7 @@ namespace Bat
 		Type* coerced = Coerce( index_type, int_type );
 		if( !coerced )
 		{
-			Error( node->Index()->Location(), "Array index must evaluate to integer" );
+			Error( node->Index()->Location(), "Index must evaluate to integer" );
 		}
 		else if( coerced != index_type )
 		{
@@ -612,6 +624,30 @@ namespace Bat
 		{
 			Type* inner = node_type->AsArray()->Inner();
 			node->SetType( inner );
+		}
+		else if( node_type->IsTuple() )
+		{
+			TupleType* tuple_type = node_type->AsTuple();
+			// If index is a constant, resolve exact element type
+			if( node->Index()->Kind() == AstType::IntLiteral )
+			{
+				int64_t idx = node->Index()->ToIntLiteral()->value;
+				if( idx < 0 )
+					idx += (int64_t)tuple_type->NumElements();
+				if( idx >= 0 && (size_t)idx < tuple_type->NumElements() )
+				{
+					node->SetType( tuple_type->ElementAt( (size_t)idx ) );
+				}
+				else
+				{
+					Error( node->Index()->Location(), "Tuple index out of bounds" );
+					node->SetType( tuple_type->ElementAt( 0 ) );
+				}
+			}
+			else
+			{
+				Error( node->Index()->Location(), "Cannot use dynamic index for tuple" );
+			}
 		}
 		else
 		{

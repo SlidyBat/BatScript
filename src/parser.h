@@ -59,6 +59,7 @@ namespace Bat
 		FunctionSignature ParseFuncSignature();
 
 		// Expression parsing
+		std::unique_ptr<Expression> ParseExpressions();
 		std::unique_ptr<Expression> ParseExpression();
 		std::unique_ptr<Expression> ParseOr();
 		std::unique_ptr<Expression> ParseAnd();
