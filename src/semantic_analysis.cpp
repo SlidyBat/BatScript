@@ -868,9 +868,29 @@ namespace Bat
 		m_pCurrentLoop = node;
 
 		PushScope();
-		if( node->Initializer() ) Analyze( node->Initializer() );
-		if( node->Condition() )   Analyze( node->Condition() );
-		if( node->Increment() )   Analyze( node->Increment() );
+
+		Analyze( node->Iterable() );
+		Type* iterable_type = GetExprType( node->Iterable() );
+
+		Type* var_type = nullptr;
+		if( iterable_type->IsArray() )
+		{
+			var_type = iterable_type->AsArray()->Inner();
+		}
+		else if( iterable_type->IsPrimitive() && iterable_type->AsPrimitive()->PrimKind() == PrimitiveKind::String )
+		{
+			var_type = iterable_type;
+		}
+		else
+		{
+			Error( node->Location(), "Cannot iterate over '" + iterable_type->ToString() + "'" );
+			PopScope();
+			m_pCurrentLoop = old_loop;
+			return;
+		}
+
+		AddVariable( node, node->Variable(), var_type );
+
 		Analyze( node->Body() );
 		PopScope();
 

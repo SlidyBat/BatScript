@@ -17,6 +17,7 @@
 	_(ENUM,           "enum")                                   \
 	_(IMPORT,         "import")                                 \
 	_(AS,             "as")                                     \
+	_(IN,             "in")                                     \
 	_(FROM,           "from")                                   \
 	_(NATIVE,         "native")                                 \
 	_(CONST,          "const")                                  \

@@ -48,9 +48,15 @@ namespace Bat
 	}
 	BatObject& BatObject::operator=( const BatObject& rhs )
 	{
-		impl = rhs.impl;
-		if( impl )
-			impl->refcnt++;
+		if( impl != rhs.impl )
+		{
+			if( impl && --impl->refcnt == 0 )
+				delete impl;
+			impl = rhs.impl;
+			if( impl )
+				impl->refcnt++;
+		}
+		return *this;
 
 		return *this;
 	}
@@ -61,6 +67,8 @@ namespace Bat
 	}
 	BatObject& BatObject::operator=( BatObject&& rhs ) noexcept
 	{
+    	if( impl && --impl->refcnt == 0 )
+			delete impl;
 		impl = rhs.impl;
 		rhs.impl = nullptr;
 
@@ -211,6 +219,9 @@ namespace Bat
 
 		const ObjectValues& value = Value();
 		const ObjectValues& rhs_value = rhs.Value();
+
+		if( rhs_value.i64 == 0 )
+			throw BatObjectError("Division by zero");
 
 		if( type == TYPE_INT && rhs_type == TYPE_INT ) return BatObject::Int( value.i64 / rhs_value.i64 );
 		if( type == TYPE_FLOAT && rhs_type == TYPE_FLOAT ) return BatObject::Float( value.f64 / rhs_value.f64 );

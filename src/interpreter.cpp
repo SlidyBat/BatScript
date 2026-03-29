@@ -43,8 +43,6 @@ namespace Bat
 	{
 		e->Accept( this );
 		return m_Result;
-
-		return BatObject();
 	}
 
 	void Interpreter::Execute( std::unique_ptr<Statement> s )
@@ -542,19 +540,26 @@ namespace Bat
 	}
 	void Interpreter::VisitForStmt( ForStmt* node )
 	{
-		for( Evaluate( node->Initializer() );
-			IsTruthy( Evaluate( node->Condition() ), node->Condition()->Location() );
-			Evaluate( node->Increment() ) )
+		BatObject iterable = Evaluate( node->Iterable() );
+
+		Environment env( m_pEnvironment );
+		EnvironmentRestore save( &m_pEnvironment );
+		m_pEnvironment = &env;
+
+		m_pEnvironment->AddVar( node->Variable().lexeme, BatObject() );
+
+		for( size_t i = 0; i < iterable.Size(); i++ )
 		{
+			m_pEnvironment->SetVar( node->Variable().lexeme, iterable.Index( BatObject::Int( (int64_t)i ) ) );
 			try
 			{
 				Execute( node->Body() );
 			}
-			catch ( const BreakLoop& )
+			catch( const BreakLoop& )
 			{
 				break;
 			}
-			catch ( const ContinueLoop& )
+			catch( const ContinueLoop& )
 			{
 				continue;
 			}

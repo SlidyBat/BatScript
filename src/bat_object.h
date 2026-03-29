@@ -92,6 +92,7 @@ namespace Bat
 		BatObject Call( Interpreter& interpreter, const std::vector<BatObject>& args ) const;
 		BatObject Index( const BatObject& index );
 		BatObject Slice( const BatObject& begin, const BatObject& end );
+		size_t Size() const { return impl ? impl->arr_size : 0; }
 
 		bool IsTruthy() const;
 

@@ -489,23 +489,20 @@ namespace Bat
 	public:
 		DECLARE_AST_NODE( ForStmt );
 
-		ForStmt( const SourceLoc& loc, std::unique_ptr<Expression> initializer, std::unique_ptr<Expression> condition, std::unique_ptr<Expression> increment, std::unique_ptr<Statement> body )
+		ForStmt( const SourceLoc& loc, Token variable, std::unique_ptr<Expression> iterable, std::unique_ptr<Statement> body )
 			:
 			Statement( loc ),
-			m_pCondition( std::move( condition ) ),
-			m_pInitializer( std::move( initializer ) ),
-			m_pIncrement( std::move( increment ) ),
+			m_Variable( std::move( variable ) ),
+			m_pIterable( std::move( iterable ) ),
 			m_pBody( std::move( body ) )
 		{}
 
-		Expression* Condition() { return m_pCondition.get(); }
-		Expression* Initializer() { return m_pInitializer.get(); }
-		Expression* Increment() { return m_pIncrement.get(); }
+		const Token& Variable() const { return m_Variable; }
+		Expression* Iterable() { return m_pIterable.get(); }
 		Statement* Body() { return m_pBody.get(); }
 	private:
-		std::unique_ptr<Expression> m_pCondition;
-		std::unique_ptr<Expression> m_pInitializer;
-		std::unique_ptr<Expression> m_pIncrement;
+		Token m_Variable;
+		std::unique_ptr<Expression> m_pIterable;
 		std::unique_ptr<Statement> m_pBody;
 	};
 
@@ -662,7 +659,7 @@ namespace Bat
 			:
 			Statement( loc ),
 			m_TypeName( std::move( type_name ) ),
-			m_Identifier( identifier ),
+			m_Identifier( std::move( identifier ) ),
 			m_pInitializer( std::move( initializer ) )
 		{}
 

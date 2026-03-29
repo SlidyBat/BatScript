@@ -176,10 +176,8 @@ namespace Bat
 
 	void AstPrinter::VisitForStmt( ForStmt* node )
 	{
-		std::cout << "for";
-		PrintNode( node->Initializer() );
-		PrintNode( node->Condition() );
-		PrintNode( node->Increment() );
+		std::cout << "for " << node->Variable().lexeme << " in";
+		PrintNode( node->Iterable() );
 		PrintNode( node->Body() );
 	}
 

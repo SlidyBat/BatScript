@@ -323,32 +323,24 @@ namespace Bat
 	{
 		SourceLoc loc = Previous().loc;
 
-		Expect( TOKEN_LPAREN, "Expected '('" );
+		Token variable = Expect( TOKEN_IDENT, "Expected identifier" );
 
-		std::unique_ptr<Expression> initializer = nullptr;
-		if( !Check( TOKEN_SEMICOLON ) )
+		Expect( TOKEN_IN, "Expected 'in'" );
+		
+		auto iterable = ParseExpression();
+		Expect( TOKEN_COLON, "Expected ':' after for statement" );
+
+		std::unique_ptr<Statement> body;
+		if( Match( TOKEN_ENDOFLINE ) )
 		{
-			initializer = ParseExpression();
+			body = ParseBlock();
 		}
-		Expect( TOKEN_SEMICOLON, "Expected ';'" );
-
-		std::unique_ptr<Expression> condition = nullptr;
-		if( !Check( TOKEN_SEMICOLON ) )
+		else
 		{
-			condition = ParseExpression();
+			body = ParseSimpleStatement();
 		}
-		Expect( TOKEN_SEMICOLON, "Expected ';'" );
 
-		std::unique_ptr<Expression> increment = nullptr;
-		if( !Check( TOKEN_RPAREN ) )
-		{
-			increment = ParseExpression();
-		}
-		Expect( TOKEN_RPAREN, "Expected ')'" );
-
-		std::unique_ptr<Statement> body = ParseStatement();
-
-		return std::make_unique<ForStmt>( loc, std::move( initializer ), std::move( condition ), std::move( increment ), std::move( body ) );
+		return std::make_unique<ForStmt>( loc, variable, std::move( iterable ), std::move( body ) );
 	}
 
 	std::unique_ptr<ReturnStmt> Parser::ParseReturn()
